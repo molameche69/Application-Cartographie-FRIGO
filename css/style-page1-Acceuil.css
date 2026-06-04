@@ -9,8 +9,7 @@
 }
  
 
-.logo {
-    
+.logo1 {
     height: 150px; 
     width: auto;
     border-left: 3px solid black;
@@ -18,9 +17,17 @@
     margin-left: auto; 
 }
 
+.logo2 {
+    height: 150px; 
+    width: auto;
+    border-right: 3px solid black;
+    border-radius: 10px;
+    margin-right: auto; 
+    
+}
 
 .Titre h2 {
-    margin-left: 520px;   
+    margin: 40px 40px;   
     font-size: 50px;
     padding: 0px;
     text-decoration: underline;
