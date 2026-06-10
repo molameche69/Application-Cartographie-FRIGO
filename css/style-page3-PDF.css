@@ -1,0 +1,69 @@
+/* Styles exclusifs pour le document PDF */
+body {
+    background-color: #ffffff;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #2b2b2b;
+    margin: 0;
+    padding: 20px;
+}
+
+.pdf-box {
+    border: 1px solid #e0e0e0;
+    padding: 40px;
+    border-radius: 4px;
+}
+
+.pdf-header {
+    border-bottom: 2px solid #007BFF;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+.pdf-header h1 {
+    margin: 0;
+    color: #007BFF;
+    font-size: 26px;
+}
+
+.pdf-header p {
+    margin: 5px 0 0 0;
+    color: #777;
+    font-size: 12px;
+}
+
+.info-group {
+    margin-bottom: 25px;
+}
+
+.label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#pdf-nom {
+    font-size: 18px;
+    font-weight: bold;
+    color: #111;
+}
+
+#pdf-message {
+    font-size: 14px;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-left: 3px solid #007BFF;
+    margin: 5px 0 0 0;
+    line-height: 1.5;
+}
+
+.pdf-footer {
+    margin-top: 60px;
+    border-top: 1px solid #eeeeee;
+    padding-top: 15px;
+    text-align: center;
+    font-size: 10px;
+    color: #bbb;
+}

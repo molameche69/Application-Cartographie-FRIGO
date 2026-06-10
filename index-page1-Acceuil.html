@@ -5,45 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
     <link rel="stylesheet" href="css/style-page1-Acceuil.css">
+    <style>
+       
+        .form-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            resize: vertical;
+            min-height: 80px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body> 
 <canvas id="fond-etoile"></canvas>
 
-    <div class="container"> 
+<div class="Titre">
+    <img src="images/logo.png" class="logo2">
+    <i>:Cartographie en 9 points:</i>
+    <img src="images/logo.png" class="logo1">
+</div>
 
-    <div class="Titre">
-        <img src="images/logo.png" class="logo2">
-    <h2>:Récuperation des données de temperature:</h2>
-        <img src="images/logo.png" class="logo1">
+<div class="container"> 
+
+    <div class="form-container">
+        <h2>Entrez Les informations</h2>
+        <input type="text" id="username" placeholder="Votre nom" required>
+        
+        <input id="userMessage" placeholder="Votre message" required></input>
+        
+        <button onclick="sauvegarderEtDiriger()">Envoyer et Voir</button>
     </div>
 
-        <div class="tableau">
-            <h2>Données du tableau Frigo 1 synchronisées en direct : Ctrl + shift + R</h2>
-            <div class="table-container">
-                <iframe class="iframes" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vSL5pWhXtiuogOJf6g0GYZmEtUCkKjcLSTpo7B8MgzO-SOowmi_eVPDvRXtlRybWLOiovFQIH_aTQol/pubhtml?chrome=false&amp;widget=false&amp;headers=false"></iframe>
-            </div>
-        </div>
+    <script>
+        function sauvegarderEtDiriger() {
+            const nom = document.getElementById('username').value.trim();
+            const message = document.getElementById('userMessage').value.trim();
 
-        <div class="lien">   
-            <a href="https://docs.google.com/spreadsheets/d/13wMa7hC8bJzKNn-TWzwInEdqq6XZJ-bGE1kxsYvVk80/edit?usp=sharing" target="_blank" class="btn">
-                Modifier le tableau Frigo 1 sur Google Sheets 📝
-            </a>
-        </div>
+           
+            if (nom === '' || message === '') {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
 
-        <div class="tableau">
-            <h2>Données du tableau Frigo 2 synchronisées en direct : Ctrl + shift + R</h2>
-            <div class="table-container">
-                <iframe class="iframes" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQDTf4_DSGpt7TBzaInTiZm7jNvgOj4ilwa9bnsOYDtM84LiTYV4I7GpaPh-nax0QZOxHm-ofGtx1gt/pubhtml?chrome=false&amp;widget=false&amp;headers=false"></iframe>
-            </div>
-        </div>
+            
+            localStorage.setItem('monNom', nom);
+            localStorage.setItem('monMessage', message);
 
-        <div class="lien">   
-            <a href="https://docs.google.com/spreadsheets/d/1F7y2rud53wk46okK2ZT2c3SGpDCjTEPrYiyXsA0U9xk/edit?usp=sharing" target="_blank" class="btn2">
-                Modifier le tableau Frigo 2 sur Google Sheets 📝
-            </a>
-        </div>
+            
+            window.location.href = 'index-page2-Rapport.html';
+        }
+    </script>
+</div>
 
-    </div> 
 <script src="JS/script-page1.js"></script>
+
 </body>
 </html>

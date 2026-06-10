@@ -1,0 +1,171 @@
+ #fond-etoile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, #5909a3, rgb(51, 50, 50));
+    z-index: -1; 
+}
+
+.container {
+    max-width: 1900px;
+    width: 95%;        
+    margin: 0 auto;       
+}
+
+.logo1 {
+    height: 150px; 
+    width: auto;
+    border-left: 3px solid black;
+    border-radius: 10px;
+    margin-left: auto; 
+}
+
+.logo2 {
+    height: 150px; 
+    width: auto;
+    border-right: 3px solid black;
+    border-radius: 10px;
+    margin-right: auto; 
+    
+}
+
+.Titre i {
+    margin: 40px 40px;   
+    font-size: 60px;
+    padding: 0px;
+    
+      
+}
+
+.Titre {
+    display: flex;
+    justify-content: center; 
+    background: beige;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    max-width: 1900px;
+    width: 100%;             
+    margin: 40px auto; 
+    transition: 1s ease-in-out;
+    border: 3px solid black;
+    max-width: 1900px;
+    width: 95%;        
+    
+}
+
+.Titre:hover{
+    background-color: grey;
+    color: beige;
+    transition: 1s ease;
+}
+
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 50px;
+    background-color: #f4f4f9;
+}
+
+.container {
+    background:beige;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+}
+
+.result-container {
+    background:white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 400px;
+}
+
+    span {
+    font-weight: bold;
+    color: #007BFF;
+}
+
+    a {
+    display: inline-block;
+    margin-top: 15px;
+    color: #333;
+    text-decoration: none;
+}
+
+    a:hover {
+    text-decoration: underline;
+}
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 🎨 LE STYLE DU PDF : Cette boîte sera convertie en PDF */
+        #bloc-rapport {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            border-left: 6px solid #007BFF; /* Une jolie barre bleue sur le côté */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            font-family: 'Arial', sans-serif;
+        }
+
+        #bloc-rapport h2 {
+            color: #1a1a1a;
+            margin-top: 0;
+            font-size: 22px;
+            border-bottom: 2px solid #eeeeee;
+            padding-bottom: 12px;
+        }
+
+        #bloc-rapport p {
+            font-size: 14px;
+            color: #4a4a4a;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        #bloc-rapport span {
+            font-weight: bold;
+            color: #007BFF; /* Couleur bleue pour mettre en valeur les données */
+        }
+
+        /* Styles pour les éléments HORS du PDF */
+        .actions-zone {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .actions-zone button {
+            width: 100%;
+            padding: 12px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .actions-zone button:hover {
+            background-color: #bd2130;
+        }
+
+        .actions-zone a {
+            display: inline-block;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .actions-zone a:hover {
+            text-decoration: underline;
+        }

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport</title>
+    <link rel="stylesheet" href="css/style-page2-Rapport.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        .actions-zone { margin-top: 25px; }
+        .actions-zone button { padding: 10px 20px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        .actions-zone a { display: inline-block; margin-top: 15px; color: #333; text-decoration: none; }
+        
+        /* 🛠️ ON CACHE LE MODÈLE POUR LE SITE, MAIS IL RESTE ACCESSIBLE POUR HTML2PDF */
+        #zone-pdf-cachee {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="fond-etoile"></canvas>
+
+<div class="Titre">
+    <img src="images/logo.png" class="logo2">
+    <i>:Rapport:</i>
+    <img src="images/logo.png" class="logo1">
+</div>
+
+<div class="container"> 
+    
+    <div id="bloc-rapport">
+        <h2>Rapport des Informations</h2>
+        <p><strong>Nom de l'utilisateur :</strong> <span id="afficherNom"></span></p>
+        <p><strong>Message transmis :</strong> <span id="afficherMessage"></span></p>
+    </div> 
+
+    <div id="zone-pdf-cachee">
+        <link rel="stylesheet" href="css/style-page3-PDF.css">
+        
+        <div class="pdf-box" style="background: white; padding: 20px; color: black;">
+            <div class="pdf-header">
+                <h1>Rapport Officiel</h1>
+                <p>Généré le : <span id="pdf-date"></span></p>
+            </div>
+
+            <div class="pdf-body">
+                <div class="info-group">
+                    <span class="label">Nom de l'utilisateur :</span>
+                    <strong id="pdf-nom"></strong>
+                </div>
+                <div class="info-group" style="margin-top: 15px;">
+                    <span class="label">Message transmis :</span>
+                    <div id="pdf-message" style="min-height: 40px; margin-top: 5px;"></div>
+                </div>
+            </div>
+
+            <div class="pdf-footer" style="margin-top: 30px;">
+                <p>Document confidentiel - Ne pas distribuer.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions-zone">
+        <button onclick="telechargerPDFDirect()">Télécharger en PDF</button>
+        <br>
+        <a href="index-page1-Acceuil.html">← Retour au formulaire</a>
+    </div>
+
+    <script>
+        // Affichage des données à l'écran sur le site
+        window.onload = function() {
+            const nomStocke = localStorage.getItem('monNom');
+            const messageStocke = localStorage.getItem('monMessage');
+
+            if (nomStocke && messageStocke) {
+                document.getElementById('afficherNom').innerText = nomStocke;
+                document.getElementById('afficherMessage').innerText = messageStocke;
+            } else {
+                document.getElementById('afficherNom').innerText = "Aucune donnée";
+                document.getElementById('afficherMessage').innerText = "Aucune donnée";
+            }
+        };
+
+        // Fonction de téléchargement ultra-simplifiée (sans fetch)
+        function telechargerPDFDirect() {
+            // 1. On coupe temporairement le fond étoilé au cas où il bloque le rendu
+            const fondEtoile = document.getElementById('fond-etoile');
+            if (fondEtoile) fondEtoile.style.display = 'none';
+
+            // 2. On récupère les données du localStorage
+            const nom = localStorage.getItem('monNom') || "Aucun nom";
+            const message = localStorage.getItem('monMessage') || "Aucun message";
+            const dateJour = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // 3. On injecte directement dans la zone masquée du document actuel
+            document.getElementById('pdf-nom').innerText = nom;
+            document.getElementById('pdf-date').innerText = dateJour;
+            document.getElementById('pdf-message').innerHTML = message.replace(/\n/g, '<br>');
+
+            // 4. On cible la boîte du PDF (.pdf-box) qui a reçu les styles de style-page3-PDF.css
+            const elementHTML = document.querySelector('.pdf-box');
+
+            const options = {
+                margin:       15,
+                filename:     'rapport_final.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true }, 
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 5. Génération immédiate
+            html2pdf().set(options).from(elementHTML).save().then(() => {
+                // On remet le fond étoilé après le téléchargement
+                if (fondEtoile) fondEtoile.style.display = 'block';
+            }).catch(err => {
+                console.error(err);
+                if (fondEtoile) fondEtoile.style.display = 'block';
+            });
+        }
+    </script>
+    
+<script src="JS/script-page1.js"></script>
+
+</div> 
+</body>
+</html>
