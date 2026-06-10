@@ -13,9 +13,9 @@
 <canvas id="fond-etoile"></canvas>
 
 <div class="Titre">
-    <img src="images/logo.png" class="logo2">
+    <img src="images/logo.png" class="logo2" alt="Logo gauche">
     <i>:Cartographie en 9 points:</i>
-    <img src="images/logo.png" class="logo1">
+    <img src="images/logo.png" class="logo1" alt="Logo droite">
 </div>
 
 <div class="systeme-onglets">
@@ -23,7 +23,7 @@
     <div class="onglets-boutons">
         <button class="onglet-btn actif" onclick="changerOnglet(event, 'onglet1')">Fiche technique</button>
         <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">Cartographie</button>
-        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">Tableau temperature</button>
+        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">Tableau température</button>
     </div>
 
     <div id="onglet1" class="contenu-onglet" style="display: block;">
@@ -34,11 +34,13 @@
             <h2>Entrer Les informations</h2>
             <input type="text" id="username" placeholder="Votre nom" required>
             <input type="text" id="userMessage" placeholder="Votre message" required>
-            <button onclick="sauvegarderToutEtDiriger()">Envoyer et Voir le Rapport</button>
+            <input type="text" id="userEntreprise" placeholder="Votre entreprise ">
+            <input type="text" id="userService" placeholder="Votre service ">
+            <input type="text" id="userReference" placeholder="Référence de l'appareil (Optionnel)">
         </div>
     </div> 
     
-    <div id="onglet2" class="contenu-onglet">
+    <div id="onglet2" class="contenu-onglet" style="display: none;">
         <div class="Carto">
             <i>Cartographie</i>
         </div>
@@ -47,15 +49,15 @@
             
             <div class="reserve-images" id="reserve-cible">
                 <h3>Sondes à placer :</h3>
-                <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" draggable="true">
-                <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" draggable="true">
-                <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" draggable="true">
-                <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" draggable="true">
-                <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" draggable="true">
-                <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" draggable="true">
-                <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" draggable="true">
-                <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" draggable="true">
-                <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" draggable="true">
+                <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" draggable="true" alt="Sonde 1">
+                <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" draggable="true" alt="Sonde 2">
+                <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" draggable="true" alt="Sonde 3">
+                <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" draggable="true" alt="Sonde 4">
+                <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" draggable="true" alt="Sonde 5">
+                <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" draggable="true" alt="Sonde 6">
+                <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" draggable="true" alt="Sonde 7">
+                <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" draggable="true" alt="Sonde 8">
+                <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" draggable="true" alt="Sonde 9">
 
                 <button onclick="reinitialiserMarqueurs()">
                     Réinitialiser les marqueurs
@@ -69,20 +71,19 @@
         </div>
     </div> 
 
-    <div id="onglet3" class="contenu-onglet">
-     <div id="bloc-graphique" style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-top: 20px;">
-        <h2 style="color: #1a1a1a; border-bottom: 2px solid #eeeeee; padding-bottom: 12px; font-size: 22px;">
-            Analyse Thermique depuis Fichier Excel
-        </h2>
-        
-        <div style="max-width: 1000px; margin: 20px auto;">
-            <canvas id="graphiqueTemperatures"></canvas>
+    <div id="onglet3" class="contenu-onglet" style="display: none;">
+        <div id="bloc-graphique">
+            <h2>Analyse Thermique depuis Fichier Excel</h2>
+            
+            <div style="max-width: 1000px; margin: 20px auto; background: white; padding: 10px; border-radius: 8px;">
+                <canvas id="graphiqueTemperatures"></canvas>
+            </div>
+
+            <button onclick="sauvegarderToutEtDiriger()">Envoyer et Voir le Rapport</button>
         </div>
     </div>
-</div>
-</div>
-
-<script src="JS/script-fond.js"></script>
+    
+</div> <script src="JS/script-fond.js"></script>
 <script src="JS/script-page1.js"></script>
 
 </body>

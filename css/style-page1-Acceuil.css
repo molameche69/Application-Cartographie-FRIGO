@@ -165,7 +165,7 @@ body {
     transform: translate(-50%, -50%); 
 }
 
-input, button {
+input,.onglet-btn {
     width: 100%;
     padding: 10px;
     margin: 10px 0;
@@ -173,12 +173,14 @@ input, button {
     border-radius: 4px;
     box-sizing: border-box;
 }
+
 button {
     background-color: #007BFF;
     color: white;
     border: none;
     cursor: pointer;
 }
+
 button:hover {
     background-color: #0056b3;
 }
@@ -210,6 +212,41 @@ button:hover {
 
 
 
-   
+#bloc-graphique{
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-top: 20px;
+}
+
+
+#bloc-graphique h2{   
+    color: #1a1a1a; 
+    border-bottom: 2px solid #eeeeee;
+    font-size: 22px;
+    display: flex;
+    justify-content: center;
+    text-decoration: underline;
+    font-size: 50px;
+    margin: auto;
+    
+}
+
+#bloc-graphique button {
+
+    display: flex;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 10px 10px;
+    font-size: 20px;
+    margin: auto;
+}
+
+#bloc-graphique button:hover {
+    background-color: #973e3e;
+}
 
 

@@ -179,3 +179,31 @@ a:hover {
     border-radius: 10px;
     margin: auto;
 }
+
+.conteneur-tableau {
+            max-height: 300px; 
+            overflow-y: auto; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            margin-top: 15px;
+        }
+        .tab-donnees {
+            width: 100%; 
+            border-collapse: collapse; 
+            font-family: sans-serif; 
+            font-size: 14px; 
+            text-align: left;
+        }
+        .tab-donnees th {
+            background: #f8f9fa; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            padding: 10px; 
+            border-bottom: 2px solid #ddd;
+            color: #333;
+        }
+        .tab-donnees td {
+            padding: 8px 10px; 
+            border-bottom: 1px solid #eee;
+        }

@@ -7,16 +7,8 @@
     <link rel="stylesheet" href="css/style-page2-Rapport.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <style>
-        
-        #zone-pdf-cachee {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
-            width: 794px; 
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <canvas id="fond-etoile"></canvas>
@@ -29,53 +21,58 @@
 
 <div class="container"> 
     
-    <p><strong class="Rap">Informations :</strong></p>
-    <div id="bloc-rapport">
-        <h2>Rapport des Informations</h2>
-        <p><strong>Nom de l'utilisateur :</strong> <span id="afficherNom"></span></p>
-        <p><strong>Message transmis :</strong> <span id="afficherMessage"></span></p>
-    </div> 
+    <div id="zone-impression-pdf" style="background: transparent; padding: 1px;">
+        
+        <p><strong class="Rap">Informations :</strong></p>
+        <div id="bloc-rapport">
+            <h2>Rapport des Informations</h2>
+            <p><strong>Nom de l'utilisateur :</strong> <span id="afficherNom"></span></p>
+            <p><strong>Message transmis :</strong> <span id="afficherMessage"></span></p>
+        </div> 
 
-    <p><strong class="Sonde">Positionnement des sondes :</strong></p>
-    <div class="zone-carte" id="carte-rapport">
-        <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Carte">
-    </div>
+        <p><strong class="Sonde">Positionnement des sondes :</strong></p>
+        <div class="zone-carte" id="carte-rapport">
+            <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Carte">
+        </div>
 
-    <div class="actions-zone">
+        <p><strong class="Sonde">Analyse des Températures :</strong></p>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <div style="height: 350px; width: 100%; position: relative;">
+                <canvas id="graphiqueTemperatures"></canvas>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
+            <h3 style="margin-top: 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px;">📋 Données brutes du fichier ODS</h3>
+            <div class="conteneur-tableau">
+                <table class="tab-donnees">
+                    <thead>
+                        <tr>
+                            <th>Capteur (S/N)</th>
+                            <th>Horodatage</th>
+                            <th>Température</th>
+                            <th>Unité</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpsTableauODS">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #999; font-style: italic; padding: 20px;">
+                                Chargement des données du capteur...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div> <div class="actions-zone">
         <button onclick="telechargerPDFDirect()">Télécharger en PDF</button>
         <br>
         <a href="index-page1-Acceuil.html">← Retour au formulaire</a>
     </div>
 
 </div> 
-
-<div id="zone-pdf-cachee">
-    <link rel="stylesheet" href="css/style-page3-PDF.css">
-    
-    <div class="pdf-box" style="background: white; padding: 30px; color: black; box-sizing: border-box; margin: 0;">
-        <div class="pdf-header" style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
-            <h1 style="font-size: 24px; color: #007bff; margin: 0;">Rapport Officiel</h1>
-            <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Généré le : <span id="pdf-date"></span></p>
-        </div>
-
-        <div class="pdf-body">
-            <div class="info-group" style="margin-bottom: 15px;">
-                <span class="label" style="color: #555; display: block; font-size: 12px;">Nom de l'utilisateur :</span>
-                <strong id="pdf-nom" style="font-size: 16px; color: #000;"></strong>
-            </div>
-            
-            <div class="info-group" style="margin-bottom: 15px;">
-                <span class="label" style="color: #555; display: block; font-size: 12px;">Message transmis :</span>
-                <div id="pdf-message" style="background: #f8f9fa; padding: 10px; border-left: 3px solid #007bff; font-style: italic; margin-top: 5px;"></div>
-            </div>
-            
-            </div>
-
-        <div class="pdf-footer" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 10px; text-align: center; font-size: 10px; color: #999;">
-            <p>Document confidentiel - Ne pas distribuer.</p>
-        </div>
-    </div>
-</div>
 
 <script src="JS/script-fond.js"></script>
 <script src="JS/script-page2.js"></script>
