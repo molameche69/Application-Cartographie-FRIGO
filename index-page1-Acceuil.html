@@ -5,26 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
     <link rel="stylesheet" href="css/style-page1-Acceuil.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
-       
-        .form-container textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            resize: vertical;
-            min-height: 80px;
-            box-sizing: border-box;
-            font-family: inherit;
+        .marqueur-draggable {
+            width: 40px !important;
+            height: 40px !important;
+            cursor: grab;
+            margin: 5px;
         }
-        .form-container input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
+        /* Style des marqueurs UNIQUEMENT quand ils sont déposés sur la carte */
+        #carte-cible .marqueur-draggable {
+            position: absolute !important;
+            margin: 0px !important;
+            transform: translate(-50%, -50%) !important;
+        }
+        /* Cache les onglets par défaut en CSS */
+        .contenu-onglet {
+            display: none;
         }
     </style>
 </head>
@@ -37,38 +35,63 @@
     <img src="images/logo.png" class="logo1">
 </div>
 
-<div class="container"> 
-
-    <div class="form-container">
-        <h2>Entrez Les informations</h2>
-        <input type="text" id="username" placeholder="Votre nom" required>
-        
-        <input id="userMessage" placeholder="Votre message" required></input>
-        
-        <button onclick="sauvegarderEtDiriger()">Envoyer et Voir</button>
+<div class="systeme-onglets">
+    
+    <div class="onglets-boutons">
+        <button class="onglet-btn actif" onclick="changerOnglet(event, 'onglet1')">Fiche technique</button>
+        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">Cartographie</button>
+        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">Tableau temperature</button>
     </div>
 
-    <script>
-        function sauvegarderEtDiriger() {
-            const nom = document.getElementById('username').value.trim();
-            const message = document.getElementById('userMessage').value.trim();
+    <div id="onglet1" class="contenu-onglet" style="display: block;">
+        <div class="tech">
+            <i>Veuillez remplir les cases</i>
+        </div>
+        <div class="Fiche">
+            <h2>Entrer Les informations</h2>
+            <input type="text" id="username" placeholder="Votre nom" required>
+            <input type="text" id="userMessage" placeholder="Votre message" required>
+            <button onclick="sauvegarderToutEtDiriger()">Envoyer et Voir le Rapport</button>
+        </div>
+    </div> 
+    
+    <div id="onglet2" class="contenu-onglet">
+        <div class="Carto">
+            <i>Cartographie</i>
+        </div>
 
-           
-            if (nom === '' || message === '') {
-                alert('Veuillez remplir tous les champs');
-                return;
-            }
-
+        <div class="container-global">
             
-            localStorage.setItem('monNom', nom);
-            localStorage.setItem('monMessage', message);
+            <div class="reserve-images" id="reserve-cible">
+                <h3>Sondes à placer :</h3>
+                <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" draggable="true">
+                <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" draggable="true">
+                <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" draggable="true">
+                <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" draggable="true">
+                <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" draggable="true">
+                <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" draggable="true">
+                <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" draggable="true">
+                <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" draggable="true">
+                <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" draggable="true">
 
-            
-            window.location.href = 'index-page2-Rapport.html';
-        }
-    </script>
+                <button onclick="reinitialiserMarqueurs()">
+                    Réinitialiser les marqueurs
+                </button>
+            </div>
+
+            <div class="zone-carte" id="carte-cible">
+                <img src="images/MAP frigo.png" class="image-fond" alt="Carte">
+            </div>
+
+        </div>
+    </div> <div id="onglet3" class="contenu-onglet">
+        <h3>Avis clients</h3>
+        <p>Les commentaires des utilisateurs apparaissent ici.</p>
+    </div>
+
 </div>
 
+<script src="JS/script-fond.js"></script>
 <script src="JS/script-page1.js"></script>
 
 </body>

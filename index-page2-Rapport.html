@@ -30,11 +30,19 @@
 
 <div class="container"> 
     
+    <p><strong class="Rap">Informations :</strong></p>
     <div id="bloc-rapport">
         <h2>Rapport des Informations</h2>
         <p><strong>Nom de l'utilisateur :</strong> <span id="afficherNom"></span></p>
         <p><strong>Message transmis :</strong> <span id="afficherMessage"></span></p>
     </div> 
+
+    <p><strong class="Sonde">Positionnement des sondes :</strong></p>
+        <div class="zone-carte" id="carte-rapport" style="position: relative; width: 500px; height: 450px; border: 2px solid #333; background: white; display: inline-block;">
+        <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Carte">
+    </div>
+
+</div>
 
     <div id="zone-pdf-cachee">
         <link rel="stylesheet" href="css/style-page3-PDF.css">
@@ -68,60 +76,9 @@
         <a href="index-page1-Acceuil.html">← Retour au formulaire</a>
     </div>
 
-    <script>
-        // Affichage des données à l'écran sur le site
-        window.onload = function() {
-            const nomStocke = localStorage.getItem('monNom');
-            const messageStocke = localStorage.getItem('monMessage');
 
-            if (nomStocke && messageStocke) {
-                document.getElementById('afficherNom').innerText = nomStocke;
-                document.getElementById('afficherMessage').innerText = messageStocke;
-            } else {
-                document.getElementById('afficherNom').innerText = "Aucune donnée";
-                document.getElementById('afficherMessage').innerText = "Aucune donnée";
-            }
-        };
-
-        // Fonction de téléchargement ultra-simplifiée (sans fetch)
-        function telechargerPDFDirect() {
-            // 1. On coupe temporairement le fond étoilé au cas où il bloque le rendu
-            const fondEtoile = document.getElementById('fond-etoile');
-            if (fondEtoile) fondEtoile.style.display = 'none';
-
-            // 2. On récupère les données du localStorage
-            const nom = localStorage.getItem('monNom') || "Aucun nom";
-            const message = localStorage.getItem('monMessage') || "Aucun message";
-            const dateJour = new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' });
-
-            // 3. On injecte directement dans la zone masquée du document actuel
-            document.getElementById('pdf-nom').innerText = nom;
-            document.getElementById('pdf-date').innerText = dateJour;
-            document.getElementById('pdf-message').innerHTML = message.replace(/\n/g, '<br>');
-
-            // 4. On cible la boîte du PDF (.pdf-box) qui a reçu les styles de style-page3-PDF.css
-            const elementHTML = document.querySelector('.pdf-box');
-
-            const options = {
-                margin:       15,
-                filename:     'rapport_final.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true }, 
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            // 5. Génération immédiate
-            html2pdf().set(options).from(elementHTML).save().then(() => {
-                // On remet le fond étoilé après le téléchargement
-                if (fondEtoile) fondEtoile.style.display = 'block';
-            }).catch(err => {
-                console.error(err);
-                if (fondEtoile) fondEtoile.style.display = 'block';
-            });
-        }
-    </script>
-    
-<script src="JS/script-page1.js"></script>
+<script src="JS/script-fond.js"></script>
+<script src="JS/script-page2.js"></script>
 
 </div> 
 </body>
