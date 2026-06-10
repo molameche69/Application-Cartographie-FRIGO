@@ -1,4 +1,4 @@
- #fond-etoile {
+#fond-etoile {
     position: fixed;
     top: 0;
     left: 0;
@@ -8,10 +8,14 @@
     z-index: -1; 
 }
 
+/* Fusion des 3 blocs .container pour éviter les conflits */
 .container {
-    max-width: 1900px;
+    max-width: 500px;
     width: 95%;        
     margin: 0 auto;       
+    background: beige;
+    padding: 20px;
+    border-radius: 8px;
 }
 
 .logo1 {
@@ -28,15 +32,12 @@
     border-right: 3px solid black;
     border-radius: 10px;
     margin-right: auto; 
-    
 }
 
 .Titre i {
     margin: 40px 40px;   
     font-size: 60px;
     padding: 0px;
-    
-      
 }
 
 .Titre {
@@ -45,14 +46,11 @@
     background: beige;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     border-radius: 10px;
-    max-width: 1900px;
-    width: 100%;             
     margin: 40px auto; 
     transition: 1s ease-in-out;
     border: 3px solid black;
     max-width: 1900px;
     width: 95%;        
-    
 }
 
 .Titre:hover{
@@ -61,18 +59,10 @@
     transition: 1s ease;
 }
 
-
 body {
     font-family: Arial, sans-serif;
     margin: 50px;
     background-color: #f4f4f9;
-}
-
-.container {
-    background:beige;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 400px;
 }
 
 .result-container {
@@ -83,26 +73,20 @@ body {
     max-width: 400px;
 }
 
-    span {
+span {
     font-weight: bold;
     color: #007BFF;
 }
 
-    a {
+a {
     display: inline-block;
     margin-top: 15px;
     color: #333;
     text-decoration: none;
 }
 
-    a:hover {
+a:hover {
     text-decoration: underline;
-}
-
-.container {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 20px;
 }
 
 .Sonde {
@@ -117,8 +101,6 @@ body {
     font-size: 30px;
 }
 
-
-        
 #bloc-rapport {
     background-color: #ffffff;
     padding: 30px;
@@ -148,23 +130,23 @@ body {
     color: #007BFF;
 }
 
-        
+/* Fusion et nettoyage des doublons de la zone d'actions */
 .actions-zone {
     margin-top: 25px;
     text-align: center;
 }
 
 .actions-zone button {
-    
-    padding: 12px;
+    padding: 10px 20px; 
     background-color: #dc3545;
     color: white;
+    border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 20px;
     margin-top: 20px;
     transition: background 0.2s;
-    
+    font-weight: bold; 
 }
 
 .actions-zone button:hover {
@@ -173,12 +155,27 @@ body {
 
 .actions-zone a {
     display: inline-block;
-    margin-top: 30px;
-    color: beige;
+    margin-top: 20px;
+    color: rgb(0, 0, 0);
     text-decoration: none;
     font-size: 20px;
 }
 
 .actions-zone a:hover {
     text-decoration: underline;
+}
+        
+#zone-pdf-cachee {
+    display: none;
+}
+
+.zone-carte{
+    position: relative;
+    width: 400px;
+    height: 300px;
+    border: 2px solid #333;
+    background: white;
+    display: flex;
+    border-radius: 10px;
+    margin: auto;
 }

@@ -6,25 +6,8 @@
     <title>Accueil</title>
     <link rel="stylesheet" href="css/style-page1-Acceuil.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <style>
-        .marqueur-draggable {
-            width: 40px !important;
-            height: 40px !important;
-            cursor: grab;
-            margin: 5px;
-        }
-        /* Style des marqueurs UNIQUEMENT quand ils sont déposés sur la carte */
-        #carte-cible .marqueur-draggable {
-            position: absolute !important;
-            margin: 0px !important;
-            transform: translate(-50%, -50%) !important;
-        }
-        /* Cache les onglets par défaut en CSS */
-        .contenu-onglet {
-            display: none;
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body> 
 <canvas id="fond-etoile"></canvas>
@@ -84,11 +67,19 @@
             </div>
 
         </div>
-    </div> <div id="onglet3" class="contenu-onglet">
-        <h3>Avis clients</h3>
-        <p>Les commentaires des utilisateurs apparaissent ici.</p>
-    </div>
+    </div> 
 
+    <div id="onglet3" class="contenu-onglet">
+     <div id="bloc-graphique" style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-top: 20px;">
+        <h2 style="color: #1a1a1a; border-bottom: 2px solid #eeeeee; padding-bottom: 12px; font-size: 22px;">
+            Analyse Thermique depuis Fichier Excel
+        </h2>
+        
+        <div style="max-width: 1000px; margin: 20px auto;">
+            <canvas id="graphiqueTemperatures"></canvas>
+        </div>
+    </div>
+</div>
 </div>
 
 <script src="JS/script-fond.js"></script>

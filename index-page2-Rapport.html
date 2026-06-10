@@ -7,15 +7,14 @@
     <link rel="stylesheet" href="css/style-page2-Rapport.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
+
     <style>
-        .actions-zone { margin-top: 25px; }
-        .actions-zone button { padding: 10px 20px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 4px; font-weight: bold; }
-        .actions-zone a { display: inline-block; margin-top: 15px; color: #333; text-decoration: none; }
         
-        /* 🛠️ ON CACHE LE MODÈLE POUR LE SITE, MAIS IL RESTE ACCESSIBLE POUR HTML2PDF */
         #zone-pdf-cachee {
-            display: none;
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 794px; 
         }
     </style>
 </head>
@@ -23,9 +22,9 @@
 <canvas id="fond-etoile"></canvas>
 
 <div class="Titre">
-    <img src="images/logo.png" class="logo2">
+    <img src="images/logo.png" class="logo2" alt="Logo Gauche">
     <i>:Rapport:</i>
-    <img src="images/logo.png" class="logo1">
+    <img src="images/logo.png" class="logo1" alt="Logo Droite">
 </div>
 
 <div class="container"> 
@@ -38,36 +37,8 @@
     </div> 
 
     <p><strong class="Sonde">Positionnement des sondes :</strong></p>
-        <div class="zone-carte" id="carte-rapport" style="position: relative; width: 500px; height: 450px; border: 2px solid #333; background: white; display: inline-block;">
+    <div class="zone-carte" id="carte-rapport">
         <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Carte">
-    </div>
-
-</div>
-
-    <div id="zone-pdf-cachee">
-        <link rel="stylesheet" href="css/style-page3-PDF.css">
-        
-        <div class="pdf-box" style="background: white; padding: 20px; color: black;">
-            <div class="pdf-header">
-                <h1>Rapport Officiel</h1>
-                <p>Généré le : <span id="pdf-date"></span></p>
-            </div>
-
-            <div class="pdf-body">
-                <div class="info-group">
-                    <span class="label">Nom de l'utilisateur :</span>
-                    <strong id="pdf-nom"></strong>
-                </div>
-                <div class="info-group" style="margin-top: 15px;">
-                    <span class="label">Message transmis :</span>
-                    <div id="pdf-message" style="min-height: 40px; margin-top: 5px;"></div>
-                </div>
-            </div>
-
-            <div class="pdf-footer" style="margin-top: 30px;">
-                <p>Document confidentiel - Ne pas distribuer.</p>
-            </div>
-        </div>
     </div>
 
     <div class="actions-zone">
@@ -76,10 +47,38 @@
         <a href="index-page1-Acceuil.html">← Retour au formulaire</a>
     </div>
 
+</div> 
+
+<div id="zone-pdf-cachee">
+    <link rel="stylesheet" href="css/style-page3-PDF.css">
+    
+    <div class="pdf-box" style="background: white; padding: 30px; color: black; box-sizing: border-box; margin: 0;">
+        <div class="pdf-header" style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1 style="font-size: 24px; color: #007bff; margin: 0;">Rapport Officiel</h1>
+            <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Généré le : <span id="pdf-date"></span></p>
+        </div>
+
+        <div class="pdf-body">
+            <div class="info-group" style="margin-bottom: 15px;">
+                <span class="label" style="color: #555; display: block; font-size: 12px;">Nom de l'utilisateur :</span>
+                <strong id="pdf-nom" style="font-size: 16px; color: #000;"></strong>
+            </div>
+            
+            <div class="info-group" style="margin-bottom: 15px;">
+                <span class="label" style="color: #555; display: block; font-size: 12px;">Message transmis :</span>
+                <div id="pdf-message" style="background: #f8f9fa; padding: 10px; border-left: 3px solid #007bff; font-style: italic; margin-top: 5px;"></div>
+            </div>
+            
+            </div>
+
+        <div class="pdf-footer" style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 10px; text-align: center; font-size: 10px; color: #999;">
+            <p>Document confidentiel - Ne pas distribuer.</p>
+        </div>
+    </div>
+</div>
 
 <script src="JS/script-fond.js"></script>
 <script src="JS/script-page2.js"></script>
 
-</div> 
 </body>
 </html>

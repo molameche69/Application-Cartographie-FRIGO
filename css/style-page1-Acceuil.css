@@ -8,7 +8,7 @@
     z-index: -1; 
 }
 
-.container {
+.systeme-onglets {
     max-width: 1900px;
     width: 95%;        
     margin: 0 auto;       
@@ -111,13 +111,6 @@ body {
     font-family: sans-serif;
 }
 
-.reserve-images {
-    margin-left: 650px;
-    width: 200px;
-    border: 2px dashed #ccc;
-    padding: 10px;
-    text-align: center;
-}
 
 .reserve-images h3 {
    color: beige;
@@ -148,6 +141,14 @@ body {
     overflow: hidden;
    
     
+}
+
+.reserve-images {
+    margin-left: 470px;
+    width: 200px;
+    border: 2px dashed #ccc;
+    padding: 10px;
+    text-align: center;
 }
 
 .image-fond {
