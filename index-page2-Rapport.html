@@ -1,81 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rapport</title>
-    <link rel="stylesheet" href="css/style-page2-Rapport.css">
-    
+    <link rel="stylesheet" href="css/style-page2-Rapport.css" />
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-<canvas id="fond-etoile"></canvas>
+  </head>
+  <body>
+    <canvas id="fond-etoile"></canvas>
 
-<div class="Titre">
-    <img src="images/logo.png" class="logo2" alt="Logo Gauche">
-    <i>:Rapport:</i>
-    <img src="images/logo.png" class="logo1" alt="Logo Droite">
-</div>
+    <div class="Titre">
+      <img src="images/logo.png" class="logo2" alt="Logo Gauche" />
+      <i>:Rapport:</i>
+      <img src="images/logo.png" class="logo1" alt="Logo Droite" />
+    </div>
 
-<div class="container"> 
-    
-    <div id="zone-impression-pdf" style="background: transparent; padding: 1px;">
-        
+    <div class="container">
+      <div
+        id="zone-impression-pdf"
+        style="background: transparent; padding: 1px"
+      >
         <p><strong class="Rap">Informations :</strong></p>
         <div id="bloc-rapport">
-            <h2>Rapport des Informations</h2>
-            <p><strong>Nom de l'utilisateur :</strong> <span id="afficherNom"></span></p>
-            <p><strong>Message transmis :</strong> <span id="afficherMessage"></span></p>
-        </div> 
+          <h2>1. Identification de l'enceinte</h2>
+          <p>
+            <strong>Équipement :</strong> <span id="report-username"></span>
+          </p>
+          <p>
+            <strong>N° de série :</strong> <span id="report-entreprise"></span>
+          </p>
+          <p>
+            <strong>Localisation :</strong> <span id="report-service"></span>
+          </p>
+          <p>
+            <strong>Normes de Réf :</strong> <span id="report-reference"></span>
+          </p>
+          <p>
+            <strong>Caractéristique :</strong>
+            <span id="report-userCaracteristique"></span>
+          </p>
+          <p>
+            <strong>Localisation spécifiée :</strong>
+            <span id="report-userLoc"></span>
+          </p>
+
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0" />
+
+          <h2>2. Paramètres de la cartographie</h2>
+          <p>
+            <strong>Température ambiante :</strong>
+            <span id="report-tdeconsigne"></span>
+          </p>
+          <p>
+            <strong>Condition Désirée :</strong>
+            <span id="report-valeur"></span>
+          </p>
+          <p>
+            <strong>Type de sonde :</strong> <span id="report-periode"></span>
+          </p>
+
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0" />
+
+          <h2>3. Mode Opératoire</h2>
+          <div
+            id="report-message"
+            style="
+              background: #f8f9fa;
+              padding: 12px;
+              border-left: 4px solid #007bff;
+              font-family: monospace;
+              white-space: pre-line;
+              color: #333;
+              margin-top: 10px;
+              border-radius: 4px;
+            "
+          >
+            Non renseigné
+          </div>
+        </div>
 
         <p><strong class="Sonde">Positionnement des sondes :</strong></p>
-        <div class="zone-carte" id="carte-rapport">
-            <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Carte">
+        <div
+          class="zone-carte"
+          id="carte-rapport"
+          style="
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+          "
+        >
+          <img
+            src="images/MAP frigo.png"
+            style="width: 100%; height: auto; display: block"
+            alt="Carte"
+          />
         </div>
 
         <p><strong class="Sonde">Analyse des Températures :</strong></p>
-        
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <div style="height: 350px; width: 100%; position: relative;">
-                <canvas id="graphiqueTemperatures"></canvas>
-            </div>
+
+        <div
+          style="
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+          "
+        >
+          <div style="height: 350px; width: 100%; position: relative">
+            <canvas id="report-graphiqueTemperatures"></canvas>
+          </div>
         </div>
 
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;">
-            <h3 style="margin-top: 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px;">📋 Données brutes du fichier ODS</h3>
-            <div class="conteneur-tableau">
-                <table class="tab-donnees">
-                    <thead>
-                        <tr>
-                            <th>Capteur (S/N)</th>
-                            <th>Horodatage</th>
-                            <th>Température</th>
-                            <th>Unité</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpsTableauODS">
-                        <tr>
-                            <td colspan="4" style="text-align: center; color: #999; font-style: italic; padding: 20px;">
-                                Chargement des données du capteur...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div
+          style="
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+          "
+        >
+          <h3
+            style="
+              margin-top: 0;
+              font-size: 16px;
+              color: #333;
+              border-bottom: 1px solid #eee;
+              padding-bottom: 8px;
+            "
+          >
+            📋 Données brutes du fichier ODS
+          </h3>
+          <div class="conteneur-tableau">
+            <table class="tab-donnees">
+              <thead>
+                <tr>
+                  <th>Capteur (S/N)</th>
+                  <th>Horodatage</th>
+                  <th>Température</th>
+                  <th>Unité</th>
+                </tr>
+              </thead>
+              <tbody id="report-corpsTableauODS">
+                <tr>
+                  <td
+                    colspan="4"
+                    style="
+                      text-align: center;
+                      color: #999;
+                      font-style: italic;
+                      padding: 20px;
+                    "
+                  >
+                    Chargement des données du capteur...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+      </div>
 
-    </div> <div class="actions-zone">
+      <div class="actions-zone">
         <button onclick="telechargerPDFDirect()">Télécharger en PDF</button>
-        <br>
+        <br />
         <a href="index-page1-Acceuil.html">← Retour au formulaire</a>
+      </div>
     </div>
 
-</div> 
-
-<script src="JS/script-fond.js"></script>
-<script src="JS/script-page2.js"></script>
-
-</body>
+    <script src="JS/script-fond.js"></script>
+    <script src="JS/script-page2.js"></script>
+  </body>
 </html>
