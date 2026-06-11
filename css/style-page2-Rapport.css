@@ -8,6 +8,12 @@
   z-index: -1;
 }
 
+body {
+  font-family: Arial, sans-serif;
+  margin: 50px;
+  background-color: #f4f4f9;
+}
+
 .container {
   max-width: 500px;
   width: 95%;
@@ -15,28 +21,6 @@
   background: beige;
   padding: 20px;
   border-radius: 8px;
-}
-
-.logo1 {
-  height: 150px;
-  width: auto;
-  border-left: 3px solid black;
-  border-radius: 10px;
-  margin-left: auto;
-}
-
-.logo2 {
-  height: 150px;
-  width: auto;
-  border-right: 3px solid black;
-  border-radius: 10px;
-  margin-right: auto;
-}
-
-.Titre i {
-  margin: 40px 40px;
-  font-size: 60px;
-  padding: 0px;
 }
 
 .Titre {
@@ -58,46 +42,44 @@
   transition: 1s ease;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 50px;
-  background-color: #f4f4f9;
+.Titre i {
+  margin: 40px 40px;
+  font-size: 60px;
+  padding: 0px;
 }
 
-.result-container {
-  background: white;
+.logo1 {
+  height: 150px;
+  width: auto;
+  border-left: 3px solid black;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.logo2 {
+  height: 150px;
+  width: auto;
+  border-right: 3px solid black;
+  border-radius: 10px;
+  margin-right: auto;
+}
+
+#zone-impression-pdf {
+  background: #ffffff;
+  color: #333333;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
 }
 
-span {
+.Rap, .Sonde {
+  display: flex;
+  justify-content: center;
+  font-size: 30px;
+}
+
+span, #bloc-rapport span {
   font-weight: bold;
   color: #007bff;
-}
-
-a {
-  display: inline-block;
-  margin-top: 15px;
-  color: #333;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-.Sonde {
-  display: flex;
-  justify-content: center;
-  font-size: 30px;
-}
-
-.Rap {
-  display: flex;
-  justify-content: center;
-  font-size: 30px;
 }
 
 #bloc-rapport {
@@ -124,12 +106,60 @@ a:hover {
   margin: 15px 0;
 }
 
-#bloc-rapport span {
-  font-weight: bold;
-  color: #007bff;
+#report-message {
+  background: #f8f9fa;
+  padding: 12px;
+  border-left: 4px solid #007bff;
+  font-family: monospace;
+  white-space: pre-line;
+  color: #333333;
+  margin-top: 10px;
+  border-radius: 4px;
 }
 
-/* Fusion et nettoyage des doublons de la zone d'actions */
+.zone-carte {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 20px auto;
+  border: 1px solid #cccccc;
+  background: white;
+  border-radius: 10px;
+}
+
+.zone-carte img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.conteneur-graphique {
+  background: #ffffff;
+  padding: 15px;
+  border: 1px solid #eeeeee;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.graphique-image-zoom {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.saut-de-page {
+  page-break-before: always;
+  break-before: page;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.section-pdf {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
 .actions-zone {
   margin-top: 25px;
   text-align: center;
@@ -152,7 +182,7 @@ a:hover {
   background-color: #bd2130;
 }
 
-.actions-zone a {
+a, .actions-zone a {
   display: inline-block;
   margin-top: 20px;
   color: rgb(0, 0, 0);
@@ -160,23 +190,20 @@ a:hover {
   font-size: 20px;
 }
 
-.actions-zone a:hover {
+a:hover, .actions-zone a:hover {
   text-decoration: underline;
+}
+
+.result-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
 }
 
 #zone-pdf-cachee {
   display: none;
-}
-
-.zone-carte {
-  position: relative;
-  width: 400px;
-  height: 300px;
-  border: 2px solid #333;
-  background: white;
-  display: flex;
-  border-radius: 10px;
-  margin: auto;
 }
 
 .conteneur-tableau {
@@ -186,6 +213,7 @@ a:hover {
   border-radius: 6px;
   margin-top: 15px;
 }
+
 .tab-donnees {
   width: 100%;
   border-collapse: collapse;
@@ -193,6 +221,7 @@ a:hover {
   font-size: 14px;
   text-align: left;
 }
+
 .tab-donnees th {
   background: #f8f9fa;
   position: sticky;
@@ -202,71 +231,8 @@ a:hover {
   border-bottom: 2px solid #ddd;
   color: #333;
 }
+
 .tab-donnees td {
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
 }
-/* ==========================================================
-   STYLISATION DU RAPPORT ET ZONE IMPRESSION
-   ========================================================== */
-
-#zone-impression-pdf {
-  background: #ffffff; /* Changé de transparent à blanc pour un PDF propre */
-  color: #333333;
-  padding: 20px;
-  border-radius: 8px;
-}
-
-#report-message {
-  background: #f8f9fa;
-  padding: 12px;
-  border-left: 4px solid #007bff;
-  font-family: monospace;
-  white-space: pre-line;
-  color: #333333;
-  margin-top: 10px;
-  border-radius: 4px;
-}
-
-.zone-carte {
-  position: relative;
-  width: 100%;
-  max-width: 500px; /* Légèrement réduit pour une intégration A4 parfaite */
-  margin: 0 auto 20px auto;
-  border: 1px solid #cccccc;
-}
-
-.zone-carte img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Conteneur du bloc graphique blanc */
-.conteneur-graphique {
-  background: #ffffff;
-  padding: 15px;
-  border: 1px solid #eeeeee;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-
-#zone-impression-pdf {
-  background: transparent;
-  padding: 1px;
-}
-
-.zone-carte {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.zone-carte img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-
