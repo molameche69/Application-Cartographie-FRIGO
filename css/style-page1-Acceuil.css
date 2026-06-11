@@ -1,3 +1,6 @@
+/* ==========================================================
+   1. STYLE GÉNÉRAL & FONDS
+   ========================================================== */
 #fond-etoile {
   position: fixed;
   top: 0;
@@ -8,10 +11,38 @@
   z-index: -1;
 }
 
-.systeme-onglets {
+body {
+  font-family: Arial, sans-serif;
+  margin: 50px;
+  background-color: #f4f4f9;
+}
+
+/* ==========================================================
+   2. EN-TÊTE / TITRE
+   ========================================================== */
+.Titre {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: beige;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  margin: 40px auto;
+  transition: 1s ease-in-out;
+  border: 3px solid black;
   max-width: 1900px;
   width: 95%;
-  margin: 0 auto;
+}
+
+.Titre:hover {
+  background-color: grey;
+  color: beige;
+}
+
+.Titre i {
+  margin: 40px 40px;
+  font-size: 60px;
+  padding: 0px;
 }
 
 .logo1 {
@@ -30,154 +61,13 @@
   margin-right: auto;
 }
 
-.Titre i {
-  margin: 40px 40px;
-  font-size: 60px;
-  padding: 0px;
-}
-
-.Titre {
-  display: flex;
-  justify-content: center;
-  background: beige;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  max-width: 1900px;
-  width: 100%;
-  margin: 40px auto;
-  transition: 1s ease-in-out;
-  border: 3px solid black;
+/* ==========================================================
+   3. STRUCTURE DES ONGLETS
+   ========================================================== */
+.systeme-onglets {
   max-width: 1900px;
   width: 95%;
-}
-
-.Titre:hover {
-  background-color: grey;
-  color: beige;
-  transition: 1s ease;
-}
-
-.container {
-  background: beige;
-  padding: 20px;
-  border-radius: 8px;
-  max-width: 400px;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 50px;
-  background-color: #f4f4f9;
-}
-
-.Fiche {
-  background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
-  margin: auto;
-}
-
-.Fiche h2 {
-  color: beige;
-}
-
-.tech {
-  display: flex;
-  justify-content: center;
-  text-decoration: underline;
-  margin-bottom: 40px;
-  font-size: 50px;
-  color: beige;
-}
-
-.contenu-onglet {
-  display: none;
-  padding: 15px;
-  background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
-  border: 4px solid gray;
-  box-shadow: 0px 0px 3px 3px rgb(43, 43, 43);
-  border-radius: 4px;
-}
-
-.container-global {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-  font-family: sans-serif;
-  justify-content: center;
-  margin: auto;
-}
-
-.reserve-images h3 {
-  color: beige;
-}
-
-.marqueur-draggable {
-  width: 50px;
-  height: 50px;
-  cursor: grab;
-  margin: 10px;
-}
-
-.Carto {
-  display: flex;
-  justify-content: center;
-  text-decoration: underline;
-  margin-bottom: 40px;
-  font-size: 50px;
-  color: beige;
-}
-
-.zone-carte {
-  position: relative;
-  width: 600px;
-  height: 600px;
-  border: 2px solid #333;
-  overflow: hidden;
-}
-
-.reserve-images {
-  
-  width: 200px;
-  border: 2px dashed #ccc;
-  padding: 10px;
-  text-align: center;
-}
-
-.image-fond {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-}
-
-.zone-carte .marqueur-draggable {
-  position: absolute;
-  margin: 0;
-  transform: translate(-50%, -50%);
-}
-
-input,
-.onglet-btn {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #0056b3;
+  margin: 0 auto;
 }
 
 .onglets-boutons {
@@ -191,11 +81,14 @@ button:hover {
   cursor: pointer;
   border: none;
   background: none;
-  font-size: 16px;
   font-weight: bold;
   color: beige;
   transition: 0.2s;
   font-size: 20px;
+  width: 100%;
+  margin: 10px 0;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .onglet-btn.actif {
@@ -203,15 +96,318 @@ button:hover {
   border-bottom: 3px solid #dc3545;
 }
 
+/* CORRECTION : Cache tous les onglets par défaut pour éviter les superpositions */
+.contenu-onglet {
+  display: none;
+  padding: 15px;
+  background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
+  border: 4px solid gray;
+  box-shadow: 0px 0px 3px 3px rgb(43, 43, 43);
+  border-radius: 4px;
+}
+
+/* CORRECTION : Force l'affichage du premier onglet à l'ouverture de la page */
+#onglet1 {
+  display: block;
+}
+
+/* ==========================================================
+   4. ONGLET 1 : FICHE TECHNIQUE & FORMULAIRE
+   ========================================================== */
+.tech {
+  display: flex;
+  justify-content: center;
+  text-decoration: underline;
+  margin-bottom: 40px;
+  font-size: 50px;
+  color: beige;
+}
+
+.Fiche {
+  background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+  margin: auto;
+  box-sizing: border-box;
+}
+
+.Fiche h2 {
+  color: beige;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+#userMessage {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* ==========================================================
+   5. ONGLET 2 : CARTOGRAPHIE & DRAG & DROP
+   ========================================================== */
+.Carto {
+  display: flex;
+  justify-content: center;
+  text-decoration: underline;
+  margin-bottom: 40px;
+  font-size: 50px;
+  color: beige;
+}
+
+.container-global {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  font-family: sans-serif;
+  justify-content: center;
+  align-items: flex-start;
+  margin: auto;
+  max-width: 100%;
+}
+
+.reserve-images {
+  width: 200px;
+  border: 2px dashed #ccc;
+  padding: 10px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.reserve-images h3 {
+  color: beige;
+}
+
+.marqueur-draggable {
+  width: 50px;
+  height: 50px;
+  cursor: grab;
+  margin: 10px;
+}
+
+.zone-carte {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  max-width: 100%;
+  border: 2px solid #333;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.image-fond {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.zone-carte .marqueur-draggable {
+  position: absolute;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* ==========================================================
+   6. ONGLET 3 : ANALYSE THERMIQUE & RECHERCHE DE FICHIERS
+   ========================================================== */
 #bloc-graphique i {
   color: beige;
-  font-size: 22px;
   display: flex;
   justify-content: center;
   text-decoration: underline;
   font-size: 50px;
-  margin: auto;
-  margin-bottom: 70px;
+  margin: 0 auto 40px auto;
+}
+
+/* Style pour l'outil de sélection de fichier personnalisé */
+.zone-import-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 20px auto 30px auto;
+}
+
+/* On cache la structure système par défaut de l'input */
+#selecteur-fichier {
+  display: none;
+}
+
+/* Customisation du label en un bouton d'import élégant */
+.btn-import {
+  background-color: #ffc107; /* Jaune ambre */
+  color: #212529;
+  padding: 12px 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.btn-import:hover {
+  background-color: #e0a800;
+}
+
+.btn-import:active {
+  transform: scale(0.97);
+}
+
+#nom-fichier-choisi {
+  color: #f8f9fa;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* MODIFICATION : Largeur augmentée à 1600px pour harmoniser avec le tableau élargi */
+.zone-filtres {
+  max-width: 1600px;
+  width: 95%;
+  margin: 10px auto;
+  background: #333;
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.zone-filtres input {
+  padding: 5px;
+  border-radius: 4px;
+  border: none;
+  color: black;
+  width: auto;
+}
+
+.zone-filtres button {
+  background: grey;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: auto;
+}
+
+/* MODIFICATION : Largeur augmentée à 1600px pour la zone du bouton */
+.zone-generation-graphique {
+  max-width: 1600px;
+  width: 95%;
+  margin: 30px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#btn-generer-graphique {
+  background-color: #28a745; /* Vert pour se distinguer */
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition:
+    background-color 0.2s,
+    opacity 0.2s,
+    transform 0.1s;
+}
+
+#btn-generer-graphique:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+#btn-generer-graphique:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* État grisé tant qu'aucun document n'est analysé par le script */
+#btn-generer-graphique:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+/* MODIFICATION : Largeur augmentée à 1600px pour que le graphique soit aussi large que le tableau */
+.conteneur-graphique-cadre {
+  max-width: 1600px;
+  width: 95%;
+  margin: 20px auto;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  height: 400px;
+}
+
+/* MODIFICATION : Passage du max-width de 1000px à 1600px pour élargir proprement le tableau */
+.conteneur-tableau-ods {
+  max-width: 1600px;
+  width: 95%;
+  margin: 20px auto;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  max-height: 450px; /* Augmenté légèrement pour le confort visuel */
+  overflow-y: auto;
+  color: #333;
+}
+
+.conteneur-tableau-ods table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: sans-serif;
+}
+
+.conteneur-tableau-ods tr {
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #ddd;
+}
+
+.conteneur-tableau-ods th {
+  padding: 10px;
+  font-weight: bold;
+}
+
+/* ==========================================================
+   7. BOUTONS GENERAUX
+   ========================================================== */
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 #bloc-graphique button {
@@ -220,11 +416,79 @@ button:hover {
   color: white;
   border: none;
   cursor: pointer;
-  padding: 10px 10px;
+  padding: 10px 20px;
   font-size: 20px;
   margin: auto;
+  border-radius: 4px;
 }
 
 #bloc-graphique button:hover {
   background-color: #973e3e;
+}
+
+/* ==========================================================
+   8. MEDIA QUERIES : ADAPTATION RESPONSIVE (MOBILE)
+   ========================================================== */
+@media (max-width: 768px) {
+  body {
+    margin: 15px;
+  }
+
+  .Titre {
+    margin: 15px auto;
+    border-width: 2px;
+  }
+
+  .Titre i {
+    font-size: 26px;
+    margin: 15px 10px;
+  }
+
+  .logo1,
+  .logo2 {
+    height: 60px;
+  }
+
+  .tech,
+  .Carto,
+  #bloc-graphique i {
+    font-size: 30px;
+    margin-bottom: 20px;
+  }
+
+  .container-global {
+    flex-direction: column;
+    align-items: center;
+    padding: 5px;
+    gap: 15px;
+  }
+
+  .zone-carte {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .reserve-images {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .onglet-btn {
+    font-size: 16px;
+    padding: 8px 10px;
+  }
+
+  .onglets-boutons {
+    overflow-x: auto;
+  }
+
+  #btn-generer-graphique {
+    font-size: 15px;
+    padding: 12px 20px;
+    width: 100%;
+  }
 }

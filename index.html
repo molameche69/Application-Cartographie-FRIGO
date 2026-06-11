@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Accueil - Saisie Cartographie</title>
     <link rel="stylesheet" href="css/style-page1-Acceuil.css" />
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+  </head>
   <body>
     <canvas id="fond-etoile"></canvas>
 
@@ -35,7 +35,8 @@
       </div>
 
       <form id="formulaire-carto" onsubmit="return false;">
-        <div id="onglet1" class="contenu-onglet" style="display: block;">
+        
+        <div id="onglet1" class="contenu-onglet">
           <div class="tech">
             <i>Veuillez remplir les cases</i>
           </div>
@@ -54,7 +55,7 @@
             <input type="text" id="periode" name="periode" placeholder="Type de sonde" required />
 
             <h2>3. Mode Opératoire</h2>
-            <textarea id="userMessage" name="userMessage" rows="4" style="width: 600px; resize: vertical;" placeholder="Saisissez votre mode opératoire...">
+            <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
 - La cartographie a été effectuée avec l'enceinte chargée
 - Le début des mesures commence une fois le régime établi.
 - Les points sont positionnés à 5 cm de chacune des parois.
@@ -62,7 +63,7 @@
           </div>
         </div>
 
-        <div id="onglet2" class="contenu-onglet" style="display: none;">
+        <div id="onglet2" class="contenu-onglet">
           <div class="Carto">
             <i>Cartographie</i>
           </div>
@@ -85,43 +86,53 @@
               </button>
             </div>
 
-            <div class="zone-carte" id="carte-cible" style="position: relative;">
+            <div class="zone-carte" id="carte-cible">
               <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
             </div>
           </div>
         </div>
 
-        <div id="onglet3" class="contenu-onglet" style="display: none;">
+        <div id="onglet3" class="contenu-onglet">
           <div id="bloc-graphique">
-            <i>Analyse Thermique depuis Fichier exporter oceamap</i>
+            <i>Analyse Thermique depuis Fichier personnalisé</i>
 
-            <div style="max-width: 1000px; margin: 10px auto; background: #333; padding: 15px; border-radius: 8px; color: white; display: flex; gap: 20px; align-items: center; justify-content: center;">
+            <div class="zone-import-file">
+              <label for="selecteur-fichier" class="btn-import">
+                📁 Choisir un fichier ODS/Excel
+              </label>
+              <input type="file" id="selecteur-fichier" accept=".ods, .xlsx, .xls" onchange="importerNouveauFichier(event)" />
+              <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
+            </div>
+
+            <div class="zone-filtres">
               <label><strong>Sélectionner la zone à analyser :</strong></label>
               <div>
                 <label for="heureDebut">Début (HH:MM:SS) :</label>
-                <input type="text" id="heureDebut" placeholder="Ex: 14:40:00" style="padding: 5px; border-radius: 4px; border: none; color: black;" />
+                <input type="text" id="heureDebut" placeholder="Ex: 14:40:00" />
               </div>
               <div>
                 <label for="heureFin">Fin (HH:MM:SS) :</label>
-                <input type="text" id="heureFin" placeholder="Ex: 15:30:00" style="padding: 5px; border-radius: 4px; border: none; color: black;" />
+                <input type="text" id="heureFin" placeholder="Ex: 15:30:00" />
               </div>
-              <button type="button" onclick="chargerDonneesODS()" style="background: grey; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              <button type="button" onclick="chargerDonneesODS()">
                 Filtrer la zone
               </button>
             </div>
 
-            <div style="max-width: 1000px; margin: 20px auto; background: white; padding: 10px; border-radius: 8px; height: 400px;">
-              <canvas id="graphiqueTemperatures"></canvas>
+            <div class="zone-generation-graphique">
+              <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
+                Générer le Graphique depuis le Tableau
+              </button>
             </div>
 
-            <div style="max-width: 1000px; margin: 20px auto; background: white; padding: 15px; border-radius: 8px; max-height: 350px; overflow-y: auto; color: #333;">
-              <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: sans-serif;">
+            <div class="conteneur-tableau-ods">
+              <table>
                 <thead>
-                  <tr style="background-color: #f5f5f5; border-bottom: 2px solid #ddd;">
-                    <th style="padding: 10px; font-weight: bold;">Identifiant Capteur</th>
-                    <th style="padding: 10px; font-weight: bold;">Horodatage</th>
-                    <th style="padding: 10px; font-weight: bold;">Valeur mesurée</th>
-                    <th style="padding: 10px; font-weight: bold;">Unité</th>
+                  <tr>
+                    <th>Identifiant Capteur</th>
+                    <th>Horodatage</th>
+                    <th>Valeur mesurée</th>
+                    <th>Unité</th>
                   </tr>
                 </thead>
                 <tbody id="corpsTableauODS"></tbody>

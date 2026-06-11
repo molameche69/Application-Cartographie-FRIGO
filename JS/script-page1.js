@@ -5,6 +5,12 @@ let monGraphiqueInstance = null;
 let estEnTrainDeGlisser = false;
 let ligneDebutSelection = null;
 
+// Variable de stockage temporaire pour le fichier sélectionné
+let fichierActuelPourFiltrage = null;
+
+// Variables pour mémoriser les données lues du fichier ODS sans générer le graphique immédiatement
+let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
+
 document.addEventListener("DOMContentLoaded", () => {
   const marqueurs = document.querySelectorAll(".marqueur-draggable");
   const carteCible = document.getElementById("carte-cible");
@@ -69,9 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  // Chargement initial automatique des données ODS
-  chargerDonneesODS();
 });
 
 // ==========================================================
@@ -109,22 +112,68 @@ function reinitialiserMarqueurs() {
 }
 
 // ==========================================================
-// 3. PARSING DU FICHIER ODS & GENERATION COMPOSANTS
+// GESTION DE L'IMPORTATION DU FICHIER LOCAL CHOSI
 // ==========================================================
-function chargerDonneesODS() {
-  const cheminFichierODS = "Relevés.ods";
+function importerNouveauFichier(evenement) {
+  const fichier = evenement.target.files[0];
+  const txtNomFichier = document.getElementById("nom-fichier-choisi");
+  const btnGenerer = document.getElementById("btn-generer-graphique");
+
+  if (!fichier) return;
+
+  fichierActuelPourFiltrage = fichier;
+
+  if (txtNomFichier)
+    txtNomFichier.textContent = `Fichier chargé : ${fichier.name}`;
+  if (btnGenerer) btnGenerer.disabled = false;
+
+  chargerDonneesODS(fichier);
+}
+
+// ==========================================================
+// ACTION DU BOUTON POUR INJECTER ET CRÉER LE GRAPHIQUE
+// ==========================================================
+function genererLeGraphique() {
+  const zoneGeneration = document.querySelector(".zone-generation-graphique");
+  if (!zoneGeneration) return;
+
+  zoneGeneration.innerHTML = `
+    <div class="conteneur-graphique-cadre" style="width: 100%; height: 450px; position: relative;">
+      <canvas id="graphiqueTemperatures"></canvas>
+    </div>
+  `;
+
+  genererGraphiqueTriCapteurs(
+    donneesGraphesEnMemoire.labelsX,
+    donneesGraphesEnMemoire.datasets,
+  );
+}
+
+// ==========================================================
+// 3. PARSING DU FICHIER LOCAL (OU FILTRAGE RE-DÉCLENCHÉ)
+// ==========================================================
+function chargerDonneesODS(fichierDynamique = null) {
   const filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   const filtreFin = document.getElementById("heureFin")?.value.trim() || "";
 
-  // Sauvegarde des filtres dans le localStorage
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
 
-  fetch(cheminFichierODS)
-    .then((response) => {
-      if (!response.ok) throw new Error(`Impossible de trouver le fichier "${cheminFichierODS}".`);
-      return response.arrayBuffer();
-    })
+  const fichierATraiter = fichierDynamique || fichierActuelPourFiltrage;
+
+  if (!fichierATraiter) {
+    console.warn("Aucun fichier n'a encore été importé par l'utilisateur.");
+    return;
+  }
+
+  const promesseLecture = new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsArrayBuffer(fichierATraiter);
+  });
+
+  promesseLecture
     .then((buffer) => {
       const data = new Uint8Array(buffer);
       const workbook = XLSX.read(data, { type: "array" });
@@ -137,10 +186,17 @@ function chargerDonneesODS() {
 
       for (let i = 1; i < donneesJson.length; i++) {
         const ligne = donneesJson[i];
-        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
+        if (
+          ligne &&
+          ligne[0] !== undefined &&
+          ligne[1] !== undefined &&
+          ligne[2] !== undefined
+        ) {
           const idCapteur = ligne[0].toString().trim();
           let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
+          let tempsAffiche = tempsBrut.includes("T")
+            ? tempsBrut.split("T")[1].replace("Z", "")
+            : tempsBrut;
 
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
@@ -167,7 +223,9 @@ function chargerDonneesODS() {
 
       const corpsTableau = document.getElementById("corpsTableauODS");
       if (corpsTableau) {
-        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
+        corpsTableau.innerHTML =
+          htmlLignes ||
+          '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
         activerSelectionSouris(corpsTableau);
       }
 
@@ -182,7 +240,9 @@ function chargerDonneesODS() {
 
       const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
         const dataPoints = listeLabelsX.map((temps) =>
-          donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null
+          donneesCapteurs[id][temps] !== undefined
+            ? donneesCapteurs[id][temps]
+            : null,
         );
         const couleur = couleursCourbes[index % couleursCourbes.length];
 
@@ -199,10 +259,20 @@ function chargerDonneesODS() {
         };
       });
 
-      genererGraphiqueTriCapteurs(listeLabelsX, datasetsGraphique);
+      donneesGraphesEnMemoire = {
+        labelsX: listeLabelsX,
+        datasets: datasetsGraphique,
+      };
+
+      if (
+        !document.getElementById("btn-generer-graphique") &&
+        document.getElementById("graphiqueTemperatures")
+      ) {
+        genererGraphiqueTriCapteurs(listeLabelsX, datasetsGraphique);
+      }
     })
     .catch((error) => {
-      console.error("Erreur critique ODS :", error);
+      console.error("Erreur critique d'analyse :", error);
     });
 }
 
@@ -221,66 +291,67 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       scales: {
-        y: { 
+        y: {
           title: { display: true, text: "Température (°C)" },
-          // Force l'échelle à englober les lignes de repère (0°C à 30°C par exemple)
           min: 0,
-          max: 30
+          max: 30,
         },
-        x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } }
+        x: {
+          title: { display: true, text: "Horodatage (UTC)" },
+          ticks: { maxTicksLimit: 12 },
+        },
       },
       plugins: {
         legend: { position: "top" },
-        // Intégration des deux lignes d'EMT demandées (5°C et 8°C)
         annotation: {
           annotations: {
             ligneMin: {
-              type: 'line',
+              type: "line",
               yMin: 5,
               yMax: 5,
-              borderColor: 'rgb(220, 53, 69)', // Rouge
+              borderColor: "rgb(220, 53, 69)",
               borderWidth: 2.5,
               borderDash: [5, 5],
               label: {
                 display: true,
-                content: 'Seuil Min (5°C)',
-                position: 'start',
-                backgroundColor: 'rgba(220, 53, 69, 0.85)',
-                color: 'white',
-                font: { size: 11, weight: 'bold' }
-              }
+                content: "Seuil Min (5°C)",
+                position: "start",
+                backgroundColor: "rgba(220, 53, 69, 0.85)",
+                color: "white",
+                font: { size: 11, weight: "bold" },
+              },
             },
             ligneMax: {
-              type: 'line',
+              type: "line",
               yMin: 8,
               yMax: 8,
-              borderColor: 'rgb(40, 167, 69)', // Vert
+              borderColor: "rgb(40, 167, 69)",
               borderWidth: 2.5,
               borderDash: [5, 5],
               label: {
                 display: true,
-                content: 'Seuil Max (8°C)',
-                position: 'start',
-                backgroundColor: 'rgba(40, 167, 69, 0.85)',
-                color: 'white',
-                font: { size: 11, weight: 'bold' }
-              }
-            }
-          }
+                content: "Seuil Max (8°C)",
+                position: "start",
+                backgroundColor: "rgba(40, 167, 69, 0.85)",
+                color: "white",
+                font: { size: 11, weight: "bold" },
+              },
+            },
+          },
         },
         zoom: {
           zoom: {
             drag: {
               enabled: true,
-              backgroundColor: 'rgba(0, 123, 255, 0.2)',
-              borderColor: '#007BFF',
-              borderWidth: 1
+              backgroundColor: "rgba(0, 123, 255, 0.2)",
+              borderColor: "#007BFF",
+              borderWidth: 1,
             },
-            mode: 'xy'
-          }
-        }
-      }
-    }
+            mode: "xy",
+          },
+        },
+      },
+    },
   });
 }
 
@@ -290,7 +361,7 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
   conteneurTableau.onmousedown = null;
-  
+
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
@@ -299,9 +370,9 @@ function activerSelectionSouris(conteneurTableau) {
     ligneDebutSelection = ligneCible;
 
     const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
-    lignes.forEach(l => l.style.backgroundColor = "");
+    lignes.forEach((l) => (l.style.backgroundColor = ""));
     ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
-    e.preventDefault(); 
+    e.preventDefault();
   });
 
   conteneurTableau.addEventListener("mouseover", (e) => {
@@ -317,7 +388,8 @@ function activerSelectionSouris(conteneurTableau) {
     const maxIndex = Math.max(indexDebut, indexActuel);
 
     lignes.forEach((l, idx) => {
-      l.style.backgroundColor = (idx >= minIndex && idx <= maxIndex) ? "rgba(0, 123, 255, 0.18)" : "";
+      l.style.backgroundColor =
+        idx >= minIndex && idx <= maxIndex ? "rgba(0, 123, 255, 0.18)" : "";
     });
   });
 }
@@ -327,22 +399,53 @@ window.addEventListener("mouseup", () => {
 });
 
 // ==========================================================
-// 5. ENREGISTREMENT GLOBAL ET REDIRECTION
+// 5. SAUVEGARDE ET REDIRECTION
 // ==========================================================
 function sauvegarderToutEtDiriger() {
-  // 1. Sauvegarde des champs texte
-  localStorage.setItem("username", document.getElementById("username")?.value || "");
-  localStorage.setItem("userEntreprise", document.getElementById("userEntreprise")?.value || "");
-  localStorage.setItem("userService", document.getElementById("userService")?.value || "");
-  localStorage.setItem("userReference", document.getElementById("userReference")?.value || "");
-  localStorage.setItem("userCaracteristique", document.getElementById("userCaracteristique")?.value || "");
-  localStorage.setItem("userLoc", document.getElementById("userLoc")?.value || "");
-  localStorage.setItem("tdeconsigne", document.getElementById("tdeconsigne")?.value || "");
-  localStorage.setItem("valeur", document.getElementById("valeur")?.value || "");
-  localStorage.setItem("periode", document.getElementById("periode")?.value || "");
-  localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
+  localStorage.removeItem("imageGraphiqueZoome");
+  localStorage.removeItem("imageTableauSelection");
 
-  // 2. Sauvegarde des positions des sondes
+  localStorage.setItem(
+    "username",
+    document.getElementById("username")?.value || "",
+  );
+  localStorage.setItem(
+    "userEntreprise",
+    document.getElementById("userEntreprise")?.value || "",
+  );
+  localStorage.setItem(
+    "userService",
+    document.getElementById("userService")?.value || "",
+  );
+  localStorage.setItem(
+    "userReference",
+    document.getElementById("userReference")?.value || "",
+  );
+  localStorage.setItem(
+    "userCaracteristique",
+    document.getElementById("userCaracteristique")?.value || "",
+  );
+  localStorage.setItem(
+    "userLoc",
+    document.getElementById("userLoc")?.value || "",
+  );
+  localStorage.setItem(
+    "tdeconsigne",
+    document.getElementById("tdeconsigne")?.value || "",
+  );
+  localStorage.setItem(
+    "valeur",
+    document.getElementById("valeur")?.value || "",
+  );
+  localStorage.setItem(
+    "periode",
+    document.getElementById("periode")?.value || "",
+  );
+  localStorage.setItem(
+    "userMessage",
+    document.getElementById("userMessage")?.value || "",
+  );
+
   const carteCible = document.getElementById("carte-cible");
   if (carteCible) {
     const donneesSondes = [];
@@ -351,62 +454,62 @@ function sauvegarderToutEtDiriger() {
         id: sonde.id,
         src: sonde.getAttribute("src"),
         left: sonde.style.left,
-        top: sonde.style.top
+        top: sonde.style.top,
       });
     });
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
 
-  // 3. CAPTURE DE LA SÉLECTION DU GRAPHIQUE ZOOMÉ
+  const boutonGenererExiste =
+    document.getElementById("btn-generer-graphique") !== null;
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
-  if (canvasOrigine && monGraphiqueInstance) {
-    monGraphiqueInstance.options.responsive = false;
-    monGraphiqueInstance.update('none');
 
-    const canvasTemporaire = document.createElement("canvas");
-    canvasTemporaire.width = canvasOrigine.width;
-    canvasTemporaire.height = canvasOrigine.height;
-    const ctxTemp = canvasTemporaire.getContext("2d");
-    
-    ctxTemp.fillStyle = "#FFFFFF";
-    ctxTemp.fillRect(0, 0, canvasTemporaire.width, canvasTemporaire.height);
-    ctxTemp.drawImage(canvasOrigine, 0, 0);
-    
-    localStorage.setItem("imageGraphiqueZoome", canvasTemporaire.toDataURL("image/png"));
+  if (canvasOrigine && monGraphiqueInstance && !boutonGenererExiste) {
+    const imageGenereeBase64 = monGraphiqueInstance.toBase64Image();
+    localStorage.setItem("imageGraphiqueZoome", imageGenereeBase64);
   }
 
-  // 4. Capture du tableau de données et redirection
-  const tableauODS = document.getElementById("corpsTableauODS")?.closest("table");
+  const tableauODS = document
+    .getElementById("corpsTableauODS")
+    ?.closest("table");
   const ongletTableau = document.getElementById("onglet3");
+  const corpsTableau = document.getElementById("corpsTableauODS");
 
-  if (tableauODS && ongletTableau) {
+  let unTableauEstSelectionne = false;
+  if (corpsTableau) {
+    const lignes = corpsTableau.querySelectorAll("tr");
+    lignes.forEach((ligne) => {
+      if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
+        unTableauEstSelectionne = true;
+      }
+    });
+  }
+
+  if (tableauODS && ongletTableau && unTableauEstSelectionne) {
     const styleInitial = ongletTableau.style.display;
     ongletTableau.style.display = "block";
 
-    html2canvas(tableauODS, { backgroundColor: "#ffffff", scale: 2, useCORS: true })
+    // Forcer la synchronisation : on attend la fin de html2canvas avant de changer de page
+    html2canvas(tableauODS, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+    })
       .then((canvas) => {
-        localStorage.setItem("imageTableauSelection", canvas.toDataURL("image/png"));
+        localStorage.setItem(
+          "imageTableauSelection",
+          canvas.toDataURL("image/png"),
+        );
         ongletTableau.style.display = styleInitial;
-        
-        if (monGraphiqueInstance) {
-          monGraphiqueInstance.options.responsive = true;
-          monGraphiqueInstance.update('none');
-        }
-        
         window.location.href = "index-page2-rapport.html";
-      }).catch(() => {
+      })
+      .catch((err) => {
+        console.error("Erreur html2canvas:", err);
         ongletTableau.style.display = styleInitial;
-        if (monGraphiqueInstance) {
-          monGraphiqueInstance.options.responsive = true;
-          monGraphiqueInstance.update('none');
-        }
         window.location.href = "index-page2-rapport.html";
       });
   } else {
-    if (monGraphiqueInstance) {
-      monGraphiqueInstance.options.responsive = true;
-      monGraphiqueInstance.update('none');
-    }
+    localStorage.removeItem("imageTableauSelection");
     window.location.href = "index-page2-rapport.html";
   }
 }
