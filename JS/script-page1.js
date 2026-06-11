@@ -11,12 +11,17 @@ let fichierActuelPourFiltrage = null;
 // Variables pour mémoriser les données lues du fichier ODS sans générer le graphique immédiatement
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
 
+// Variable globale temporaire pour suivre la sonde déplacée au doigt sur mobile
+window.sondeEnCoursDeToucher = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const marqueurs = document.querySelectorAll(".marqueur-draggable");
   const carteCible = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible");
 
-  // Activation du Drag & Drop sur toutes les images de sondes
+  // ==========================================================
+  // A. GESTION DES SOURIS (ORDINATEUR) - DRAG & DROP
+  // ==========================================================
   marqueurs.forEach((marqueur) => {
     marqueur.setAttribute("draggable", "true");
     marqueur.addEventListener("dragstart", (e) => {
@@ -28,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Zone de dépôt : Sur la carte
+  // Zone de dépôt : Sur la carte (Souris)
   if (carteCible) {
     carteCible.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -41,22 +46,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (elementGlisse) {
         const limitesCarte = carteCible.getBoundingClientRect();
-        const x = e.clientX - limitesCarte.left;
-        const y = e.clientY - limitesCarte.top;
-
-        const xPourcentage = (x / limitesCarte.width) * 100;
-        const yPourcentage = (y / limitesCarte.height) * 100;
-
-        carteCible.appendChild(elementGlisse);
-        elementGlisse.style.position = "absolute";
-        elementGlisse.style.left = xPourcentage + "%";
-        elementGlisse.style.top = yPourcentage + "%";
-        elementGlisse.style.margin = "0px";
+        const xPourcentage = ((e.clientX - limitesCarte.left) / limitesCarte.width) * 100;
+        const yPourcentage = ((e.clientY - limitesCarte.top) / limitesCarte.height) * 100;
+        placerSonde(elementGlisse, carteCible, xPourcentage, yPourcentage);
       }
     });
   }
 
-  // Zone de dépôt : Retour dans la réserve
+  // Zone de dépôt : Retour dans la réserve (Souris)
   if (reserveCible) {
     reserveCible.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -68,12 +65,79 @@ document.addEventListener("DOMContentLoaded", () => {
       const elementGlisse = document.getElementById(idElement);
 
       if (elementGlisse) {
-        reserveCible.appendChild(elementGlisse);
-        elementGlisse.style.position = "";
-        elementGlisse.style.left = "";
-        elementGlisse.style.top = "";
+        remettreDansReserve(elementGlisse, reserveCible);
       }
     });
+  }
+
+  // ==========================================================
+  // B. GESTION DES ÉCRANS TACTILES (TÉLÉPHONE / TABLETTE)
+  // ==========================================================
+  marqueurs.forEach((marqueur) => {
+    marqueur.addEventListener("touchstart", (e) => {
+      window.sondeEnCoursDeToucher = e.target;
+      e.target.style.opacity = "0.5";
+    }, { passive: true });
+
+    marqueur.addEventListener("touchmove", (e) => {
+      if (!window.sondeEnCoursDeToucher) return;
+      const touch = e.touches[0];
+      const sonde = window.sondeEnCoursDeToucher;
+      
+      // Déplacement visuel de l'icône sous le doigt en temps réel
+      sonde.style.position = "fixed";
+      sonde.style.left = touch.clientX + "px";
+      sonde.style.top = touch.clientY + "px";
+      sonde.style.transform = "translate(-50%, -50%)";
+      sonde.style.zIndex = "1000";
+    }, { passive: true });
+
+    marqueur.addEventListener("touchend", (e) => {
+      const sonde = window.sondeEnCoursDeToucher;
+      if (!sonde) return;
+
+      // Réinitialisation des styles temporaires de glisse
+      sonde.style.opacity = "1";
+      sonde.style.transform = "";
+      sonde.style.zIndex = "";
+
+      const touch = e.changedTouches[0];
+      const limitesCarte = carteCible.getBoundingClientRect();
+
+      // Vérification si le doigt lâche la sonde à l'intérieur de la carte
+      if (
+        touch.clientX >= limitesCarte.left &&
+        touch.clientX <= limitesCarte.right &&
+        touch.clientY >= limitesCarte.top &&
+        touch.clientY <= limitesCarte.bottom
+      ) {
+        const xPourcentage = ((touch.clientX - limitesCarte.left) / limitesCarte.width) * 100;
+        const yPourcentage = ((touch.clientY - limitesCarte.top) / limitesCarte.height) * 100;
+        placerSonde(sonde, carteCible, xPourcentage, yPourcentage);
+      } else {
+        // En dehors de la zone : retour automatique à la réserve
+        remettreDansReserve(sonde, reserveCible);
+      }
+      window.sondeEnCoursDeToucher = null;
+    });
+  });
+
+  // ==========================================================
+  // FONCTIONS OUTILS COMMUNES (SOURIS ET TACTILE)
+  // ==========================================================
+  function placerSonde(sonde, carte, x, y) {
+    carte.appendChild(sonde);
+    sonde.style.position = "absolute";
+    sonde.style.left = x + "%";
+    sonde.style.top = y + "%";
+    sonde.style.margin = "0px";
+  }
+
+  function remettreDansReserve(sonde, reserve) {
+    reserve.appendChild(sonde);
+    sonde.style.position = "";
+    sonde.style.left = "";
+    sonde.style.top = "";
   }
 });
 
@@ -156,7 +220,6 @@ function chargerDonneesODS(fichierDynamique = null) {
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
 
-  // Normalisation automatique au format HH:MM:SS si l'utilisateur oublie les secondes
   if (filtreDebut.length === 5) filtreDebut += ":00";
   if (filtreFin.length === 5) filtreFin += ":00";
 
@@ -353,6 +416,9 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
               borderColor: "#007BFF",
               borderWidth: 1,
             },
+            pinch: {
+              enabled: true // Activation du zoom mobile par pincement de doigts (pinch)
+            },
             mode: "xy",
           },
         },
@@ -411,7 +477,6 @@ function sauvegarderToutEtDiriger() {
   localStorage.removeItem("imageGraphiqueZoome");
   localStorage.removeItem("imageTableauSelection");
 
-  // Enregistrement forcé des filtres temporels de l'essai
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
   
@@ -421,7 +486,6 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
 
-  // Stockage des données d'identification de la fiche
   localStorage.setItem("username", document.getElementById("username")?.value || "");
   localStorage.setItem("userEntreprise", document.getElementById("userEntreprise")?.value || "");
   localStorage.setItem("userService", document.getElementById("userService")?.value || "");
@@ -433,7 +497,6 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
-  // Sauvegarde des positions des sondes
   const carteCible = document.getElementById("carte-cible");
   if (carteCible) {
     const donneesSondes = [];
@@ -448,7 +511,6 @@ function sauvegarderToutEtDiriger() {
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
 
-  // Traitement graphique (capture de l'état zoomé)
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine && monGraphiqueInstance) {
     try {
@@ -459,7 +521,6 @@ function sauvegarderToutEtDiriger() {
     }
   }
 
-  // Traitement et capture visuelle optionnelle du tableau ODS
   const tableauODS = document.getElementById("corpsTableauODS")?.closest("table");
   const ongletTableau = document.getElementById("onglet3");
   const corpsTableau = document.getElementById("corpsTableauODS");
