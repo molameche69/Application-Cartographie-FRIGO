@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     carteCible.addEventListener("dragover", (e) => e.preventDefault());
     carteCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.setData("text/plain");
+      const idElement = e.dataTransfer.getData("text/plain");
       const elementGlisse = document.getElementById(idElement);
       if (elementGlisse) {
         const limitesCarte = carteCible.getBoundingClientRect();
@@ -109,11 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==========================================================
-  // ÉCOUTEURS POUR LA PÉRIODICITÉ ET LES SEUILS MANUELS
+  // ÉCOUTEURS DYNAMIQUES POUR LA PÉRIODICITÉ ET LES CALCULS AUTOMATIQUES
   // ==========================================================
   const inputPeriode = document.getElementById("periode");
-  const inputSeuilMax = document.getElementById("seuil-max");
-  const inputSeuilMin = document.getElementById("seuil-min");
+  const inputConsigne = document.getElementById("tdeconsigne");
+  const inputEMT = document.getElementById("valeur");
 
   if (inputPeriode) {
     inputPeriode.addEventListener("input", () => {
@@ -123,8 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (inputSeuilMax) inputSeuilMax.addEventListener("input", mettreAJourSeuilsEnDirect);
-  if (inputSeuilMin) inputSeuilMin.addEventListener("input", mettreAJourSeuilsEnDirect);
+  if (inputConsigne) inputConsigne.addEventListener("input", mettreAJourSeuilsAutomatiques);
+  if (inputEMT) inputEMT.addEventListener("input", mettreAJourSeuilsAutomatiques);
 
   function placerSonde(sonde, carte, x, y) {
     carte.appendChild(sonde);
@@ -202,7 +202,6 @@ function genererLeGraphique() {
   `;
 
   const pasPeriode = parseInt(document.getElementById("periode")?.value) || 1;
-  
   let labelsFiltres = [];
   let datasetsFiltres = [];
 
@@ -337,8 +336,16 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 
   if (monGraphiqueInstance) monGraphiqueInstance.destroy();
 
-  const valeurMinInitiale = parseFloat(document.getElementById("seuil-min")?.value) || 5.0;
-  const valeurMaxInitiale = parseFloat(document.getElementById("seuil-max")?.value) || 8.0;
+  const consigne = parseFloat(document.getElementById("tdeconsigne")?.value);
+  const emt = parseFloat(document.getElementById("valeur")?.value);
+
+  let valeurMinInitiale = 5.0;
+  let valeurMaxInitiale = 8.0;
+
+  if (!isNaN(consigne) && !isNaN(emt)) {
+    valeurMinInitiale = consigne - emt;
+    valeurMaxInitiale = consigne + emt;
+  }
 
   const ctx = canvas.getContext("2d");
   monGraphiqueInstance = new Chart(ctx, {
@@ -376,7 +383,6 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
               const maxIndex = chart.scales.x.max;
               const pointsVisibles = Math.round(maxIndex - minIndex + 1);
               
-              // RECTIFIÉ ICI : La variable s'appelle bien pointsVisibles avec un "s"
               if (pointsVisibles < 31) {
                 chart.resetZoom();
                 alert(`⚠️ Zoom refusé (${pointsVisibles} points sur 31) : Le graphique doit afficher au minimum 31 points de mesure consécutifs.`);
@@ -391,41 +397,43 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 }
 
 // ==========================================================
-// RENDU EN DIRECT DES LIGNES LORSQUE L'UTILISATEUR TAPE UNE TEMPÉRATURE
+// RENDU EN DIRECT LOGIQUE : CALCUL DES SEUILS VIA CONSIGNE ET EMT
 // ==========================================================
-function mettreAJourSeuilsEnDirect() {
+function mettreAJourSeuilsAutomatiques() {
   if (!monGraphiqueInstance) return;
 
-  const nouveauMin = parseFloat(document.getElementById("seuil-min")?.value);
-  const nouveauMax = parseFloat(document.getElementById("seuil-max")?.value);
+  const consigne = parseFloat(document.getElementById("tdeconsigne")?.value);
+  const emt = parseFloat(document.getElementById("valeur")?.value);
 
+  if (isNaN(consigne) || isNaN(emt)) return;
+
+  const calculMin = consigne - emt;
+  const calculMax = consigne + emt;
   const annotations = monGraphiqueInstance.options.plugins.annotation.annotations;
 
-  if (annotations.ligneMin && !isNaN(nouveauMin)) {
-    annotations.ligneMin.yMin = nouveauMin;
-    annotations.ligneMin.yMax = nouveauMin;
-    annotations.ligneMin.label.content = `Seuil Min (${nouveauMin.toFixed(1)}°C)`;
+  if (annotations.ligneMin) {
+    annotations.ligneMin.yMin = calculMin;
+    annotations.ligneMin.yMax = calculMin;
+    annotations.ligneMin.label.content = `Seuil Min (${calculMin.toFixed(1)}°C)`;
   }
 
-  if (annotations.ligneMax && !isNaN(nouveauMax)) {
-    annotations.ligneMax.yMin = nouveauMax;
-    annotations.ligneMax.yMax = nouveauMax;
-    annotations.ligneMax.label.content = `Seuil Max (${nouveauMax.toFixed(1)}°C)`;
+  if (annotations.ligneMax) {
+    annotations.ligneMax.yMin = calculMax;
+    annotations.ligneMax.yMax = calculMax;
+    annotations.ligneMax.label.content = `Seuil Max (${calculMax.toFixed(1)}°C)`;
   }
 
   monGraphiqueInstance.update();
 }
 
 // ==========================================================
-// 4. SYSTEME DE SÉLECTION VISUELLE DU TABLEAU À LA SOURIS
+// 4. SYSTEME DE SÉLECTION VISUELLE DU TABLEAU (SOURIS & TACTILE MOBILE)
 // ==========================================================
 function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
-  
-  // Réinitialisation des anciens écouteurs pour éviter les doublons
   conteneurTableau.onmousedown = null;
 
-  // --- 1. GESTION POUR ORDINATEUR (SOURIS) ---
+  // --- ORDINATEUR (SOURIS) ---
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
@@ -447,36 +455,28 @@ function activerSelectionSouris(conteneurTableau) {
     appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
   });
 
-
-  // --- 2. GESTION POUR TÉLÉPHONE / TABLETTE (TACTILE) ---
+  // --- MOBILE / TABLETTE (TACTILE) ---
   conteneurTableau.addEventListener("touchstart", (e) => {
-    // On cherche la ligne touchée au départ
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
 
     estEnTrainDeGlisser = true;
     ligneDebutSelection = ligneCible;
 
-    // Réinitialise les anciennes sélections
     const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
     lignes.forEach((l) => (l.style.backgroundColor = ""));
     ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
-    
-    // Empêche le défilement de la page pendant qu'on sélectionne les points
     e.preventDefault(); 
   }, { passive: false });
 
   conteneurTableau.addEventListener("touchmove", (e) => {
     if (!estEnTrainDeGlisser || !ligneDebutSelection) return;
 
-    // Sur mobile, e.target reste bloqué sur l'élément de départ. 
-    // Il faut utiliser elementFromPoint pour savoir sur quelle ligne se trouve le doigt actuellement.
     const touch = e.touches[0];
     const elementSousLeDoigt = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elementSousLeDoigt) return;
 
     const ligneActuelle = elementSousLeDoigt.closest("tr");
-    // On vérifie que la ligne trouvée appartient bien à notre tableau
     if (!ligneActuelle || ligneActuelle.parentNode !== conteneurTableau) return;
 
     appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
@@ -484,12 +484,10 @@ function activerSelectionSouris(conteneurTableau) {
   }, { passive: false });
 }
 
-// Fonction outil pour colorer les lignes entre le point de départ et la position actuelle
 function appliquerSelectionVisuelle(conteneur, ligneDebut, ligneFin) {
   const lignes = Array.from(conteneur.querySelectorAll("tr"));
   const indexDebut = lignes.indexOf(ligneDebut);
   const indexActuel = lignes.indexOf(ligneFin);
-  
   const minIndex = Math.min(indexDebut, indexActuel);
   const maxIndex = Math.max(indexDebut, indexActuel);
 
@@ -498,7 +496,6 @@ function appliquerSelectionVisuelle(conteneur, ligneDebut, ligneFin) {
   });
 }
 
-// Événement global pour relâcher la sélection (Souris et Doigt)
 window.addEventListener("mouseup", () => { estEnTrainDeGlisser = false; });
 window.addEventListener("touchend", () => { estEnTrainDeGlisser = false; });
 
@@ -518,7 +515,6 @@ function sauvegarderToutEtDiriger() {
     });
   }
 
-  // ALERTE SUR LE BOUTON VALIDATION AVEC COMPTEUR
   if (pointsSelectionnes > 0 && pointsSelectionnes < 31) {
     alert(`⚠️ Sélection insuffisante (${pointsSelectionnes} points sur 31) : Vous devez sélectionner au minimum 31 points de mesure dans le tableau pour valider le rapport.`);
     return; 
@@ -540,11 +536,22 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("userReference", document.getElementById("userReference")?.value || "");
   localStorage.setItem("userCaracteristique", document.getElementById("userCaracteristique")?.value || "");
   localStorage.setItem("userLoc", document.getElementById("userLoc")?.value || "");
-  localStorage.setItem("tdeconsigne", document.getElementById("tdeconsigne")?.value || "");
-  localStorage.setItem("valeur", document.getElementById("valeur")?.value || "");
   
-  localStorage.setItem("seuilMaxManuel", document.getElementById("seuil-max")?.value || "");
-  localStorage.setItem("seuilMinManuel", document.getElementById("seuil-min")?.value || "");
+  const inputConsigneElement = document.getElementById("tdeconsigne");
+  const inputEmtElement = document.getElementById("valeur");
+  const consigne = parseFloat(inputConsigneElement?.value);
+  const emt = parseFloat(inputEmtElement?.value);
+
+  localStorage.setItem("tdeconsigne", inputConsigneElement?.value || "");
+  localStorage.setItem("valeur", inputEmtElement?.value || "");
+  
+  if (!isNaN(consigne) && !isNaN(emt)) {
+    localStorage.setItem("seuilMaxManuel", (consigne + emt).toString());
+    localStorage.setItem("seuilMinManuel", (consigne - emt).toString());
+  } else {
+    localStorage.setItem("seuilMaxManuel", "");
+    localStorage.setItem("seuilMinManuel", "");
+  }
   
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
@@ -567,7 +574,7 @@ function sauvegarderToutEtDiriger() {
     }
   }
 
-  const tableauODS = document.getElementById("corpsTableauODS")?.closest("table");
+  const tableauODS = corpsTableau?.closest("table");
   const ongletTableau = document.getElementById("onglet3");
 
   if (tableauODS && ongletTableau && pointsSelectionnes >= 31) {

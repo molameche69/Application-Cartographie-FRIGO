@@ -1,34 +1,68 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Rapport PDF</title>
-    <link rel="stylesheet" href="css/style-page3-PDF.css">
+  <meta charset="UTF-8">
+  <title>Gabarit Impression PDF</title>
+  <link rel="stylesheet" href="css/style-page3-PDF.css">
 </head>
 <body>
 
-    <div class="pdf-box">
-        <div class="pdf-header">
-            <h1>Rapport Officiel</h1>
-            <p>Généré le : <span id="pdf-date"></span></p>
-        </div>
+  <div class="page-pdf">
+    <div class="entete-pdf">
+      <div class="titre-bloc">
+        <h1 class="titre-principal">RAPPORT DE CARACTÉRISATION</h1>
+        <h2 class="sous-titre-principal">Analyse Thermique d'Enceinte</h2>
+      </div>
+    </div>
+    
+    <div class="separateur-bleu"></div>
 
-        <div class="pdf-body">
-            <div class="info-group">
-                <span class="label">Nom de l'utilisateur :</span>
-                <span id="pdf-nom"></span>
-            </div>
-            <div class="info-group">
-                <span class="label">Message transmis :</span>
-                <span id="pdf-message"></span>
-            </div>
-        </div>
-
-        <div class="pdf-footer">
-            <p>Document confidentiel - Ne pas distribuer.</p>
-        </div>
+    <div class="section-pdf">
+      <h3 class="titre-section">1. Identification de l'Opérateur & Entreprise</h3>
+      <div class="grille-infos">
+        <p><strong>Opérateur :</strong> <span id="pdf-username"></span></p>
+        <p><strong>Entreprise / Organisme :</strong> <span id="pdf-userEntreprise"></span></p>
+        <p><strong>Service / Département :</strong> <span id="pdf-userService"></span></p>
+      </div>
     </div>
 
-    
+    <div class="section-pdf">
+      <h3 class="titre-section">2. Identification de l'enceinte à contrôler</h3>
+      <div class="grille-infos">
+        <p><strong>N° de série / Réf. interne :</strong> <span id="pdf-userReference"></span></p>
+        <p><strong>Caractéristiques appareil :</strong> <span id="pdf-userCaracteristique"></span></p>
+        <p><strong>Localisation :</strong> <span id="pdf-userLoc"></span></p>
+      </div>
+    </div>
+
+    <div class="section-pdf">
+      <h3 class="titre-section">3. Spécifications Métrologiques & Filtres</h3>
+      <div class="grille-infos">
+        <p><strong>Température de consigne :</strong> <span id="pdf-tdeconsigne"></span> °C</p>
+        <p><strong>Écart Maximum Toléré (EMT) :</strong> ± <span id="pdf-valeur"></span> °C</p>
+        <p><strong>Période de début :</strong> <span id="pdf-filtreHeureDebut"></span></p>
+        <p><strong>Période de fin :</strong> <span id="pdf-filtreHeureFin"></span></p>
+      </div>
+    </div>
+
+    <div class="section-pdf">
+      <h3 class="titre-section">4. Mode Opératoire</h3>
+      <div id="pdf-message" class="bloc-message-pdf"></div>
+    </div>
+  </div>
+
+  <div class="page-pdf">
+    <h3 class="titre-section">5. Positionnement des Sondes (Cartographie)</h3>
+    <div id="pdf-conteneur-carte" class="zone-carte-pdf"></div>
+
+    <h3 class="titre-section espace-haut-graphes">6. Analyse Graphique des Températures</h3>
+    <div id="pdf-conteneur-graphique" class="zone-graphique-pdf"></div>
+  </div>
+
+  <div class="page-pdf">
+    <h3 class="titre-section">7. Résultats Détaillés (Selon Norme NF X 15 140)</h3>
+    <div id="pdf-conteneur-tableau" class="zone-tableau-pdf"></div>
+  </div>
+
 </body>
 </html>

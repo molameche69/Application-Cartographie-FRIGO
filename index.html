@@ -1,291 +1,147 @@
 <!doctype html>
-
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Accueil - Saisie Cartographie</title>
-<link rel="stylesheet" href="css/style-page1-Acceuil.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accueil - Saisie Cartographie</title>
+  <link rel="stylesheet" href="css/style-page1-Acceuil.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
 </head>
 
-  <body>
-    <canvas id="fond-etoile"></canvas>
+<body>
+  <canvas id="fond-etoile"></canvas>
 
-    <div class="Titre">
-      <img src="images/logo.png" class="logo2" alt="Logo gauche" />
+  <div class="Titre">
+    <img src="images/logo.png" class="logo2" alt="Logo gauche" />
+    <i>:Cartographie en 9 points:</i>
+    <img src="images/logo.png" class="logo1" alt="Logo droite" />
+  </div>
 
-      <i>:Cartographie en 9 points:</i>
-
-      <img src="images/logo.png" class="logo1" alt="Logo droite" />
+  <div class="systeme-onglets">
+    <div class="onglets-boutons">
+      <button class="onglet-btn actif" onclick="changerOnglet(event, 'onglet1')">
+        Fiche technique
+      </button>
+      <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">
+        Cartographie
+      </button>
+      <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">
+        Tableau température
+      </button>
     </div>
 
-    <div class="systeme-onglets">
-      <div class="onglets-boutons">
-        <button
-          class="onglet-btn actif"
-          onclick="changerOnglet(event, 'onglet1')"
-        >
-          Fiche technique
-        </button>
-        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">
-          Cartographie
-        </button>
-        <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">
-          Tableau température
-        </button>
-      </div>
+    <form id="formulaire-carto" onsubmit="return false;">
+      <div id="onglet1" class="contenu-onglet">
+        <div class="tech">
+          <i>Veuillez remplir les cases</i>
+        </div>
+        <div class="Fiche">
+          <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
+          <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur :" required />
+          <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme :" required />
+          <input type="text" id="userService" name="userService" placeholder="Service / Département :" required />
 
-      <form id="formulaire-carto" onsubmit="return false;">
-        <div id="onglet1" class="contenu-onglet">
-          <div class="tech">
-            <i>Veuillez remplir les cases</i>
-          </div>
-          <div class="Fiche">
-            <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              placeholder="Nom et Prénom de l'opérateur :"
-              required
-            />
-            <input
-              type="text"
-              id="userEntreprise"
-              name="userEntreprise"
-              placeholder="Nom de l'entreprise / Organisme :"
-              required
-            />
-            <input
-              type="text"
-              id="userService"
-              name="userService"
-              placeholder="Service / Département :"
-              required
-            />
+          <h2>2. Section : Identification de l'Enceinte à Contrôler</h2>
+          <input type="text" id="userReference" name="userReference" placeholder="Référence interne / Numéro de série de l'enceinte :" />
+          <input type="text" id="userCaracteristique" name="userCaracteristique" placeholder="Caractéristiques de l'appareil (Marque, Modèle, Volume) :" />
+          <input type="text" id="userLoc" name="userLoc" placeholder="Localisation de l'enceinte :" />
 
-            <h2>2. Section : Identification de l'Enceinte à Contrôler</h2>
-            <input
-              type="text"
-              id="userReference"
-              name="userReference"
-              placeholder="Référence interne / Numéro de série de l'enceinte :"
-            />
-            <input
-              type="text"
-              id="userCaracteristique"
-              name="userCaracteristique"
-              placeholder="Caractéristiques de l'appareil (Marque, Modèle, Volume) :"
-            />
-            <input
-              type="text"
-              id="userLoc"
-              name="userLoc"
-              placeholder="Localisation de l'enceinte :"
-            />
+          <h2>3. Section : Spécifications Métrologiques (Les Critères)</h2>
+          <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) :" />
+          <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) :" />
 
-            <h2>3. Section : Spécifications Métrologiques (Les Critères)</h2>
-            <input
-              type="text"
-              id="tdeconsigne"
-              name="tdeconsigne"
-              placeholder="Température de consigne visée (°C) :"
-            />
-            <input
-              type="text"
-              id="valeur"
-              name="valeur"
-              placeholder="Écart Maximum Toléré / EMT (°C) :"
-            />
-            <input
-              type="text"
-              id="seuil-max"
-              name="seuil-max"
-              placeholder="Seuil-max:"
-              required
-            />
+          <h2>4. Section : Filtres Temporels de l'Essai</h2>
+          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :" required />
+          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :" required />
 
-              <input
-              type="text"
-              id="seuil-min"
-              name="seuil-min"
-              placeholder="Seuil-min :"
-              required
-            />
-
-              <input
-              type="text"
-              id="periode"
-              name="periode"
-              placeholder="Périodicité / Fréquence des relevés :"
-              required
-            />
-
-            <h2>4. Section : Filtres Temporels de l'Essai</h2>
-            <input
-              type="text"
-              id="heureDebut"
-              name="filtreHeureDebut"
-              placeholder="Heure de début de l'analyse (Ex: 14:40:00) :"
-              required
-            />
-            <input
-              type="text"
-              id="heureFin"
-              name="filtreHeureFin"
-              placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :"
-              required
-            />
-
-            <h2>5. Mode Opératoire</h2>
-            <textarea
-              id="userMessage"
-              name="userMessage"
-              rows="4"
-              placeholder="Saisissez votre mode opératoire..."
-            >
+          <h2>5. Mode Opératoire</h2>
+          <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
 - La cartographie a été effectuée avec l'enceinte chargée
 - Le début des mesures commence une fois le régime établi.
 - Les points sont positionnés à 5 cm de chacune des parois.
-</textarea
-            >
-          </div>
+          </textarea>
+        </div>
+      </div>
+
+      <div id="onglet2" class="contenu-onglet">
+        <div class="Carto">
+          <i>Cartographie</i>
         </div>
 
-        <div id="onglet2" class="contenu-onglet">
-          <div class="Carto">
-            <i>Cartographie</i>
-          </div>
+        <div class="container-global">
+          <div class="reserve-images" id="reserve-cible">
+            <h3>Sondes à placer :</h3>
+            <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" alt="Sonde 1" />
+            <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" alt="Sonde 2" />
+            <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" alt="Sonde 3" />
+            <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" alt="Sonde 4" />
+            <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" alt="Sonde 5" />
+            <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" alt="Sonde 6" />
+            <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" alt="Sonde 7" />
+            <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" alt="Sonde 8" />
+            <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" alt="Sonde 9" />
 
-          <div class="container-global">
-            <div class="reserve-images" id="reserve-cible">
-              <h3>Sondes à placer :</h3>
-              <img
-                src="images/Sondes/1.png"
-                class="marqueur-draggable"
-                id="marqueur1"
-                alt="Sonde 1"
-              />
-              <img
-                src="images/Sondes/2.jpg"
-                class="marqueur-draggable"
-                id="marqueur2"
-                alt="Sonde 2"
-              />
-              <img
-                src="images/Sondes/3.jpg"
-                class="marqueur-draggable"
-                id="marqueur3"
-                alt="Sonde 3"
-              />
-              <img
-                src="images/Sondes/4.jpg"
-                class="marqueur-draggable"
-                id="marqueur4"
-                alt="Sonde 4"
-              />
-              <img
-                src="images/Sondes/5.jpg"
-                class="marqueur-draggable"
-                id="marqueur5"
-                alt="Sonde 5"
-              />
-              <img
-                src="images/Sondes/6.jpg"
-                class="marqueur-draggable"
-                id="marqueur6"
-                alt="Sonde 6"
-              />
-              <img
-                src="images/Sondes/7.jpg"
-                class="marqueur-draggable"
-                id="marqueur7"
-                alt="Sonde 7"
-              />
-              <img
-                src="images/Sondes/8.jpg"
-                class="marqueur-draggable"
-                id="marqueur8"
-                alt="Sonde 8"
-              />
-              <img
-                src="images/Sondes/9.jpg"
-                class="marqueur-draggable"
-                id="marqueur9"
-                alt="Sonde 9"
-              />
-
-              <button type="button" onclick="reinitialiserMarqueurs()">
-                Réinitialiser les marqueurs
-              </button>
-            </div>
-
-            <div class="zone-carte" id="carte-cible">
-              <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
-            </div>
-          </div>
-        </div>
-
-        <div id="onglet3" class="contenu-onglet">
-          <div id="bloc-graphique">
-            <i>Analyse Thermique depuis Fichier personnalisé</i>
-
-            <div class="zone-import-file">
-              <label for="selecteur-fichier" class="btn-import">
-                📁 Choisir un fichier ODS/Excel
-              </label>
-              <input
-                type="file"
-                id="selecteur-fichier"
-                accept=".ods, .xlsx, .xls"
-                onchange="importerNouveauFichier(event)"
-              />
-              <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
-            </div>
-
-            <div class="zone-generation-graphique">
-              <button
-                type="button"
-                id="btn-generer-graphique"
-                onclick="genererLeGraphique()"
-                disabled
-              >
-                Générer le Graphique depuis le Tableau
-              </button>
-            </div>
-
-            <div class="conteneur-tableau-ods">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Identifiant Capteur</th>
-                    <th>Horodatage</th>
-                    <th>Valeur mesurée</th>
-                    <th>Unité</th>
-                  </tr>
-                </thead>
-                <tbody id="corpsTableauODS"></tbody>
-              </table>
-            </div>
-
-            <button
-              type="button"
-              class="btn-validation-rapport"
-              onclick="sauvegarderToutEtDiriger()"
-            >
-              Envoyer et Voir le Rapport
+            <button type="button" onclick="reinitialiserMarqueurs()">
+              Réinitialiser les marqueurs
             </button>
           </div>
-        </div>
-      </form>
-    </div>
 
-    <script src="JS/script-fond.js"></script>
-    <script src="JS/script-page1.js"></script>
-  </body>
+          <div class="zone-carte" id="carte-cible">
+            <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
+          </div>
+        </div>
+      </div>
+
+      <div id="onglet3" class="contenu-onglet">
+        <div id="bloc-graphique">
+          <i>Analyse Thermique depuis Fichier personnalisé</i>
+
+          <div class="zone-import-file">
+            <label for="selecteur-fichier" class="btn-import">
+              📁 Choisir un fichier ODS/Excel
+            </label>
+            <input type="file" id="selecteur-fichier" accept=".ods, .xlsx, .xls" onchange="importerNouveauFichier(event)" />
+            <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
+          </div>
+
+          <div class="zone-periode" style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
+            <label for="periode" style="color: #fff; font-weight: bold; font-size: 14px;">Périodicité d'affichage :</label>
+            <input type="number" id="periode" name="periode" value="1" min="1" style="width: 60px; padding: 6px; text-align: center; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;" />
+          </div>
+
+          <div class="zone-generation-graphique">
+            <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
+              Générer le Graphique depuis le Tableau
+            </button>
+          </div>
+
+          <div class="conteneur-tableau-ods">
+            <table>
+              <thead>
+                <tr>
+                  <th>Identifiant Capteur</th>
+                  <th>Horodatage</th>
+                  <th>Valeur mesurée</th>
+                  <th>Unité</th>
+                </tr>
+              </thead>
+              <tbody id="corpsTableauODS"></tbody>
+            </table>
+          </div>
+
+          <button type="button" class="btn-validation-rapport" onclick="sauvegarderToutEtDiriger()">
+            Envoyer et Voir le Rapport
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script src="JS/script-fond.js"></script>
+  <script src="JS/script-page1.js"></script>
+</body>
 </html>

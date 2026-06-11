@@ -18,13 +18,20 @@ body {
 }
 
 .container {
-  max-width: 1000px; /* AUGMENTÉ : Passe de 810px à 1000px pour offrir plus d'espace au graphique et au tableau */
+  max-width: 1000px; /* Offre plus d'espace au graphique et au tableau */
   width: 100%;
   margin: 0 auto;
   background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
   padding: 20px;
   border-radius: 8px;
   box-sizing: border-box;
+}
+
+/* Structure des pages du rapport (Écran normal) */
+.page-section {
+  display: block;
+  width: 100%;
+  margin-bottom: 40px;
 }
 
 /* ==========================================================
@@ -166,7 +173,6 @@ span,
   box-sizing: border-box;
 }
 
-/* MODIFIÉ : Hauteur confortable et proportionnelle au ratio 1200x600 généré par Chart.js */
 .wrapper-canvas {
   height: 480px !important;
   width: 100%;
@@ -174,7 +180,6 @@ span,
   overflow: hidden;
 }
 
-/* OPTIMISÉ : object-fit réglé sur 'fill' pour forcer l'image haute définition à occuper tout le cadre disponible */
 .graphique-image-zoom,
 .graphique-rapport-img {
   width: 100% !important;
@@ -303,22 +308,71 @@ a:hover,
   text-decoration: underline;
 }
 
-/* GESTION IMPRESSION PDF */
-.saut-de-page {
-  page-break-before: always;
-  break-before: page;
-  height: 0;
-  margin: 0;
-  padding: 0;
-}
+/* ==========================================================
+   GESTION DE L'IMPRESSION PDF (NETTOYAGE DU MÉLANGE)
+   ========================================================== */
+@media print {
+  /* Supprime définitivement les arrières-plans sombres */
+  body, .container, #zone-impression-pdf {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+  }
 
-.section-pdf {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
+  /* Disparition des éléments d'interface sur le document final */
+  .actions-zone, .Titre img, #fond-etoile {
+    display: none !important;
+  }
 
-#zone-pdf-cachee {
-  display: none;
+  /* Force chaque bloc page-section à s'isoler sur une page dédiée */
+  .page-section {
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+    margin: 0 0 30px 0 !important;
+  }
+
+  /* Sécurise l'affichage des composants graphiques */
+  .conteneur-graphique, .zone-carte, #bloc-rapport {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* Réduction contrôlée de la hauteur du graphique pour le stabiliser sur la page 2 */
+  .wrapper-canvas {
+    height: 380px !important; 
+  }
+
+  /* CORRECTION DU TABLEAU : Désactivation complète du mode sticky et des blocages de lignes */
+  .tab-donnees th, .table-rapport-spec th {
+    position: static !important; /* Neutralise le bug de clonage html2pdf */
+    background: #f1f1f1 !important;
+  }
+
+  /* Autorise le grand tableau à s'écouler librement sur plusieurs pages sans se mélanger */
+  .conteneur-tableau {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    overflow: visible !important;
+  }
+
+  table, .tab-donnees, .table-rapport-spec {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Empêche uniquement les lignes individuelles de se couper en deux */
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
 
 /* ==========================================================
@@ -353,7 +407,6 @@ a:hover,
     padding: 15px;
   }
 
-  /* Sur mobile, on réduit proportionnellement la hauteur pour éviter d'écraser l'image */
   .wrapper-canvas {
     height: 250px !important;
     min-height: auto;
@@ -445,18 +498,16 @@ a:hover,
   color: red;
 }
 
-/* Force la carte du rapport à servir de repère pour les pourcentages */
 #carte-rapport {
   position: relative !important;
   display: inline-block;
 }
 
-/* Force les sondes à garder une taille normale sur le rapport */
 #carte-rapport .marqueur-draggable {
-  width: 40px !important;   /* Ajuste cette valeur selon la taille voulue (ex: 35px ou 40px) */
-  height: 40px !important;  /* Doit être identique à la largeur */
+  width: 40px !important;   
+  height: 40px !important;  
   position: absolute !important;
-  transform: translate(-50%, -50%) !important; /* Centre parfaitement la sonde sur son point */
+  transform: translate(-50%, -50%) !important; 
   object-fit: contain !important;
   z-index: 10;
 }
