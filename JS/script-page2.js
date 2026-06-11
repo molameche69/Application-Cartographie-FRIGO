@@ -32,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const heureDebutStockee = localStorage.getItem("filtreHeureDebut");
   const heureFinStockee = localStorage.getItem("filtreHeureFin");
 
-  // Injection sécurisée des heures (HH:MM)
   if (elDebut) {
     elDebut.textContent = heureDebutStockee && heureDebutStockee !== "" 
       ? heureDebutStockee.substring(0, 5) 
@@ -56,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================================
-  // 2. RESTITUTION CORRECTE DES SONDES SUR LA CARTE
+  // 2. RESTITUTION CORRECTE ET REDIMENSIONNÉE DES SONDES
   // ==========================================================
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
@@ -71,6 +70,12 @@ document.addEventListener("DOMContentLoaded", () => {
         imgSonde.style.left = sonde.left;
         imgSonde.style.top = sonde.top;
         imgSonde.style.transform = "translate(-50%, -50%)";
+        
+        // Taille d'icône stricte pour le rapport
+        imgSonde.style.width = "32px";
+        imgSonde.style.height = "32px";
+        imgSonde.style.objectFit = "contain";
+
         carteRapport.appendChild(imgSonde);
       });
     } catch (e) {
@@ -88,16 +93,10 @@ function chargerDonneesODSRapport() {
   const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
   const canvasRapport = document.getElementById("graphiqueTemperatures");
 
-  // --- GESTION DU GRAPHIQUE ---
   if (!imageZoomee) {
-    if (canvasRapport) {
-      canvasRapport.classList.add("masque");
-    }
+    if (canvasRapport) canvasRapport.classList.add("masque");
     const imgExistante = document.querySelector(".graphique-image-zoom");
-    if (imgExistante) {
-      imgExistante.classList.add("masque");
-    }
-    console.log("Graphique masqué.");
+    if (imgExistante) imgExistante.classList.add("masque");
   } else if (canvasRapport) {
     const wrapper = canvasRapport.closest(".wrapper-canvas");
     if (wrapper) {
@@ -105,9 +104,7 @@ function chargerDonneesODSRapport() {
     }
   }
 
-  // --- GESTION DE LA VISIBILITÉ DU TABLEAU ---
   let conteneurTableau = document.querySelector(".conteneur-tableau");
-
   if (!conteneurTableau) {
     const zoneImpression = document.getElementById("zone-impression-pdf") || document.body;
     conteneurTableau = document.createElement("div");
@@ -118,7 +115,6 @@ function chargerDonneesODSRapport() {
   conteneurTableau.classList.remove("masque");
   conteneurTableau.classList.add("affiche-bloc");
 
-  // --- EXTRACTION ET FILTRAGE DES DONNÉES DU FICHIER ODS ---
   const filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
   const filtreFin = localStorage.getItem("filtreHeureFin") || "";
 
@@ -138,19 +134,11 @@ function chargerDonneesODSRapport() {
 
       for (let i = 1; i < json.length; i++) {
         const ligne = json[i];
-        if (
-          ligne &&
-          ligne[0] !== undefined &&
-          ligne[1] !== undefined &&
-          ligne[2] !== undefined
-        ) {
+        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
           const id = ligne[0].toString().trim();
           let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T")
-            ? tempsBrut.split("T")[1].replace("Z", "")
-            : tempsBrut;
+          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
 
-          // Alignement strict sur 8 caractères (HH:MM:SS) pour le filtrage
           tempsAffiche = tempsAffiche.substring(0, 8);
 
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
@@ -163,13 +151,12 @@ function chargerDonneesODSRapport() {
       }
 
       const nombreCapteurs = Object.keys(donneesCapteurs).length;
-
       if (nombreCapteurs === 0) {
-        conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée (${filtreDebut.substring(0,5)} - ${filtreFin.substring(0,5)}).</p>`;
+        conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée.</p>`;
         return;
       }
 
-      // --- CALCULS STATISTIQUES CONFORMES À LA NORME ---
+      // --- CALCULS STATISTIQUES CONFORMES ---
       const statsCapteurs = {};
       let sommeDesMoyennes = 0;
       let N = nombreCapteurs;
@@ -177,7 +164,6 @@ function chargerDonneesODSRapport() {
       Object.keys(donneesCapteurs).forEach((id) => {
         const releves = donneesCapteurs[id].filter((v) => !isNaN(v));
         const n = releves.length;
-
         if (n === 0) return;
 
         const max = Math.max(...releves);
@@ -186,43 +172,29 @@ function chargerDonneesODSRapport() {
         sommeDesMoyennes += moyenne;
 
         const stabilite = max - min;
-        const sommeCarresSomme = releves.reduce(
-          (acc, val) => acc + Math.pow(val - moyenne, 2),
-          0,
-        );
+        const sommeCarresSomme = releves.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
         const ecartTypeExp = n > 1 ? Math.sqrt(sommeCarresSomme / (n - 1)) : 0;
 
-        statsCapteurs[id] = {
-          moyenne: moyenne,
-          stabilite: stabilite,
-          ecartTypeExp: ecartTypeExp,
-          n: n,
-        };
+        statsCapteurs[id] = { moyenne, stabilite, ecartTypeExp, n };
       });
 
       const Xair = N > 0 ? sommeDesMoyennes / N : 0;
       const toutesLesStabilites = Object.values(statsCapteurs).map((s) => s.stabilite);
       const SXM = toutesLesStabilites.length > 0 ? Math.max(...toutesLesStabilites) : 0;
-      const sommeEcartTypeExpCarre = Object.values(statsCapteurs).reduce(
-        (acc, s) => acc + Math.pow(s.ecartTypeExp, 2),
-        0,
-      );
+      const sommeEcartTypeExpCarre = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.ecartTypeExp, 2), 0);
       const Sr = N > 0 ? Math.sqrt(sommeEcartTypeExpCarre / N) : 0;
 
       const premierId = Object.keys(statsCapteurs)[0];
       const nGenerique = premierId ? statsCapteurs[premierId].n : 1;
-      const sommeVarianceInterCapteurs = Object.values(statsCapteurs).reduce(
-        (acc, s) => acc + Math.pow(s.moyenne - Xair, 2),
-        0,
-      );
+      const sommeVarianceInterCapteurs = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.moyenne - Xair, 2), 0);
       const partieDroiteSR = N > 1 ? (1 / (N - 1)) * sommeVarianceInterCapteurs : 0;
       const SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
 
       creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
     })
     .catch((err) => {
-      console.error("Erreur de traitement ODS :", err);
-      conteneurTableau.innerHTML = `<p class="erreur-ods">Erreur lors de la lecture du fichier de relevés.</p>`;
+      console.error("Erreur ODS :", err);
+      conteneurTableau.innerHTML = `<p class="erreur-ods">Erreur lors de la lecture du fichier.</p>`;
     });
 }
 
@@ -296,11 +268,10 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
   `;
 
   conteneurTableau.innerHTML = html;
-  console.log("Tableau des spécifications injecté avec succès !");
 }
 
 // ==========================================================
-// 5. EXPORTATION PDF (html2pdf.js)
+// 5. EXPORTATION PDF PROPRE ET SÉCURISÉE (html2pdf.js)
 // ==========================================================
 function telechargerPDFDirect() {
   const fondEtoile = document.getElementById("fond-etoile");
@@ -312,25 +283,27 @@ function telechargerPDFDirect() {
     return;
   }
 
+  // Styles temporaires propres pour l'impression sans déformation CSS scale
   const styleImpression = document.createElement("style");
   styleImpression.innerHTML = `
     .html2pdf__page-break { height: 0 !important; margin: 0 !important; padding: 0 !important; }
-    #zone-impression-pdf { padding: 0px !important; margin: 0px !important; }
+    #zone-impression-pdf { padding: 0px !important; margin: 0px !important; width: 100% !important; }
     body { margin: 0 !important; }
     .saut-de-page { page-break-before: always !important; break-before: page !important; height: 0 !important; }
   `;
   document.head.appendChild(styleImpression);
 
   const options = {
-    margin: [10, 15, 10, 15],
+    margin: [10, 10, 10, 10], 
     filename: "rapport_final.pdf",
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: {
-      scale: 2,
+      scale: 2,                  // Excellente netteté des textes et graphiques
       useCORS: true,
       backgroundColor: "#ffffff",
       scrollX: 0,
       scrollY: 0,
+      windowWidth: 1100          // 💡 Simule une largeur d'écran idéale pour figer la mise en page proprement
     },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     pagebreak: { mode: "css" },
