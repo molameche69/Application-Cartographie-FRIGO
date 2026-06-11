@@ -1,28 +1,57 @@
 let monGraphiqueInstance = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Démarrage du script de rendu du rapport...");
+  console.log("Démarrage du script de rendu du rapport conforme NF X 15-140...");
 
   // ==========================================================
   // 1. INJECTION DES CHAMPS TEXTES DEPUIS LE LOCALSTORAGE
   // ==========================================================
   const champs = {
     "report-username": "username",
-    "report-entreprise": "userEntreprise",
-    "report-service": "userService",
-    "report-reference": "userReference",
+    "report-userEntreprise": "userEntreprise",
+    "report-userService": "userService",
+    "report-userReference": "userReference",
     "report-userCaracteristique": "userCaracteristique",
     "report-userLoc": "userLoc",
     "report-tdeconsigne": "tdeconsigne",
     "report-valeur": "valeur",
-    "report-periode": "periode",
-    "report-message": "userMessage",
+    "report-periode": "periode"
   };
 
   for (let id in champs) {
     const el = document.getElementById(id);
     if (el) {
       el.textContent = localStorage.getItem(champs[id]) || "Non renseigné";
+    }
+  }
+
+  // --- Gestion explicite des filtres de la période d'analyse ---
+  const elDebut = document.getElementById("report-filtreHeureDebut");
+  const elFin = document.getElementById("report-filtreHeureFin");
+  
+  const heureDebutStockee = localStorage.getItem("filtreHeureDebut");
+  const heureFinStockee = localStorage.getItem("filtreHeureFin");
+
+  // Injection sécurisée des heures (HH:MM)
+  if (elDebut) {
+    elDebut.textContent = heureDebutStockee && heureDebutStockee !== "" 
+      ? heureDebutStockee.substring(0, 5) 
+      : "Début de l'enregistrement";
+  }
+  if (elFin) {
+    elFin.textContent = heureFinStockee && heureFinStockee !== "" 
+      ? heureFinStockee.substring(0, 5) 
+      : "Fin de l'enregistrement";
+  }
+
+  // --- Gestion propre du Mode Opératoire ---
+  const elMessage = document.getElementById("report-message");
+  if (elMessage) {
+    const messageStocke = localStorage.getItem("userMessage");
+    if (messageStocke) {
+      elMessage.innerHTML = messageStocke.replace(/\n/g, "<br />");
+    } else {
+      elMessage.textContent = "Non renseigné";
     }
   }
 
@@ -41,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
         imgSonde.style.position = "absolute";
         imgSonde.style.left = sonde.left;
         imgSonde.style.top = sonde.top;
-        // Le transform assure que le centre du pointeur correspond au clic d'origine
         imgSonde.style.transform = "translate(-50%, -50%)";
         carteRapport.appendChild(imgSonde);
       });
@@ -73,7 +101,6 @@ function chargerDonneesODSRapport() {
   } else if (canvasRapport) {
     const wrapper = canvasRapport.closest(".wrapper-canvas");
     if (wrapper) {
-      // Remplace intégralement le canvas par la balise image pour appliquer le CSS fluide
       wrapper.innerHTML = `<img src="${imageZoomee}" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" style="width:100%; height:100%; display:block;" />`;
     }
   }
@@ -82,11 +109,7 @@ function chargerDonneesODSRapport() {
   let conteneurTableau = document.querySelector(".conteneur-tableau");
 
   if (!conteneurTableau) {
-    console.warn(
-      "Élément .conteneur-tableau introuvable. Création dynamique...",
-    );
-    const zoneImpression =
-      document.getElementById("zone-impression-pdf") || document.body;
+    const zoneImpression = document.getElementById("zone-impression-pdf") || document.body;
     conteneurTableau = document.createElement("div");
     conteneurTableau.className = "conteneur-tableau";
     zoneImpression.appendChild(conteneurTableau);
@@ -99,10 +122,6 @@ function chargerDonneesODSRapport() {
   const filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
   const filtreFin = localStorage.getItem("filtreHeureFin") || "";
 
-  console.log(
-    `Filtres récupérés - Début: ${filtreDebut || "Aucun"}, Fin: ${filtreFin || "Aucun"}`,
-  );
-
   fetch("Relevés.ods")
     .then((res) => {
       if (!res.ok) throw new Error("Fichier Relevés.ods introuvable.");
@@ -113,8 +132,6 @@ function chargerDonneesODSRapport() {
       const workbook = XLSX.read(data, { type: "array" });
       const feuille = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(feuille, { header: 1 });
-
-      console.log(`Lignes lues dans le fichier ODS : ${json.length}`);
 
       const donneesCapteurs = {};
       const tousLesHorodatages = new Set();
@@ -133,6 +150,9 @@ function chargerDonneesODSRapport() {
             ? tempsBrut.split("T")[1].replace("Z", "")
             : tempsBrut;
 
+          // Alignement strict sur 8 caractères (HH:MM:SS) pour le filtrage
+          tempsAffiche = tempsAffiche.substring(0, 8);
+
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
 
@@ -143,10 +163,9 @@ function chargerDonneesODSRapport() {
       }
 
       const nombreCapteurs = Object.keys(donneesCapteurs).length;
-      console.log(`Nombre de capteurs après filtrage : ${nombreCapteurs}`);
 
       if (nombreCapteurs === 0) {
-        conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée (${filtreDebut} - ${filtreFin}).</p>`;
+        conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée (${filtreDebut.substring(0,5)} - ${filtreFin.substring(0,5)}).</p>`;
         return;
       }
 
@@ -182,11 +201,8 @@ function chargerDonneesODSRapport() {
       });
 
       const Xair = N > 0 ? sommeDesMoyennes / N : 0;
-      const toutesLesStabilites = Object.values(statsCapteurs).map(
-        (s) => s.stabilite,
-      );
-      const SXM =
-        toutesLesStabilites.length > 0 ? Math.max(...toutesLesStabilites) : 0;
+      const toutesLesStabilites = Object.values(statsCapteurs).map((s) => s.stabilite);
+      const SXM = toutesLesStabilites.length > 0 ? Math.max(...toutesLesStabilites) : 0;
       const sommeEcartTypeExpCarre = Object.values(statsCapteurs).reduce(
         (acc, s) => acc + Math.pow(s.ecartTypeExp, 2),
         0,
@@ -199,11 +215,8 @@ function chargerDonneesODSRapport() {
         (acc, s) => acc + Math.pow(s.moyenne - Xair, 2),
         0,
       );
-      const partieDroiteSR =
-        N > 1 ? (1 / (N - 1)) * sommeVarianceInterCapteurs : 0;
-      const SR = Math.sqrt(
-        Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR,
-      );
+      const partieDroiteSR = N > 1 ? (1 / (N - 1)) * sommeVarianceInterCapteurs : 0;
+      const SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
 
       creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
     })
@@ -274,7 +287,7 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
           <td class="cellule-commune">Spécification : Consigne & EMT</td>
           <td colspan="4" class="cellule-commune">Objectif : ${tempConsigne.toFixed(1)} °C | EMT : &plusmn; ${emt.toFixed(1)} °C</td>
         </tr>
-        <tr class="ligne-globale texte-gras conclusion-globale-tailne ${enceinteConforme ? "ligne-conforme" : "ligne-non-conforme"}">
+        <tr class="ligne-globale texte-gras conclusion-globale-taille ${enceinteConforme ? "ligne-conforme" : "ligne-non-conforme"}">
           <td class="cellule-commune">Conclusion Enceinte (NF X 15-140)</td>
           <td colspan="4" class="cellule-commune aligne-centre texte-couleur-statut">${enceinteConforme ? "ENCEINTE CONFORME" : "ENCEINTE NON CONFORME"}</td>
         </tr>

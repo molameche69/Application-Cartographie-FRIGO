@@ -150,11 +150,15 @@ function genererLeGraphique() {
 }
 
 // ==========================================================
-// 3. PARSING DU FICHIER LOCAL (OU FILTRAGE RE-DÉCLENCHÉ)
+// 3. PARSING DU FICHIER LOCAL ET FILTRAGE SYNCHRONISÉ
 // ==========================================================
 function chargerDonneesODS(fichierDynamique = null) {
-  const filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  const filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+
+  // Normalisation automatique au format HH:MM:SS si l'utilisateur oublie les secondes
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length === 5) filtreFin += ":00";
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
@@ -197,6 +201,8 @@ function chargerDonneesODS(fichierDynamique = null) {
           let tempsAffiche = tempsBrut.includes("T")
             ? tempsBrut.split("T")[1].replace("Z", "")
             : tempsBrut;
+
+          tempsAffiche = tempsAffiche.substring(0, 8);
 
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
@@ -399,53 +405,35 @@ window.addEventListener("mouseup", () => {
 });
 
 // ==========================================================
-// 5. SAUVEGARDE ET REDIRECTION
+// 5. SAUVEGARDE ET REDIRECTION SECURISÉE
 // ==========================================================
 function sauvegarderToutEtDiriger() {
   localStorage.removeItem("imageGraphiqueZoome");
   localStorage.removeItem("imageTableauSelection");
 
-  localStorage.setItem(
-    "username",
-    document.getElementById("username")?.value || "",
-  );
-  localStorage.setItem(
-    "userEntreprise",
-    document.getElementById("userEntreprise")?.value || "",
-  );
-  localStorage.setItem(
-    "userService",
-    document.getElementById("userService")?.value || "",
-  );
-  localStorage.setItem(
-    "userReference",
-    document.getElementById("userReference")?.value || "",
-  );
-  localStorage.setItem(
-    "userCaracteristique",
-    document.getElementById("userCaracteristique")?.value || "",
-  );
-  localStorage.setItem(
-    "userLoc",
-    document.getElementById("userLoc")?.value || "",
-  );
-  localStorage.setItem(
-    "tdeconsigne",
-    document.getElementById("tdeconsigne")?.value || "",
-  );
-  localStorage.setItem(
-    "valeur",
-    document.getElementById("valeur")?.value || "",
-  );
-  localStorage.setItem(
-    "periode",
-    document.getElementById("periode")?.value || "",
-  );
-  localStorage.setItem(
-    "userMessage",
-    document.getElementById("userMessage")?.value || "",
-  );
+  // Enregistrement forcé des filtres temporels de l'essai
+  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length === 5) filtreFin += ":00";
 
+  localStorage.setItem("filtreHeureDebut", filtreDebut);
+  localStorage.setItem("filtreHeureFin", filtreFin);
+
+  // Stockage des données d'identification de la fiche
+  localStorage.setItem("username", document.getElementById("username")?.value || "");
+  localStorage.setItem("userEntreprise", document.getElementById("userEntreprise")?.value || "");
+  localStorage.setItem("userService", document.getElementById("userService")?.value || "");
+  localStorage.setItem("userReference", document.getElementById("userReference")?.value || "");
+  localStorage.setItem("userCaracteristique", document.getElementById("userCaracteristique")?.value || "");
+  localStorage.setItem("userLoc", document.getElementById("userLoc")?.value || "");
+  localStorage.setItem("tdeconsigne", document.getElementById("tdeconsigne")?.value || "");
+  localStorage.setItem("valeur", document.getElementById("valeur")?.value || "");
+  localStorage.setItem("periode", document.getElementById("periode")?.value || "");
+  localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
+
+  // Sauvegarde des positions des sondes
   const carteCible = document.getElementById("carte-cible");
   if (carteCible) {
     const donneesSondes = [];
@@ -460,18 +448,19 @@ function sauvegarderToutEtDiriger() {
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
 
-  const boutonGenererExiste =
-    document.getElementById("btn-generer-graphique") !== null;
+  // Traitement graphique (capture de l'état zoomé)
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
-
-  if (canvasOrigine && monGraphiqueInstance && !boutonGenererExiste) {
-    const imageGenereeBase64 = monGraphiqueInstance.toBase64Image();
-    localStorage.setItem("imageGraphiqueZoome", imageGenereeBase64);
+  if (canvasOrigine && monGraphiqueInstance) {
+    try {
+      const imageGenereeBase64 = monGraphiqueInstance.toBase64Image();
+      localStorage.setItem("imageGraphiqueZoome", imageGenereeBase64);
+    } catch (e) {
+      console.error("Échec de conversion de l'image du canvas :", e);
+    }
   }
 
-  const tableauODS = document
-    .getElementById("corpsTableauODS")
-    ?.closest("table");
+  // Traitement et capture visuelle optionnelle du tableau ODS
+  const tableauODS = document.getElementById("corpsTableauODS")?.closest("table");
   const ongletTableau = document.getElementById("onglet3");
   const corpsTableau = document.getElementById("corpsTableauODS");
 
@@ -489,17 +478,13 @@ function sauvegarderToutEtDiriger() {
     const styleInitial = ongletTableau.style.display;
     ongletTableau.style.display = "block";
 
-    // Forcer la synchronisation : on attend la fin de html2canvas avant de changer de page
     html2canvas(tableauODS, {
       backgroundColor: "#ffffff",
       scale: 2,
       useCORS: true,
     })
       .then((canvas) => {
-        localStorage.setItem(
-          "imageTableauSelection",
-          canvas.toDataURL("image/png"),
-        );
+        localStorage.setItem("imageTableauSelection", canvas.toDataURL("image/png"));
         ongletTableau.style.display = styleInitial;
         window.location.href = "index-page2-rapport.html";
       })

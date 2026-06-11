@@ -15,7 +15,7 @@
 
     <div class="Titre">
       <img src="images/logo.png" class="logo2" alt="Logo Gauche" />
-      <i>:Rapport:</i>
+      <i>:Rapport de Caractérisation Métrologique:</i>
       <img src="images/logo.png" class="logo1" alt="Logo Droite" />
     </div>
 
@@ -23,27 +23,29 @@
       <div id="zone-impression-pdf">
         
         <div class="section-pdf">
-          <p><strong class="Rap">Informations :</strong></p>
+          <p><strong class="Rap">Informations Générales :</strong></p>
           
           <div id="bloc-rapport">
-            <h2>1. Identification de l'enceinte</h2>
-            <p><strong>Équipement :</strong> <span id="report-username"></span></p>
-            <p><strong>N° de série :</strong> <span id="report-entreprise"></span></p>
-            <p><strong>Localisation :</strong> <span id="report-service"></span></p>
-            <p><strong>Normes de Réf :</strong> <span id="report-reference"></span></p>
-            <p><strong>Caractéristique :</strong> <span id="report-userCaracteristique"></span></p>
-            <p><strong>Localisation spécifiée :</strong> <span id="report-userLoc"></span></p>
+            <h2>1. Identification de l'Opérateur & Entreprise</h2>
+            <p><strong>Opérateur :</strong> <span id="report-username"></span></p>
+            <p><strong>Entreprise / Organisme :</strong> <span id="report-userEntreprise"></span></p>
+            <p><strong>Service / Département :</strong> <span id="report-userService"></span></p>
 
-            <hr />
+            <h2>2. Identification de l'enceinte à contrôler</h2>
+            <p><strong>N° de série / Référence interne :</strong> <span id="report-userReference"></span></p>
+            <p><strong>Caractéristiques de l'appareil :</strong> <span id="report-userCaracteristique"></span></p>
+            <p><strong>Localisation de l'enceinte :</strong> <span id="report-userLoc"></span></p>
 
-            <h2>2. Paramètres de la cartographie</h2>
-            <p><strong>Température ambiante :</strong> <span id="report-tdeconsigne"></span></p>
-            <p><strong>Condition Désirée :</strong> <span id="report-valeur"></span></p>
-            <p><strong>Type de sonde :</strong> <span id="report-periode"></span></p>
+            <h2>3. Spécifications Métrologiques & Filtres</h2>
+            <p><strong>Température de consigne visée :</strong> <span id="report-tdeconsigne"></span> °C</p>
+            <p><strong>Écart Maximum Toléré (EMT) :</strong> ± <span id="report-valeur"></span> °C</p>
+            <p><strong>Fréquence des relevés :</strong> <span id="report-periode"></span></p>
+            <p><strong>Période de debut :</strong> De <span id="report-filtreHeureDebut"></span></p>
+            <p><strong>Période de fin:</strong> De <span id="report-filtreHeureFin"></span></p>
 
-            <hr />
+            
 
-            <h2>3. Mode Opératoire</h2>
+            <h2>4. Mode Opératoire</h2>
             <div id="report-message">Non renseigné</div>
           </div>
         </div>
