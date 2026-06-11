@@ -1,69 +1,43 @@
 // ==========================================================
-// VARIABLES GLOBALES
+// VARIABLES GLOBALES (PAGE 2)
 // ==========================================================
 let monGraphiqueInstance = null;
 
 // ==========================================================
-// 1. INITIALISATION AU CHARGEMENT DE LA PAGE RAPPORT
+// 1. INITIALISATION AU CHARGEMENT DE LA PAGE
 // ==========================================================
 document.addEventListener("DOMContentLoaded", () => {
-  // --- SECTION 1 : Identification de l'enceinte ---
-  if (document.getElementById("report-username")) {
-    document.getElementById("report-username").textContent =
-      localStorage.getItem("username") || "Non renseigné";
-  }
-  if (document.getElementById("report-entreprise")) {
-    document.getElementById("report-entreprise").textContent =
-      localStorage.getItem("userEntreprise") || "Non renseigné";
-  }
-  if (document.getElementById("report-service")) {
-    document.getElementById("report-service").textContent =
-      localStorage.getItem("userService") || "Non renseigné";
-  }
-  if (document.getElementById("report-reference")) {
-    document.getElementById("report-reference").textContent =
-      localStorage.getItem("userReference") || "Non renseigné";
-  }
-  if (document.getElementById("report-userCaracteristique")) {
-    document.getElementById("report-userCaracteristique").textContent =
-      localStorage.getItem("userCaracteristique") || "Non renseigné";
-  }
-  if (document.getElementById("report-userLoc")) {
-    document.getElementById("report-userLoc").textContent =
-      localStorage.getItem("userLoc") || "Non renseigné";
+  console.log("Rapport chargé, initialisation des données...");
+
+  // Récupération et affichage des textes sauvés dans le localStorage
+  const champs = {
+    "report-username": "username",
+    "report-entreprise": "userEntreprise",
+    "report-service": "userService",
+    "report-reference": "userReference",
+    "report-userCaracteristique": "userCaracteristique",
+    "report-userLoc": "userLoc",
+    "report-tdeconsigne": "tdeconsigne",
+    "report-valeur": "valeur",
+    "report-periode": "periode",
+    "report-message": "userMessage"
+  };
+
+  for (let id in champs) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = localStorage.getItem(champs[id]) || "Non renseigné";
+    }
   }
 
-  // --- SECTION 2 : Paramètres de la cartographie ---
-  if (document.getElementById("report-tdeconsigne")) {
-    document.getElementById("report-tdeconsigne").textContent =
-      localStorage.getItem("tdeconsigne") || "Non renseigné";
-  }
-  if (document.getElementById("report-valeur")) {
-    document.getElementById("report-valeur").textContent =
-      localStorage.getItem("valeur") || "Non renseigné";
-  }
-  if (document.getElementById("report-periode")) {
-    document.getElementById("report-periode").textContent =
-      localStorage.getItem("periode") || "Non renseigné";
-  }
-
-  // --- SECTION 3 : Mode Opératoire ---
-  const reportMessage = document.getElementById("report-message");
-  if (reportMessage) {
-    reportMessage.textContent =
-      localStorage.getItem("userMessage") || "Non renseigné";
-  }
-
-  // Repositionnement automatique des sondes sur le rapport HTML
+  // Re-génération des sondes sur la carte du rapport
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
 
   if (carteRapport && sondesStockees) {
     try {
-      const listeSondes = JSON.parse(sondesStockees);
-      listeSondes.forEach((sondeData) => {
+      JSON.parse(sondesStockees).forEach((sondeData) => {
         const nouvelleSonde = document.createElement("img");
-        nouvelleSonde.id = sondeData.id;
         nouvelleSonde.src = sondeData.src;
         nouvelleSonde.style.position = "absolute";
         nouvelleSonde.style.left = sondeData.left;
@@ -71,30 +45,53 @@ document.addEventListener("DOMContentLoaded", () => {
         nouvelleSonde.style.width = "24px";
         nouvelleSonde.style.height = "24px";
         nouvelleSonde.style.transform = "translate(-50%, -50%)";
-
         carteRapport.appendChild(nouvelleSonde);
       });
     } catch (error) {
-      console.error("Erreur lors de la lecture des positions des sondes :", error);
+      console.error("Erreur lors du rendu des sondes :", error);
     }
   }
 
-  // Chargement automatique du graphique et tableau ODS
-  const cheminFichierODS = "Relevés.ods";
-  console.log("Tentative de chargement automatique du fichier :", cheminFichierODS);
+  // Chargement sécurisé du graphique
+  try {
+    chargerDonneesODSRapport();
+  } catch (err) {
+    console.error("Erreur critique au chargement du graphique :", err);
+  }
+});
 
-  // Récupération des filtres horaires
+// ==========================================================
+// 2. RENDU DU GRAPHIQUE (IMAGE ZOOMÉE OU INTEGRALITÉ)
+// ==========================================================
+function chargerDonneesODSRapport() {
+  const imageZoomee = localStorage.getItem("imageGraphicZoome") || localStorage.getItem("imageGraphiqueZoome");
+  const canvasRapport = document.getElementById("graphiqueTemperatures");
+
+  if (!canvasRapport) {
+    console.warn("Le canvas 'graphiqueTemperatures' n'a pas été trouvé ou a déjà été remplacé.");
+    return;
+  }
+
+  // Si on a une image zoomée provenant de la page 1, on l'affiche directement
+  if (imageZoomee) {
+    const conteneurParent = canvasRapport.parentNode;
+    if (conteneurParent) {
+      conteneurParent.innerHTML = `<img src="${imageZoomee}" style="width: 100%; height: 100%; object-fit: contain;" alt="Graphique Zone Sélectionnée" />`;
+      console.log("Image zoomée affichée à la place du canvas.");
+      return;
+    }
+  }
+
+  // Sinon, on charge le fichier ODS global
   const filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
   const filtreFin = localStorage.getItem("filtreHeureFin") || "";
 
-  fetch(cheminFichierODS)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Impossible de trouver le fichier "${cheminFichierODS}".`);
-      }
-      return response.arrayBuffer();
+  fetch("Relevés.ods")
+    .then(res => {
+      if (!res.ok) throw new Error("Fichier Relevés.ods introuvable sur le serveur");
+      return res.arrayBuffer();
     })
-    .then((buffer) => {
+    .then(buffer => {
       const data = new Uint8Array(buffer);
       const workbook = XLSX.read(data, { type: "array" });
       const feuille = workbook.Sheets[workbook.SheetNames[0]];
@@ -102,303 +99,129 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const donneesCapteurs = {};
       const tousLesHorodatages = new Set();
-      let htmlLignes = "";
 
       for (let i = 1; i < donneesJson.length; i++) {
         const ligne = donneesJson[i];
-        if (
-          ligne &&
-          ligne[0] !== undefined &&
-          ligne[1] !== undefined &&
-          ligne[2] !== undefined
-        ) {
+        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined) {
           const idCapteur = ligne[0].toString().trim();
           let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T")
-            ? tempsBrut.split("T")[1].replace("Z", "")
-            : tempsBrut;
+          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
 
-          // Application des filtres horaires
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
 
-          const valeurTemp = parseFloat(ligne[2]);
-          const unite = ligne[3] || "°C";
-
-          if (!donneesCapteurs[idCapteur]) {
-            donneesCapteurs[idCapteur] = {};
-          }
-          donneesCapteurs[idCapteur][tempsAffiche] = valeurTemp;
+          if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
+          donneesCapteurs[idCapteur][tempsAffiche] = parseFloat(ligne[2]);
           tousLesHorodatages.add(tempsAffiche);
-
-          const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
-
-          htmlLignes += `
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 8px; font-weight: bold; color: #333;">${idCapteur}</td>
-                            <td style="padding: 8px;">${tempsBrut.replace("T", " ").replace("Z", "")}</td>
-                            <td style="padding: 8px; font-weight: bold; color: ${couleurTemp};">${valeurTemp.toFixed(2)}</td>
-                            <td style="padding: 8px; color: #888;">${unite}</td>
-                        </tr>
-                    `;
         }
-      }
-
-      // --- TRAITEMENT DU SUPPORT D'AFFICHAGE DU TABLEAU ---
-      const corpsTableau = document.getElementById("corpsTableauODS");
-      const imageSelectionnee = localStorage.getItem("imageTableauSelection");
-
-      if (imageSelectionnee && corpsTableau) {
-        const tableParent = corpsTableau.closest("table");
-        if (tableParent) {
-          const divConteneurImage = document.createElement("div");
-          divConteneurImage.style.textAlign = "center";
-          divConteneurImage.style.margin = "20px 0";
-          divConteneurImage.innerHTML = `
-            <p style="font-size: 13px; color: #555; font-style: italic; margin-bottom: 8px; font-weight: bold;">
-              📸 Capture automatique des relevés thermiques filtrés :
-            </p>
-            <img src="${imageSelectionnee}" style="max-width: 100%; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);" alt="Extrait Tableau">
-          `;
-          tableParent.parentNode.replaceChild(divConteneurImage, tableParent);
-        }
-      } else if (corpsTableau) {
-        corpsTableau.innerHTML =
-          htmlLignes ||
-          '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide trouvée pour la plage horaire sélectionnée.</td></tr>';
       }
 
       const listeLabelsX = Array.from(tousLesHorodatages).sort();
-      const listeIdsCapteurs = Object.keys(donneesCapteurs);
-
-      const couleursCourbes = [
-        { border: "#007BFF", bg: "rgba(0, 123, 255, 0.02)" },
-        { border: "#28a745", bg: "rgba(40, 167, 69, 0.02)" },
-        { border: "#dc3545", bg: "rgba(220, 53, 69, 0.02)" },
-      ];
-
-      const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
-        const dataPoints = listeLabelsX.map((temps) =>
-          donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null,
-        );
-        const couleur = couleursCourbes[index % couleursCourbes.length];
-
+      const datasetsGraphique = Object.keys(donneesCapteurs).map((id, index) => {
+        const couleurs = ["#007BFF", "#28a745", "#dc3545", "#ffc107", "#6f42c1"];
         return {
           label: `Capteur ${id}`,
-          data: dataPoints,
-          borderColor: couleur.border,
-          backgroundColor: couleur.bg,
-          borderWidth: 2,
-          fill: false,
-          tension: 0.25,
-          pointRadius: 0,
-          spanGaps: true,
+          data: listeLabelsX.map(t => donneesCapteurs[id][t] !== undefined ? donneesCapteurs[id][t] : null),
+          borderColor: couleurs[index % couleurs.length],
+          fill: false, 
+          tension: 0.25, 
+          pointRadius: 0, 
+          spanGaps: true
         };
       });
 
-      genererGraphiqueTriCapteurs(listeLabelsX, datasetsGraphique);
-    })
-    .catch((error) => {
-      console.error("Erreur critique ODS :", error);
-      const corpsTableau = document.getElementById("corpsTableauODS");
-      if (corpsTableau) {
-        corpsTableau.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align: center; color: #dc3545; font-weight: bold; padding: 25px;">
-                            ⚠️ Erreur de chargement du fichier ODS.<br>
-                            <span style="font-size: 12px; font-weight: normal; color: #666; display:block; margin-top: 10px;">
-                                Assurez-vous d'utiliser l'extension <strong>Live Server</strong> sur VS Code.
-                            </span>
-                        </td>
-                    </tr>`;
+      // Double vérification que le canvas est toujours là avant de créer Chart.js
+      const canvasVerif = document.getElementById("graphiqueTemperatures");
+      if (canvasVerif) {
+        monGraphiqueInstance = new Chart(canvasVerif.getContext("2d"), {
+          type: "line",
+          data: { labels: listeLabelsX, datasets: datasetsGraphique },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              zoom: {
+                zoom: {
+                  drag: { enabled: true },
+                  mode: 'x'
+                }
+              }
+            }
+          }
+        });
+        console.log("Graphique généré avec succès.");
       }
-    });
-});
-
-// ==========================================================
-// 2. FONCTION DE GÉNÉRATION DU GRAPHIQUE
-// ==========================================================
-function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
-  const canvas = document.getElementById("graphiqueTemperatures");
-  if (!canvas) return;
-
-  if (monGraphiqueInstance) monGraphiqueInstance.destroy();
-
-  const ctx = canvas.getContext("2d");
-  monGraphiqueInstance = new Chart(ctx, {
-    type: "line",
-    data: { labels: labelsX, datasets: datasetsFournis },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: {
-          position: "top",
-          labels: { font: { size: 12, weight: "bold" } },
-        },
-      },
-      scales: {
-        y: {
-          title: {
-            display: true,
-            text: "Température (°C)",
-            font: { weight: "bold" },
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: "Horodatage (UTC)",
-            font: { weight: "bold" },
-          },
-          ticks: { maxTicksLimit: 12 },
-        },
-      },
-    },
-  });
+    })
+    .catch(err => console.error("Erreur lors du traitement du fichier ODS :", err));
 }
 
 // ==========================================================
-// 3. GÉNÉRATION ET TÉLÉCHARGEMENT DU PDF
+// 3. GENERATION DU PDF (CORRIGÉ POUR PAGE BLANCHE)
 // ==========================================================
 function telechargerPDFDirect() {
+  console.log("Génération du PDF en cours...");
+  
   const fondEtoile = document.getElementById("fond-etoile");
   if (fondEtoile) fondEtoile.style.display = "none";
 
-  const nom = localStorage.getItem("username") || "Non renseigné";
-  const entreprise = localStorage.getItem("userEntreprise") || "Non renseigné";
-  const service = localStorage.getItem("userService") || "Non renseigné";
-  const reference = localStorage.getItem("userReference") || "Non renseigné";
-  const caracteristique = localStorage.getItem("userCaracteristique") || "Non renseigné";
-  const localisationSpecifiee = localStorage.getItem("userLoc") || "Non renseigné";
+  const elementImpression = document.getElementById("zone-impression-pdf");
 
-  const tdeconsigne = localStorage.getItem("tdeconsigne") || "Non renseigné";
-  const valeur = localStorage.getItem("valeur") || "Non renseigné";
-  const periode = localStorage.getItem("periode") || "Non renseigné";
-  const message = localStorage.getItem("userMessage") || "Aucun message";
-
-  const sondesStockees = localStorage.getItem("positionsSondes");
-  const imageSelectionneePourPDF = localStorage.getItem("imageTableauSelection");
-
-  const dateJour = new Date().toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const elementImpression = document.createElement("div");
-  elementImpression.style.fontFamily = "Arial, sans-serif";
-  elementImpression.style.padding = "15px";
-  elementImpression.style.background = "#FFFFFF";
-  elementImpression.style.color = "#000000";
-
-  const messageFormatePourPDF = message.replace(/\n/g, "<br>");
-
-  let contenuHtml = `
-        <div style="border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-bottom: 15px;">
-            <h1 style="font-size: 20px; color: #007bff; margin: 0; padding: 0;">Rapport Officiel d'Analyse</h1>
-            <p style="font-size: 11px; color: #666; margin: 3px 0 0 0;">Généré le : ${dateJour}</p>
-        </div>
-
-        <h3 style="font-size: 14px; color: #007bff; margin-top: 10px; margin-bottom: 5px; border-bottom: 1px solid #ddd;">1. Identification de l'enceinte</h3>
-        <div style="margin-bottom: 15px; font-size: 12px; line-height: 1.4;">
-            <p style="margin: 3px 0;"><strong>Équipement :</strong> ${nom}</p>
-            <p style="margin: 3px 0;"><strong>N° de série :</strong> ${entreprise}</p>
-            <p style="margin: 3px 0;"><strong>Localisation :</strong> ${service}</p>
-            <p style="margin: 3px 0;"><strong>Normes de Réf :</strong> ${reference}</p>
-            <p style="margin: 3px 0;"><strong>Caractéristique :</strong> ${caracteristique}</p>
-            <p style="margin: 3px 0;"><strong>Localisation spécifiée :</strong> ${localisationSpecifiee}</p>
-        </div>
-
-        <h3 style="font-size: 14px; color: #007bff; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #ddd;">2. Paramètres de la cartographie</h3>
-        <div style="margin-bottom: 15px; font-size: 12px; line-height: 1.4;">
-            <p style="margin: 3px 0;"><strong>Température ambiante :</strong> ${tdeconsigne}</p>
-            <p style="margin: 3px 0;"><strong>Condition Désirée :</strong> ${valeur}</p>
-            <p style="margin: 3px 0;"><strong>Type de sonde :</strong> ${periode}</p>
-        </div>
-
-        <h3 style="font-size: 14px; color: #007bff; margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #ddd;">3. Mode Opératoire</h3>
-        <div style="margin-bottom: 15px; font-size: 12px; line-height: 1.4;">
-            <div style="background: #f8f9fa; padding: 8px; border-left: 3px solid #007bff; font-family: monospace; color: #333; white-space: pre-line;">
-                ${messageFormatePourPDF}
-            </div>
-        </div>
-
-        <h3 style="font-size: 14px; color: #007bff; margin-top: 15px; margin-bottom: 8px;">📍 Positionnement des sondes</h3>
-        <div id="carte-pdf-temp" style="position: relative; width: 400px; height: 300px; border: 1px solid #ccc; margin-bottom: 15px; background: #fff; border-radius: 6px;">
-            <img src="images/MAP frigo.png" style="width: 100%; height: 100%; object-fit: contain; display: block;" alt="Carte">
-        </div>
-    `;
-
-  if (imageSelectionneePourPDF) {
-    contenuHtml += `
-        <h3 style="font-size: 14px; color: #007bff; margin-top: 15px; margin-bottom: 8px;">📊 Extrait du Tableau de Données</h3>
-        <div style="text-align: center; width: 100%; margin-bottom: 15px;">
-           <img src="${imageSelectionneePourPDF}" style="width: 100%; max-height: 380px; object-fit: contain; border: 1px solid #eee;">
-        </div>`;
+  if (!elementImpression) {
+    console.error("Zone d'impression introuvable");
+    if (fondEtoile) fondEtoile.style.display = "block";
+    return;
   }
 
-  const canvasOrigine = document.getElementById("graphiqueTemperatures");
-  if (monGraphiqueInstance && canvasOrigine) {
-    contenuHtml += `
-            <h3 style="font-size: 14px; color: #007bff; margin-top: 15px; margin-bottom: 8px;">📈 Graphique des Températures</h3>
-            <div id="graphique-pdf-temp" style="width: 100%; text-align: center;"></div>
-        `;
-  }
-
-  elementImpression.innerHTML = contenuHtml;
-
-  const conteneurCarte = elementImpression.querySelector("#carte-pdf-temp");
-  if (sondesStockees && conteneurCarte) {
-    try {
-      const listSondes = JSON.parse(sondesStockees);
-      listSondes.forEach((sonde) => {
-        const sondePdf = document.createElement("img");
-        sondePdf.src = sonde.src;
-        sondePdf.style.position = "absolute";
-        sondePdf.style.left = sonde.left;
-        sondePdf.style.top = sonde.top;
-        sondePdf.style.width = "24px";
-        sondePdf.style.height = "24px";
-        sondePdf.style.transform = "translate(-50%, -50%)";
-        conteneurCarte.appendChild(sondePdf); // Correction de l'orthographe ici
-      });
-    } catch (error) {
-      console.error("Erreur d'écriture des marqueurs de sonde sur le PDF :", error);
+  // 1. On crée un bloc de styles temporaires pour forcer html2pdf à nettoyer les sauts de page
+  const styleImpression = document.createElement("style");
+  styleImpression.innerHTML = `
+    /* Supprime les marges parasites invisibles qui créent des pages blanches */
+    .html2pdf__page-break {
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-  }
-
-  if (monGraphiqueInstance && canvasOrigine) {
-    const conteneurGraphiquePdf = elementImpression.querySelector("#graphique-pdf-temp");
-    if (conteneurGraphiquePdf) {
-      const imageGraphique = document.createElement("img");
-      imageGraphique.src = canvasOrigine.toDataURL("image/png");
-      imageGraphique.style.width = "100%";
-      imageGraphique.style.maxHeight = "240px";
-      imageGraphique.style.objectFit = "contain";
-      conteneurGraphiquePdf.appendChild(imageGraphique);
+    /* Neutralise les paddings trop grands sur le conteneur principal lors de la capture */
+    #zone-impression-pdf {
+      padding: 0px !important;
+      margin: 0px !important;
     }
-  }
+    /* Force la carte et le graphique à ne jamais déborder */
+    .section-pdf {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  `;
+  document.head.appendChild(styleImpression);
 
+  // 2. Configuration stricte de html2pdf
   const options = {
-    margin: [10, 15, 10, 15],
+    margin: [15, 15, 15, 15], // Marges de sécurité A4 (Haut, Gauche, Bas, Droite)
     filename: "rapport_final.pdf",
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0
+    },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: "avoid-all" },
+    // On utilise uniquement le mode 'css' pour obéir sagement à ta div .saut-de-page
+    pagebreak: { mode: 'css' }
   };
 
-  html2pdf()
-    .set(options)
-    .from(elementImpression)
-    .save()
+  // 3. Exécution de la capture
+  html2pdf().set(options).from(elementImpression).save()
     .then(() => {
+      console.log("PDF généré avec succès.");
+      // Nettoyage : on retire le style temporaire et on remet le fond étoilé
+      styleImpression.remove();
       if (fondEtoile) fondEtoile.style.display = "block";
     })
     .catch((err) => {
-      console.error(err);
+      console.error("Erreur d'exportation PDF :", err);
+      styleImpression.remove();
       if (fondEtoile) fondEtoile.style.display = "block";
     });
 }

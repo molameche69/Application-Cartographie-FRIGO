@@ -3,11 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Accueil</title>
+    <title>Accueil - Saisie Cartographie</title>
     <link rel="stylesheet" href="css/style-page1-Acceuil.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
   </head>
   <body>
     <canvas id="fond-etoile"></canvas>
@@ -20,10 +22,7 @@
 
     <div class="systeme-onglets">
       <div class="onglets-boutons">
-        <button
-          class="onglet-btn actif"
-          onclick="changerOnglet(event, 'onglet1')"
-        >
+        <button class="onglet-btn actif" onclick="changerOnglet(event, 'onglet1')">
           Fiche technique
         </button>
         <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">
@@ -35,91 +34,34 @@
       </div>
 
       <form id="formulaire-carto" onsubmit="return false;">
-        <div id="onglet1" class="contenu-onglet" style="display: block">
+        <div id="onglet1" class="contenu-onglet" style="display: block;">
           <div class="tech">
             <i>Veuillez remplir les cases</i>
           </div>
           <div class="Fiche">
-            <h2>1. Identification de l'équipements</h2>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              placeholder="Equipement"
-              required
-            />
-            <input
-              type="text"
-              id="userEntreprise"
-              name="userEntreprise"
-              placeholder="N° de série"
-              required
-            />
-            <input
-              type="text"
-              id="userService"
-              name="userService"
-              placeholder="Délivré à :"
-              required
-            />
-            <input
-              type="text"
-              id="userReference"
-              name="userReference"
-              placeholder="Normes de Réf"
-              required
-            />
-            <input
-              type="text"
-              id="userCaracteristique"
-              name="userCaracteristique"
-              placeholder="Caractéristique (marque,taille....)"
-            />
-            <input
-              type="text"
-              id="userLoc"
-              name="userLoc"
-              placeholder="Localisation de l'equipement"
-            />
+            <h2>1. Identification de l'équipement</h2>
+            <input type="text" id="username" name="username" placeholder="Equipement" required />
+            <input type="text" id="userEntreprise" name="userEntreprise" placeholder="N° de série" required />
+            <input type="text" id="userService" name="userService" placeholder="Délivré à :" required />
+            <input type="text" id="userReference" name="userReference" placeholder="Normes de Réf" required />
+            <input type="text" id="userCaracteristique" name="userCaracteristique" placeholder="Caractéristique (marque, taille...)" />
+            <input type="text" id="userLoc" name="userLoc" placeholder="Localisation de l'équipement" />
 
             <h2>2. Paramètres de la cartographie</h2>
-            <input
-              type="text"
-              id="tdeconsigne"
-              name="tdeconsigne"
-              placeholder="Temperature ambiante (Optionnel)"
-            />
-            <input
-              type="text"
-              id="valeur"
-              name="valeur"
-              placeholder="Condition Désiréé (Optionnel)"
-            />
-            <input
-              type="text"
-              id="periode"
-              name="periode"
-              placeholder="Type de sonde"
-              required
-            />
+            <input type="text" id="tdeconsigne" name="tdeconsigne" placeholder="Température ambiante (Optionnel)" />
+            <input type="text" id="valeur" name="valeur" placeholder="Condition Désirée (Optionnel)" />
+            <input type="text" id="periode" name="periode" placeholder="Type de sonde" required />
 
             <h2>3. Mode Opératoire</h2>
-            <textarea
-              id="userMessage"
-              name="userMessage"
-              rows="4"
-              style="width: 600px; resize: vertical"
-              placeholder="Saisissez votre mode opératoire..."
-            >
+            <textarea id="userMessage" name="userMessage" rows="4" style="width: 600px; resize: vertical;" placeholder="Saisissez votre mode opératoire...">
 - La cartographie a été effectuée avec l'enceinte chargée
 - Le début des mesures commence une fois le régime établi.
 - Les points sont positionnés à 5 cm de chacune des parois.
-</textarea
-            >
+</textarea>
           </div>
         </div>
 
-        <div id="onglet2" class="contenu-onglet" style="display: none">
+        <div id="onglet2" class="contenu-onglet" style="display: none;">
           <div class="Carto">
             <i>Cartographie</i>
           </div>
@@ -127,151 +69,51 @@
           <div class="container-global">
             <div class="reserve-images" id="reserve-cible">
               <h3>Sondes à placer :</h3>
-              <img
-                src="images/Sondes/1.png"
-                class="marqueur-draggable"
-                id="marqueur1"
-                alt="Sonde 1"
-              />
-              <img
-                src="images/Sondes/2.jpg"
-                class="marqueur-draggable"
-                id="marqueur2"
-                alt="Sonde 2"
-              />
-              <img
-                src="images/Sondes/3.jpg"
-                class="marqueur-draggable"
-                id="marqueur3"
-                alt="Sonde 3"
-              />
-              <img
-                src="images/Sondes/4.jpg"
-                class="marqueur-draggable"
-                id="marqueur4"
-                alt="Sonde 4"
-              />
-              <img
-                src="images/Sondes/5.jpg"
-                class="marqueur-draggable"
-                id="marqueur5"
-                alt="Sonde 5"
-              />
-              <img
-                src="images/Sondes/6.jpg"
-                class="marqueur-draggable"
-                id="marqueur6"
-                alt="Sonde 6"
-              />
-              <img
-                src="images/Sondes/7.jpg"
-                class="marqueur-draggable"
-                id="marqueur7"
-                alt="Sonde 7"
-              />
-              <img
-                src="images/Sondes/8.jpg"
-                class="marqueur-draggable"
-                id="marqueur8"
-                alt="Sonde 8"
-              />
-              <img
-                src="images/Sondes/9.jpg"
-                class="marqueur-draggable"
-                id="marqueur9"
-                alt="Sonde 9"
-              />
+              <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" alt="Sonde 1" />
+              <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" alt="Sonde 2" />
+              <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" alt="Sonde 3" />
+              <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" alt="Sonde 4" />
+              <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" alt="Sonde 5" />
+              <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" alt="Sonde 6" />
+              <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" alt="Sonde 7" />
+              <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" alt="Sonde 8" />
+              <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" alt="Sonde 9" />
 
               <button type="button" onclick="reinitialiserMarqueurs()">
                 Réinitialiser les marqueurs
               </button>
             </div>
 
-            <div class="zone-carte" id="carte-cible" style="position: relative">
+            <div class="zone-carte" id="carte-cible" style="position: relative;">
               <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
             </div>
           </div>
         </div>
 
-        <div id="onglet3" class="contenu-onglet" style="display: none">
+        <div id="onglet3" class="contenu-onglet" style="display: none;">
           <div id="bloc-graphique">
             <i>Analyse Thermique depuis Fichier Excel</i>
 
-            <div
-              style="
-                max-width: 1000px;
-                margin: 10px auto;
-                background: #333;
-                padding: 15px;
-                border-radius: 8px;
-                color: white;
-                display: flex;
-                gap: 20px;
-                align-items: center;
-                justify-content: center;
-              "
-            >
+            <div style="max-width: 1000px; margin: 10px auto; background: #333; padding: 15px; border-radius: 8px; color: white; display: flex; gap: 20px; align-items: center; justify-content: center;">
               <label><strong>Sélectionner la zone à analyser :</strong></label>
               <div>
                 <label for="heureDebut">Début (HH:MM:SS) :</label>
-                <input
-                  type="text"
-                  id="heureDebut"
-                  placeholder="Ex: 14:40:00"
-                  style="padding: 5px; border-radius: 4px; border: none; color: black;"
-                />
+                <input type="text" id="heureDebut" placeholder="Ex: 14:40:00" style="padding: 5px; border-radius: 4px; border: none; color: black;" />
               </div>
               <div>
                 <label for="heureFin">Fin (HH:MM:SS) :</label>
-                <input
-                  type="text"
-                  id="heureFin"
-                  placeholder="Ex: 15:30:00"
-                  style="padding: 5px; border-radius: 4px; border: none; color: black;"
-                />
+                <input type="text" id="heureFin" placeholder="Ex: 15:30:00" style="padding: 5px; border-radius: 4px; border: none; color: black;" />
               </div>
-              <button
-                type="button"
-                onclick="chargerFichierODS()"
-                style="
-                  background: grey;
-                  color: white;
-                  border: none;
-                  padding: 6px 12px;
-                  border-radius: 4px;
-                  cursor: pointer;
-                  font-weight: bold;
-                "
-              >
+              <button type="button" onclick="chargerDonneesODS()" style="background: grey; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">
                 Filtrer la zone
               </button>
             </div>
 
-            <div
-              style="
-                max-width: 1000px;
-                margin: 20px auto;
-                background: white;
-                padding: 10px;
-                border-radius: 8px;
-                height: 400px;
-              "
-            >
+            <div style="max-width: 1000px; margin: 20px auto; background: white; padding: 10px; border-radius: 8px; height: 400px;">
               <canvas id="graphiqueTemperatures"></canvas>
             </div>
 
-            <div 
-              style="
-                max-width: 1000px; 
-                margin: 20px auto; 
-                background: white; 
-                padding: 15px; 
-                border-radius: 8px; 
-                max-height: 350px; 
-                overflow-y: auto;
-                color: #333;
-              "
-            >
+            <div style="max-width: 1000px; margin: 20px auto; background: white; padding: 15px; border-radius: 8px; max-height: 350px; overflow-y: auto; color: #333;">
               <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: sans-serif;">
                 <thead>
                   <tr style="background-color: #f5f5f5; border-bottom: 2px solid #ddd;">
@@ -281,8 +123,7 @@
                     <th style="padding: 10px; font-weight: bold;">Unité</th>
                   </tr>
                 </thead>
-                <tbody id="corpsTableauODS">
-                  </tbody>
+                <tbody id="corpsTableauODS"></tbody>
               </table>
             </div>
 
@@ -293,6 +134,7 @@
         </div>
       </form>
     </div>
+
     <script src="JS/script-fond.js"></script>
     <script src="JS/script-page1.js"></script>
   </body>

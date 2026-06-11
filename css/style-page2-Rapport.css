@@ -206,3 +206,67 @@ a:hover {
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
 }
+/* ==========================================================
+   STYLISATION DU RAPPORT ET ZONE IMPRESSION
+   ========================================================== */
+
+#zone-impression-pdf {
+  background: #ffffff; /* Changé de transparent à blanc pour un PDF propre */
+  color: #333333;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+#report-message {
+  background: #f8f9fa;
+  padding: 12px;
+  border-left: 4px solid #007bff;
+  font-family: monospace;
+  white-space: pre-line;
+  color: #333333;
+  margin-top: 10px;
+  border-radius: 4px;
+}
+
+.zone-carte {
+  position: relative;
+  width: 100%;
+  max-width: 500px; /* Légèrement réduit pour une intégration A4 parfaite */
+  margin: 0 auto 20px auto;
+  border: 1px solid #cccccc;
+}
+
+.zone-carte img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Conteneur du bloc graphique blanc */
+.conteneur-graphique {
+  background: #ffffff;
+  padding: 15px;
+  border: 1px solid #eeeeee;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+#zone-impression-pdf {
+  background: transparent;
+  padding: 1px;
+}
+
+.zone-carte {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.zone-carte img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+
