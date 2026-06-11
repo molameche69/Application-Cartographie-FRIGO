@@ -221,11 +221,53 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       scales: {
-        y: { title: { display: true, text: "Température (°C)" } },
+        y: { 
+          title: { display: true, text: "Température (°C)" },
+          // Force l'échelle à englober les lignes de repère (0°C à 30°C par exemple)
+          min: 0,
+          max: 30
+        },
         x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } }
       },
       plugins: {
         legend: { position: "top" },
+        // Intégration des deux lignes d'EMT demandées (5°C et 8°C)
+        annotation: {
+          annotations: {
+            ligneMin: {
+              type: 'line',
+              yMin: 5,
+              yMax: 5,
+              borderColor: 'rgb(220, 53, 69)', // Rouge
+              borderWidth: 2.5,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: 'Seuil Min (5°C)',
+                position: 'start',
+                backgroundColor: 'rgba(220, 53, 69, 0.85)',
+                color: 'white',
+                font: { size: 11, weight: 'bold' }
+              }
+            },
+            ligneMax: {
+              type: 'line',
+              yMin: 8,
+              yMax: 8,
+              borderColor: 'rgb(40, 167, 69)', // Vert
+              borderWidth: 2.5,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: 'Seuil Max (8°C)',
+                position: 'start',
+                backgroundColor: 'rgba(40, 167, 69, 0.85)',
+                color: 'white',
+                font: { size: 11, weight: 'bold' }
+              }
+            }
+          }
+        },
         zoom: {
           zoom: {
             drag: {
@@ -234,7 +276,6 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
               borderColor: '#007BFF',
               borderWidth: 1
             },
-            // CORRECTION MODE : Sélection bidimensionnelle (Temps ET Température)
             mode: 'xy'
           }
         }
@@ -319,9 +360,8 @@ function sauvegarderToutEtDiriger() {
   // 3. CAPTURE DE LA SÉLECTION DU GRAPHIQUE ZOOMÉ
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine && monGraphiqueInstance) {
-    // CORRECTION RETRECISSEMENT : On bloque le comportement responsif avant la manipulation du DOM
     monGraphiqueInstance.options.responsive = false;
-    monGraphiqueInstance.update('none'); // Applique le changement immédiatement sans animation
+    monGraphiqueInstance.update('none');
 
     const canvasTemporaire = document.createElement("canvas");
     canvasTemporaire.width = canvasOrigine.width;
@@ -348,7 +388,6 @@ function sauvegarderToutEtDiriger() {
         localStorage.setItem("imageTableauSelection", canvas.toDataURL("image/png"));
         ongletTableau.style.display = styleInitial;
         
-        // Rétablissement de l'état initial responsif de Chart.js
         if (monGraphiqueInstance) {
           monGraphiqueInstance.options.responsive = true;
           monGraphiqueInstance.update('none');
