@@ -106,6 +106,8 @@ body {
   gap: 20px;
   padding: 20px;
   font-family: sans-serif;
+  justify-content: center;
+  margin: auto;
 }
 
 .reserve-images h3 {
@@ -137,7 +139,7 @@ body {
 }
 
 .reserve-images {
-  margin-left: 470px;
+  
   width: 200px;
   border: 2px dashed #ccc;
   padding: 10px;

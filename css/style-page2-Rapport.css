@@ -15,8 +15,8 @@ body {
 }
 
 .container {
-  max-width: 500px;
-  width: 95%;
+  max-width: 810px;
+  width: 100%;
   margin: 0 auto;
   background: beige;
   padding: 20px;
@@ -133,12 +133,25 @@ span, #bloc-rapport span {
   display: block;
 }
 
+.sonde-icone {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+}
+
 .conteneur-graphique {
   background: #ffffff;
   padding: 15px;
   border: 1px solid #eeeeee;
   border-radius: 8px;
   margin-top: 10px;
+}
+
+.wrapper-canvas {
+  height: 350px;
+  width: 100%;
+  position: relative;
 }
 
 .graphique-image-zoom {
@@ -215,7 +228,7 @@ a:hover, .actions-zone a:hover {
 }
 
 .tab-donnees {
-  width: 100%;
+  width: 700px;
   border-collapse: collapse;
   font-family: sans-serif;
   font-size: 14px;
@@ -236,3 +249,40 @@ a:hover, .actions-zone a:hover {
   padding: 8px 10px;
   border-bottom: 1px solid #eee;
 }
+
+.nom-capteur {
+  font-weight: bold;
+}
+
+.ligne-globale {
+  background-color: #f0f4f8;
+  
+}
+
+.ligne-separatrice {
+  border-top: 2px solid #007bff;
+}
+
+.ligne-emt {
+  background-color: #fdf2e9;
+  border-top: 1px solid #e67e22;
+}
+
+.statut-conforme {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.statut-non-conforme {
+  color: #c0392b;
+  font-weight: bold;
+}
+
+.tab-donnees {
+  width: 100%; 
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 10px;
+  text-align: left;
+}
+
