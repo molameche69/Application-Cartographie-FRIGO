@@ -32,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const heureDebutStockee = localStorage.getItem("filtreHeureDebut");
   const heureFinStockee = localStorage.getItem("filtreHeureFin");
 
-  // Injection sécurisée des heures (HH:MM)
   if (elDebut) {
     elDebut.textContent = heureDebutStockee && heureDebutStockee !== "" 
       ? heureDebutStockee.substring(0, 5) 
@@ -56,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================================
-  // 2. RESTITUTION CORRECTE DES SONDES SUR LA CARTE
+  // 2. RESTITUTION CORRECTE ET SÉCURISÉE DES SONDES
   // ==========================================================
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
@@ -66,11 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
       JSON.parse(sondesStockees).forEach((sonde) => {
         const imgSonde = document.createElement("img");
         imgSonde.src = sonde.src;
-        imgSonde.className = "sonde-icone";
+        // On utilise la classe maître pour laisser le CSS brider la taille
+        imgSonde.className = "marqueur-draggable"; 
         imgSonde.style.position = "absolute";
         imgSonde.style.left = sonde.left;
         imgSonde.style.top = sonde.top;
         imgSonde.style.transform = "translate(-50%, -50%)";
+        imgSonde.style.margin = "0px";
+        imgSonde.style.zIndex = "10";
         carteRapport.appendChild(imgSonde);
       });
     } catch (e) {
@@ -150,7 +152,6 @@ function chargerDonneesODSRapport() {
             ? tempsBrut.split("T")[1].replace("Z", "")
             : tempsBrut;
 
-          // Alignement strict sur 8 caractères (HH:MM:SS) pour le filtrage
           tempsAffiche = tempsAffiche.substring(0, 8);
 
           if (filtreDebut && tempsAffiche < filtreDebut) continue;

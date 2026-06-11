@@ -444,3 +444,19 @@ a:hover,
 .ligne-non-conforme .texte-couleur-statut {
   color: red;
 }
+
+/* Force la carte du rapport à servir de repère pour les pourcentages */
+#carte-rapport {
+  position: relative !important;
+  display: inline-block;
+}
+
+/* Force les sondes à garder une taille normale sur le rapport */
+#carte-rapport .marqueur-draggable {
+  width: 40px !important;   /* Ajuste cette valeur selon la taille voulue (ex: 35px ou 40px) */
+  height: 40px !important;  /* Doit être identique à la largeur */
+  position: absolute !important;
+  transform: translate(-50%, -50%) !important; /* Centre parfaitement la sonde sur son point */
+  object-fit: contain !important;
+  z-index: 10;
+}

@@ -8,7 +8,7 @@ let ligneDebutSelection = null;
 // Variable de stockage temporaire pour le fichier sélectionné
 let fichierActuelPourFiltrage = null;
 
-// Variables pour mémoriser les données lues du fichier ODS sans générer le graphique immédiatement
+// Variables pour mémoriser les données brutes lues du fichier ODS
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
 
 // Variable globale temporaire pour suivre la sonde déplacée au doigt sur mobile
@@ -33,17 +33,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Zone de dépôt : Sur la carte (Souris)
   if (carteCible) {
-    carteCible.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
+    carteCible.addEventListener("dragover", (e) => e.preventDefault());
     carteCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.getData("text/plain");
+      const idElement = e.dataTransfer.setData("text/plain");
       const elementGlisse = document.getElementById(idElement);
-
       if (elementGlisse) {
         const limitesCarte = carteCible.getBoundingClientRect();
         const xPourcentage = ((e.clientX - limitesCarte.left) / limitesCarte.width) * 100;
@@ -53,20 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Zone de dépôt : Retour dans la réserve (Souris)
   if (reserveCible) {
-    reserveCible.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
+    reserveCible.addEventListener("dragover", (e) => e.preventDefault());
     reserveCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.getData("text/plain");
+      const idElement = e.dataTransfer.setData("text/plain");
       const elementGlisse = document.getElementById(idElement);
-
-      if (elementGlisse) {
-        remettreDansReserve(elementGlisse, reserveCible);
-      }
+      if (elementGlisse) remettreDansReserve(elementGlisse, reserveCible);
     });
   }
 
@@ -83,8 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!window.sondeEnCoursDeToucher) return;
       const touch = e.touches[0];
       const sonde = window.sondeEnCoursDeToucher;
-      
-      // Déplacement visuel de l'icône sous le doigt en temps réel
       sonde.style.position = "fixed";
       sonde.style.left = touch.clientX + "px";
       sonde.style.top = touch.clientY + "px";
@@ -96,15 +82,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const sonde = window.sondeEnCoursDeToucher;
       if (!sonde) return;
 
-      // Réinitialisation des styles temporaires de glisse
       sonde.style.opacity = "1";
+      sonde.style.position = "";
+      sonde.style.left = "";
+      sonde.style.top = "";
       sonde.style.transform = "";
       sonde.style.zIndex = "";
 
       const touch = e.changedTouches[0];
       const limitesCarte = carteCible.getBoundingClientRect();
 
-      // Vérification si le doigt lâche la sonde à l'intérieur de la carte
       if (
         touch.clientX >= limitesCarte.left &&
         touch.clientX <= limitesCarte.right &&
@@ -115,7 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const yPourcentage = ((touch.clientY - limitesCarte.top) / limitesCarte.height) * 100;
         placerSonde(sonde, carteCible, xPourcentage, yPourcentage);
       } else {
-        // En dehors de la zone : retour automatique à la réserve
         remettreDansReserve(sonde, reserveCible);
       }
       window.sondeEnCoursDeToucher = null;
@@ -123,8 +109,23 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ==========================================================
-  // FONCTIONS OUTILS COMMUNES (SOURIS ET TACTILE)
+  // ÉCOUTEURS POUR LA PÉRIODICITÉ ET LES SEUILS MANUELS
   // ==========================================================
+  const inputPeriode = document.getElementById("periode");
+  const inputSeuilMax = document.getElementById("seuil-max");
+  const inputSeuilMin = document.getElementById("seuil-min");
+
+  if (inputPeriode) {
+    inputPeriode.addEventListener("input", () => {
+      if (donneesGraphesEnMemoire.labelsX.length > 0) {
+        genererLeGraphique(); 
+      }
+    });
+  }
+
+  if (inputSeuilMax) inputSeuilMax.addEventListener("input", mettreAJourSeuilsEnDirect);
+  if (inputSeuilMin) inputSeuilMin.addEventListener("input", mettreAJourSeuilsEnDirect);
+
   function placerSonde(sonde, carte, x, y) {
     carte.appendChild(sonde);
     sonde.style.position = "absolute";
@@ -156,9 +157,7 @@ function changerOnglet(evenement, idOnglet) {
   }
 
   document.getElementById(idOnglet).style.display = "block";
-  if (evenement) {
-    evenement.currentTarget.className += " actif";
-  }
+  if (evenement) evenement.currentTarget.className += " actif";
 }
 
 function reinitialiserMarqueurs() {
@@ -175,27 +174,22 @@ function reinitialiserMarqueurs() {
   localStorage.removeItem("positionsSondes");
 }
 
-// ==========================================================
-// GESTION DE L'IMPORTATION DU FICHIER LOCAL CHOSI
-// ==========================================================
 function importerNouveauFichier(evenement) {
   const fichier = evenement.target.files[0];
   const txtNomFichier = document.getElementById("nom-fichier-choisi");
   const btnGenerer = document.getElementById("btn-generer-graphique");
 
   if (!fichier) return;
-
   fichierActuelPourFiltrage = fichier;
 
-  if (txtNomFichier)
-    txtNomFichier.textContent = `Fichier chargé : ${fichier.name}`;
+  if (txtNomFichier) txtNomFichier.textContent = `Fichier chargé : ${fichier.name}`;
   if (btnGenerer) btnGenerer.disabled = false;
 
   chargerDonneesODS(fichier);
 }
 
 // ==========================================================
-// ACTION DU BOUTON POUR INJECTER ET CRÉER LE GRAPHIQUE
+// ACTION DU BOUTON POUR INJECTER ET FILTRER SELON LA PERIODE
 // ==========================================================
 function genererLeGraphique() {
   const zoneGeneration = document.querySelector(".zone-generation-graphique");
@@ -207,14 +201,29 @@ function genererLeGraphique() {
     </div>
   `;
 
-  genererGraphiqueTriCapteurs(
-    donneesGraphesEnMemoire.labelsX,
-    donneesGraphesEnMemoire.datasets,
-  );
+  const pasPeriode = parseInt(document.getElementById("periode")?.value) || 1;
+  
+  let labelsFiltres = [];
+  let datasetsFiltres = [];
+
+  if (pasPeriode > 1) {
+    labelsFiltres = donneesGraphesEnMemoire.labelsX.filter((_, idx) => idx % pasPeriode === 0);
+    datasetsFiltres = donneesGraphesEnMemoire.datasets.map(dataset => {
+      return {
+        ...dataset,
+        data: dataset.data.filter((_, idx) => idx % pasPeriode === 0)
+      };
+    });
+  } else {
+    labelsFiltres = donneesGraphesEnMemoire.labelsX;
+    datasetsFiltres = donneesGraphesEnMemoire.datasets;
+  }
+
+  genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
 }
 
 // ==========================================================
-// 3. PARSING DU FICHIER LOCAL ET FILTRAGE SYNCHRONISÉ
+// 3. PARSING DU FICHIER LOCAL
 // ==========================================================
 function chargerDonneesODS(fichierDynamique = null) {
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
@@ -227,11 +236,7 @@ function chargerDonneesODS(fichierDynamique = null) {
   localStorage.setItem("filtreHeureFin", filtreFin);
 
   const fichierATraiter = fichierDynamique || fichierActuelPourFiltrage;
-
-  if (!fichierATraiter) {
-    console.warn("Aucun fichier n'a encore été importé par l'utilisateur.");
-    return;
-  }
+  if (!fichierATraiter) return;
 
   const promesseLecture = new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -253,18 +258,10 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       for (let i = 1; i < donneesJson.length; i++) {
         const ligne = donneesJson[i];
-        if (
-          ligne &&
-          ligne[0] !== undefined &&
-          ligne[1] !== undefined &&
-          ligne[2] !== undefined
-        ) {
+        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
           const idCapteur = ligne[0].toString().trim();
           let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T")
-            ? tempsBrut.split("T")[1].replace("Z", "")
-            : tempsBrut;
-
+          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
           tempsAffiche = tempsAffiche.substring(0, 8);
 
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
@@ -292,9 +289,7 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       const corpsTableau = document.getElementById("corpsTableauODS");
       if (corpsTableau) {
-        corpsTableau.innerHTML =
-          htmlLignes ||
-          '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
+        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
         activerSelectionSouris(corpsTableau);
       }
 
@@ -308,11 +303,7 @@ function chargerDonneesODS(fichierDynamique = null) {
       ];
 
       const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
-        const dataPoints = listeLabelsX.map((temps) =>
-          donneesCapteurs[id][temps] !== undefined
-            ? donneesCapteurs[id][temps]
-            : null,
-        );
+        const dataPoints = listeLabelsX.map((temps) => donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null);
         const couleur = couleursCourbes[index % couleursCourbes.length];
 
         return {
@@ -328,28 +319,26 @@ function chargerDonneesODS(fichierDynamique = null) {
         };
       });
 
-      donneesGraphesEnMemoire = {
-        labelsX: listeLabelsX,
-        datasets: datasetsGraphique,
-      };
+      donneesGraphesEnMemoire = { labelsX: listeLabelsX, datasets: datasetsGraphique };
 
-      if (
-        !document.getElementById("btn-generer-graphique") &&
-        document.getElementById("graphiqueTemperatures")
-      ) {
-        genererGraphiqueTriCapteurs(listeLabelsX, datasetsGraphique);
+      if (!document.getElementById("btn-generer-graphique") && document.getElementById("graphiqueTemperatures")) {
+        genererLeGraphique();
       }
     })
-    .catch((error) => {
-      console.error("Erreur critique d'analyse :", error);
-    });
+    .catch((error) => console.error("Erreur critique d'analyse :", error));
 }
 
+// ==========================================================
+// CONFIGURATION INITIALE ET RENDU CHART.JS
+// ==========================================================
 function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
   const canvas = document.getElementById("graphiqueTemperatures");
   if (!canvas) return;
 
   if (monGraphiqueInstance) monGraphiqueInstance.destroy();
+
+  const valeurMinInitiale = parseFloat(document.getElementById("seuil-min")?.value) || 5.0;
+  const valeurMaxInitiale = parseFloat(document.getElementById("seuil-max")?.value) || 8.0;
 
   const ctx = canvas.getContext("2d");
   monGraphiqueInstance = new Chart(ctx, {
@@ -360,67 +349,41 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       scales: {
-        y: {
-          title: { display: true, text: "Température (°C)" },
-          min: 0,
-          max: 30,
-        },
-        x: {
-          title: { display: true, text: "Horodatage (UTC)" },
-          ticks: { maxTicksLimit: 12 },
-        },
+        y: { title: { display: true, text: "Température (°C)" }, min: 0, max: 30 },
+        x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } },
       },
       plugins: {
         legend: { position: "top" },
         annotation: {
           annotations: {
             ligneMin: {
-              type: "line",
-              yMin: 5,
-              yMax: 5,
-              borderColor: "rgb(220, 53, 69)",
-              borderWidth: 2.5,
-              borderDash: [5, 5],
-              label: {
-                display: true,
-                content: "Seuil Min (5°C)",
-                position: "start",
-                backgroundColor: "rgba(220, 53, 69, 0.85)",
-                color: "white",
-                font: { size: 11, weight: "bold" },
-              },
+              type: "line", yMin: valeurMinInitiale, yMax: valeurMinInitiale, borderColor: "rgb(220, 53, 69)", borderWidth: 2.5, borderDash: [5, 5],
+              label: { display: true, content: `Seuil Min (${valeurMinInitiale.toFixed(1)}°C)`, position: "start", backgroundColor: "rgba(220, 53, 69, 0.85)", color: "white", font: { size: 11, weight: "bold" } }
             },
             ligneMax: {
-              type: "line",
-              yMin: 8,
-              yMax: 8,
-              borderColor: "rgb(40, 167, 69)",
-              borderWidth: 2.5,
-              borderDash: [5, 5],
-              label: {
-                display: true,
-                content: "Seuil Max (8°C)",
-                position: "start",
-                backgroundColor: "rgba(40, 167, 69, 0.85)",
-                color: "white",
-                font: { size: 11, weight: "bold" },
-              },
+              type: "line", yMin: valeurMaxInitiale, yMax: valeurMaxInitiale, borderColor: "rgb(40, 167, 69)", borderWidth: 2.5, borderDash: [5, 5],
+              label: { display: true, content: `Seuil Max (${valeurMaxInitiale.toFixed(1)}°C)`, position: "start", backgroundColor: "rgba(40, 167, 69, 0.85)", color: "white", font: { size: 11, weight: "bold" } }
             },
-          },
+          }
         },
         zoom: {
           zoom: {
-            drag: {
-              enabled: true,
-              backgroundColor: "rgba(0, 123, 255, 0.2)",
-              borderColor: "#007BFF",
-              borderWidth: 1,
-            },
-            pinch: {
-              enabled: true // Activation du zoom mobile par pincement de doigts (pinch)
-            },
+            drag: { enabled: true, backgroundColor: "rgba(0, 123, 255, 0.2)", borderColor: "#007BFF", borderWidth: 1 },
+            pinch: { enabled: true },
             mode: "xy",
+            onZoom: function({ chart }) {
+              const minIndex = chart.scales.x.min;
+              const maxIndex = chart.scales.x.max;
+              const pointsVisibles = Math.round(maxIndex - minIndex + 1);
+              
+              // RECTIFIÉ ICI : La variable s'appelle bien pointsVisibles avec un "s"
+              if (pointsVisibles < 31) {
+                chart.resetZoom();
+                alert(`⚠️ Zoom refusé (${pointsVisibles} points sur 31) : Le graphique doit afficher au minimum 31 points de mesure consécutifs.`);
+              }
+            }
           },
+          pan: { enabled: true, mode: "xy" }
         },
       },
     },
@@ -428,12 +391,41 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 }
 
 // ==========================================================
+// RENDU EN DIRECT DES LIGNES LORSQUE L'UTILISATEUR TAPE UNE TEMPÉRATURE
+// ==========================================================
+function mettreAJourSeuilsEnDirect() {
+  if (!monGraphiqueInstance) return;
+
+  const nouveauMin = parseFloat(document.getElementById("seuil-min")?.value);
+  const nouveauMax = parseFloat(document.getElementById("seuil-max")?.value);
+
+  const annotations = monGraphiqueInstance.options.plugins.annotation.annotations;
+
+  if (annotations.ligneMin && !isNaN(nouveauMin)) {
+    annotations.ligneMin.yMin = nouveauMin;
+    annotations.ligneMin.yMax = nouveauMin;
+    annotations.ligneMin.label.content = `Seuil Min (${nouveauMin.toFixed(1)}°C)`;
+  }
+
+  if (annotations.ligneMax && !isNaN(nouveauMax)) {
+    annotations.ligneMax.yMin = nouveauMax;
+    annotations.ligneMax.yMax = nouveauMax;
+    annotations.ligneMax.label.content = `Seuil Max (${nouveauMax.toFixed(1)}°C)`;
+  }
+
+  monGraphiqueInstance.update();
+}
+
+// ==========================================================
 // 4. SYSTEME DE SÉLECTION VISUELLE DU TABLEAU À LA SOURIS
 // ==========================================================
 function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
+  
+  // Réinitialisation des anciens écouteurs pour éviter les doublons
   conteneurTableau.onmousedown = null;
 
+  // --- 1. GESTION POUR ORDINATEUR (SOURIS) ---
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
@@ -452,40 +444,96 @@ function activerSelectionSouris(conteneurTableau) {
     const ligneActuelle = e.target.closest("tr");
     if (!ligneActuelle) return;
 
+    appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
+  });
+
+
+  // --- 2. GESTION POUR TÉLÉPHONE / TABLETTE (TACTILE) ---
+  conteneurTableau.addEventListener("touchstart", (e) => {
+    // On cherche la ligne touchée au départ
+    const ligneCible = e.target.closest("tr");
+    if (!ligneCible) return;
+
+    estEnTrainDeGlisser = true;
+    ligneDebutSelection = ligneCible;
+
+    // Réinitialise les anciennes sélections
     const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
-    const indexDebut = lignes.indexOf(ligneDebutSelection);
-    const indexActuel = lignes.indexOf(ligneActuelle);
+    lignes.forEach((l) => (l.style.backgroundColor = ""));
+    ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
+    
+    // Empêche le défilement de la page pendant qu'on sélectionne les points
+    e.preventDefault(); 
+  }, { passive: false });
 
-    const minIndex = Math.min(indexDebut, indexActuel);
-    const maxIndex = Math.max(indexDebut, indexActuel);
+  conteneurTableau.addEventListener("touchmove", (e) => {
+    if (!estEnTrainDeGlisser || !ligneDebutSelection) return;
 
-    lignes.forEach((l, idx) => {
-      l.style.backgroundColor =
-        idx >= minIndex && idx <= maxIndex ? "rgba(0, 123, 255, 0.18)" : "";
-    });
+    // Sur mobile, e.target reste bloqué sur l'élément de départ. 
+    // Il faut utiliser elementFromPoint pour savoir sur quelle ligne se trouve le doigt actuellement.
+    const touch = e.touches[0];
+    const elementSousLeDoigt = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!elementSousLeDoigt) return;
+
+    const ligneActuelle = elementSousLeDoigt.closest("tr");
+    // On vérifie que la ligne trouvée appartient bien à notre tableau
+    if (!ligneActuelle || ligneActuelle.parentNode !== conteneurTableau) return;
+
+    appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
+    e.preventDefault();
+  }, { passive: false });
+}
+
+// Fonction outil pour colorer les lignes entre le point de départ et la position actuelle
+function appliquerSelectionVisuelle(conteneur, ligneDebut, ligneFin) {
+  const lignes = Array.from(conteneur.querySelectorAll("tr"));
+  const indexDebut = lignes.indexOf(ligneDebut);
+  const indexActuel = lignes.indexOf(ligneFin);
+  
+  const minIndex = Math.min(indexDebut, indexActuel);
+  const maxIndex = Math.max(indexDebut, indexActuel);
+
+  lignes.forEach((l, idx) => {
+    l.style.backgroundColor = idx >= minIndex && idx <= maxIndex ? "rgba(0, 123, 255, 0.18)" : "";
   });
 }
 
-window.addEventListener("mouseup", () => {
-  if (estEnTrainDeGlisser) estEnTrainDeGlisser = false;
-});
+// Événement global pour relâcher la sélection (Souris et Doigt)
+window.addEventListener("mouseup", () => { estEnTrainDeGlisser = false; });
+window.addEventListener("touchend", () => { estEnTrainDeGlisser = false; });
 
 // ==========================================================
 // 5. SAUVEGARDE ET REDIRECTION SECURISÉE
 // ==========================================================
 function sauvegarderToutEtDiriger() {
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  let pointsSelectionnes = 0;
+
+  if (corpsTableau) {
+    const lignes = corpsTableau.querySelectorAll("tr");
+    lignes.forEach((ligne) => {
+      if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
+        pointsSelectionnes++;
+      }
+    });
+  }
+
+  // ALERTE SUR LE BOUTON VALIDATION AVEC COMPTEUR
+  if (pointsSelectionnes > 0 && pointsSelectionnes < 31) {
+    alert(`⚠️ Sélection insuffisante (${pointsSelectionnes} points sur 31) : Vous devez sélectionner au minimum 31 points de mesure dans le tableau pour valider le rapport.`);
+    return; 
+  }
+
   localStorage.removeItem("imageGraphiqueZoome");
   localStorage.removeItem("imageTableauSelection");
 
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
-  
   if (filtreDebut.length === 5) filtreDebut += ":00";
   if (filtreFin.length === 5) filtreFin += ":00";
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
-
   localStorage.setItem("username", document.getElementById("username")?.value || "");
   localStorage.setItem("userEntreprise", document.getElementById("userEntreprise")?.value || "");
   localStorage.setItem("userService", document.getElementById("userService")?.value || "");
@@ -494,6 +542,10 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("userLoc", document.getElementById("userLoc")?.value || "");
   localStorage.setItem("tdeconsigne", document.getElementById("tdeconsigne")?.value || "");
   localStorage.setItem("valeur", document.getElementById("valeur")?.value || "");
+  
+  localStorage.setItem("seuilMaxManuel", document.getElementById("seuil-max")?.value || "");
+  localStorage.setItem("seuilMinManuel", document.getElementById("seuil-min")?.value || "");
+  
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
@@ -501,12 +553,7 @@ function sauvegarderToutEtDiriger() {
   if (carteCible) {
     const donneesSondes = [];
     carteCible.querySelectorAll(".marqueur-draggable").forEach((sonde) => {
-      donneesSondes.push({
-        id: sonde.id,
-        src: sonde.getAttribute("src"),
-        left: sonde.style.left,
-        top: sonde.style.top,
-      });
+      donneesSondes.push({ id: sonde.id, src: sonde.getAttribute("src"), left: sonde.style.left, top: sonde.style.top });
     });
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
@@ -514,36 +561,19 @@ function sauvegarderToutEtDiriger() {
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine && monGraphiqueInstance) {
     try {
-      const imageGenereeBase64 = monGraphiqueInstance.toBase64Image();
-      localStorage.setItem("imageGraphiqueZoome", imageGenereeBase64);
+      localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
     } catch (e) {
-      console.error("Échec de conversion de l'image du canvas :", e);
+      console.error("Échec de conversion du canvas :", e);
     }
   }
 
   const tableauODS = document.getElementById("corpsTableauODS")?.closest("table");
   const ongletTableau = document.getElementById("onglet3");
-  const corpsTableau = document.getElementById("corpsTableauODS");
 
-  let unTableauEstSelectionne = false;
-  if (corpsTableau) {
-    const lignes = corpsTableau.querySelectorAll("tr");
-    lignes.forEach((ligne) => {
-      if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
-        unTableauEstSelectionne = true;
-      }
-    });
-  }
-
-  if (tableauODS && ongletTableau && unTableauEstSelectionne) {
+  if (tableauODS && ongletTableau && pointsSelectionnes >= 31) {
     const styleInitial = ongletTableau.style.display;
     ongletTableau.style.display = "block";
-
-    html2canvas(tableauODS, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-      useCORS: true,
-    })
+    html2canvas(tableauODS, { backgroundColor: "#ffffff", scale: 2, useCORS: true })
       .then((canvas) => {
         localStorage.setItem("imageTableauSelection", canvas.toDataURL("image/png"));
         ongletTableau.style.display = styleInitial;
@@ -555,7 +585,6 @@ function sauvegarderToutEtDiriger() {
         window.location.href = "index-page2-rapport.html";
       });
   } else {
-    localStorage.removeItem("imageTableauSelection");
     window.location.href = "index-page2-rapport.html";
   }
 }

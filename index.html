@@ -1,25 +1,17 @@
 <!doctype html>
 
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Accueil - Saisie Cartographie</title>
-
-    <link rel="stylesheet" href="css/style-page1-Acceuil.css" />
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
-  </head>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Accueil - Saisie Cartographie</title>
+<link rel="stylesheet" href="css/style-page1-Acceuil.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
 
   <body>
     <canvas id="fond-etoile"></canvas>
@@ -111,6 +103,22 @@
               placeholder="Écart Maximum Toléré / EMT (°C) :"
             />
             <input
+              type="text"
+              id="seuil-max"
+              name="seuil-max"
+              placeholder="Seuil-max:"
+              required
+            />
+
+              <input
+              type="text"
+              id="seuil-min"
+              name="seuil-min"
+              placeholder="Seuil-min :"
+              required
+            />
+
+              <input
               type="text"
               id="periode"
               name="periode"
