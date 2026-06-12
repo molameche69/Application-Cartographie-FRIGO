@@ -114,6 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputPeriode = document.getElementById("periode");
   const inputConsigne = document.getElementById("tdeconsigne");
   const inputEMT = document.getElementById("valeur");
+  const inputHeureDebut = document.getElementById("heureDebut");
+  const inputHeureFin = document.getElementById("heureFin");
 
   if (inputPeriode) {
     inputPeriode.addEventListener("input", () => {
@@ -122,6 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Permet de rafraîchir dynamiquement le graphique et le tableau si l'utilisateur change les heures
+  if (inputHeureDebut) inputHeureDebut.addEventListener("input", () => { if(fichierActuelPourFiltrage) chargerDonneesODS(); });
+  if (inputHeureFin) inputHeureFin.addEventListener("input", () => { if(fichierActuelPourFiltrage) chargerDonneesODS(); });
 
   if (inputConsigne) inputConsigne.addEventListener("input", mettreAJourSeuilsAutomatiques);
   if (inputEMT) inputEMT.addEventListener("input", mettreAJourSeuilsAutomatiques);
@@ -141,6 +147,28 @@ document.addEventListener("DOMContentLoaded", () => {
     sonde.style.top = "";
   }
 });
+
+// ==========================================================
+// FONCTION UTILITAIRE DE NORMALISATION DES HEURES SALSES (Ex: 15h30 -> 15:30:00)
+// ==========================================================
+function normaliserHeureSaisie(chaineSaisie) {
+  let str = chaineSaisie.toString().trim().toLowerCase();
+  if (!str) return "";
+  
+  // Remplacer les séparateurs courants (h, H, m, M, un espace) par des deux-points
+  str = str.replace(/[hm\s]/g, ":");
+  
+  // Extraire les groupes de chiffres
+  let parties = str.split(":").filter(p => p !== "");
+  
+  if (parties.length >= 2) {
+    let h = parties[0].padStart(2, '0');
+    let m = parties[1].padStart(2, '0');
+    let s = parties[2] ? parties[2].padStart(2, '0') : "00";
+    return `${h}:${m}:${s}`;
+  }
+  return "";
+}
 
 // ==========================================================
 // 2. FONCTIONS DE NAVIGATION ET REINITIALISATION
@@ -195,7 +223,6 @@ function genererLeGraphique() {
   const zoneGeneration = document.querySelector(".zone-generation-graphique");
   if (!zoneGeneration) return;
 
-  // Injection du canvas et du bouton rouge centrés verticalement
   zoneGeneration.innerHTML = `
     <div style="display: flex; flex-direction: column; width: 100%; align-items: center;">
       <div class="conteneur-graphique-cadre" style="width: 100%; height: 450px; position: relative;">
@@ -209,7 +236,6 @@ function genererLeGraphique() {
     </div>
   `;
 
-  // Liaison immédiate de l'événement clic sur le bouton créé
   const btnResetZoom = document.getElementById("btn-reset-zoom");
   if (btnResetZoom) {
     btnResetZoom.addEventListener("click", reinitialiserZoomGraphique);
@@ -236,15 +262,17 @@ function genererLeGraphique() {
 }
 
 // ==========================================================
-// 3. PARSING DU FICHIER LOCAL
+// 3. PARSING DU FICHIER LOCAL AVEC SELECTION HORAIRE ROBUSTE
 // ==========================================================
 function chargerDonneesODS(fichierDynamique = null) {
-  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  let valeurSaisieDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let valeurSaisieFin = document.getElementById("heureFin")?.value.trim() || "";
 
-  if (filtreDebut.length === 5) filtreDebut += ":00";
-  if (filtreFin.length === 5) filtreFin += ":00";
+  // Transformation intelligente (ex: 15h30 -> 15:30:00)
+  let filtreDebut = normaliserHeureSaisie(valeurSaisieDebut);
+  let filtreFin = normaliserHeureSaisie(valeurSaisieFin);
 
+  // Sauvegarde des versions normalisées pour la page 2
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
 
@@ -261,9 +289,9 @@ function chargerDonneesODS(fichierDynamique = null) {
   promesseLecture
     .then((buffer) => {
       const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: "array" });
+      const workbook = XLSX.read(data, { type: "array", raw: true });
       const feuille = workbook.Sheets[workbook.SheetNames[0]];
-      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
+      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1, raw: true });
 
       const donneesCapteurs = {};
       const tousLesHorodatages = new Set();
@@ -274,13 +302,34 @@ function chargerDonneesODS(fichierDynamique = null) {
         if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
           const idCapteur = ligne[0].toString().trim();
           let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
+          let tempsAffiche = "";
+
+          let numExcel = parseFloat(tempsBrut);
+          if (!isNaN(numExcel) && numExcel.toString() === tempsBrut) {
+            let totalSecondes = Math.round((numExcel % 1) * 24 * 3600);
+            let heures = Math.floor(totalSecondes / 3600);
+            let minutes = Math.floor((totalSecondes % 3600) / 60);
+            let secondes = totalSecondes % 60;
+            tempsAffiche = String(heures).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(secondes).padStart(2, '0');
+          } else {
+            let match = tempsBrut.match(/(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+            if (match) {
+              let h = match[1].padStart(2, '0');
+              let m = match[2].padStart(2, '0');
+              let s = match[3] ? match[3].padStart(2, '0') : "00";
+              tempsAffiche = `${h}:${m}:${s}`;
+            } else {
+              tempsAffiche = tempsBrut.substring(0, 8);
+            }
+          }
+
           tempsAffiche = tempsAffiche.substring(0, 8);
 
+          // Filtrage strict : ignorer la ligne si elle est hors limites
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
 
-          const valeurTemp = parseFloat(ligne[2]);
+          let valeurTemp = parseFloat(ligne[2].toString().replace(",", "."));
           const unite = ligne[3] || "°C";
 
           if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
@@ -292,7 +341,7 @@ function chargerDonneesODS(fichierDynamique = null) {
           htmlLignes += `
             <tr style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer;">
               <td style="padding: 8px; font-weight: bold; color: #333;">${idCapteur}</td>
-              <td style="padding: 8px;">${tempsBrut.replace("T", " ").replace("Z", "")}</td>
+              <td style="padding: 8px;">${tempsAffiche}</td>
               <td style="padding: 8px; font-weight: bold; color: ${couleurTemp};">${valeurTemp.toFixed(2)}</td>
               <td style="padding: 8px; color: #888;">${unite}</td>
             </tr>
@@ -302,7 +351,7 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       const corpsTableau = document.getElementById("corpsTableauODS");
       if (corpsTableau) {
-        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
+        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide pour cette plage horaire.</td></tr>';
         activerSelectionSouris(corpsTableau);
       }
 
@@ -334,9 +383,8 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       donneesGraphesEnMemoire = { labelsX: listeLabelsX, datasets: datasetsGraphique };
 
-      if (!document.getElementById("btn-generer-graphique") && document.getElementById("graphiqueTemperatures")) {
-        genererLeGraphique();
-      }
+      // Génération automatique du graphique rafraîchi
+      genererLeGraphique();
     })
     .catch((error) => console.error("Erreur critique d'analyse :", error));
 }
@@ -446,7 +494,6 @@ function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
   conteneurTableau.onmousedown = null;
 
-  // --- ORDINATEUR (SOURIS) ---
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
@@ -468,7 +515,6 @@ function activerSelectionSouris(conteneurTableau) {
     appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
   });
 
-  // --- MOBILE / TABLETTE (TACTILE) ---
   conteneurTableau.addEventListener("touchstart", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
@@ -536,10 +582,8 @@ function sauvegarderToutEtDiriger() {
   localStorage.removeItem("imageGraphiqueZoome");
   localStorage.removeItem("imageTableauSelection");
 
-  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
-  if (filtreDebut.length === 5) filtreDebut += ":00";
-  if (filtreFin.length === 5) filtreFin += ":00";
+  let filtreDebut = normaliserHeureSaisie(document.getElementById("heureDebut")?.value || "");
+  let filtreFin = normaliserHeureSaisie(document.getElementById("heureFin")?.value || "");
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
@@ -587,7 +631,6 @@ function sauvegarderToutEtDiriger() {
     }
   }
 
-  // MODIFICATION ICI : Traitement et stockage sécurisé du fichier ODS en Base64 au lieu d'html2canvas
   if (fichierActuelPourFiltrage) {
     const lecteurEnBase64 = new FileReader();
     lecteurEnBase64.onload = function(e) {
