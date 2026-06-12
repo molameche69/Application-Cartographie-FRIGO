@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ==========================================================
-// 3. TRAITEMENT DE L'IMAGE DU GRAPHIQUE ET CHARGEMENT ODS
+// 3. TRAITEMENT DE L'IMAGE DU GRAPHIQUE ET CHARGEMENT MEMOIRE
 // ==========================================================
 function chargerDonneesODSRapport() {
   const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
@@ -115,82 +115,97 @@ function chargerDonneesODSRapport() {
   const filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
   const filtreFin = localStorage.getItem("filtreHeureFin") || "";
 
-  fetch("Relevés.ods")
-    .then((res) => {
-      if (!res.ok) throw new Error("Fichier Relevés.ods introuvable.");
-      return res.arrayBuffer();
-    })
-    .then((buffer) => {
-      const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: "array" });
-      const feuille = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(feuille, { header: 1 });
+  // RÉCUPÉRATION DU FICHIER TRANSMIS PAR LA PAGE 1 EN BASE64
+  const fichierBase64 = localStorage.getItem("fichierOdsBase64");
 
-      const donneesCapteurs = {};
+  if (!fichierBase64) {
+    conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucun fichier de relevés disponible. Veuillez importer un fichier en page 1.</p>`;
+    return;
+  }
 
-      for (let i = 1; i < json.length; i++) {
-        const ligne = json[i];
-        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
-          const id = ligne[0].toString().trim();
-          let tempsBrut = ligne[1].toString().trim();
-          let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
+  try {
+    // Décodage de la chaîne Base64 pour reconstituer le tableau binaire (XLSX)
+    const chaineBinaire = atob(fichierBase64);
+    const longueur = chaineBinaire.length;
+    const buffer = new Uint8Array(longueur);
+    
+    for (let i = 0; i < longueur; i++) {
+      buffer[i] = chaineBinaire.charCodeAt(i);
+    }
 
-          tempsAffiche = tempsAffiche.substring(0, 8);
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const feuille = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
-          if (filtreDebut && tempsAffiche < filtreDebut) continue;
-          if (filtreFin && tempsAffiche > filtreFin) continue;
+    const donneesCapteurs = {};
 
-          if (!donneesCapteurs[id]) donneesCapteurs[id] = [];
-          donneesCapteurs[id].push(parseFloat(ligne[2]));
-        }
+    for (let i = 1; i < json.length; i++) {
+      const ligne = json[i];
+      if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
+        const id = ligne[0].toString().trim();
+        let tempsBrut = ligne[1].toString().trim();
+        let tempsAffiche = tempsBrut.includes("T") ? tempsBrut.split("T")[1].replace("Z", "") : tempsBrut;
+
+        tempsAffiche = tempsAffiche.substring(0, 8);
+
+        if (filtreDebut && tempsAffiche < filtreDebut) continue;
+        if (filtreFin && tempsAffiche > filtreFin) continue;
+
+        if (!donneesCapteurs[id]) donneesCapteurs[id] = [];
+        donneesCapteurs[id].push(parseFloat(ligne[2]));
       }
+    }
 
-      const statsCapteurs = {};
-      let sommeDesMoyennes = 0;
-      let N = nombreCapteurs = Object.keys(donneesCapteurs).length;
+    const statsCapteurs = {};
+    let sommeDesMoyennes = 0;
+    let nombreCapteurs = Object.keys(donneesCapteurs).length;
 
-      if (N === 0) {
-        conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée.</p>`;
-        return;
-      }
+    if (nombreCapteurs === 0) {
+      conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée.</p>`;
+      return;
+    }
 
-      Object.keys(donneesCapteurs).forEach((id) => {
-        const releves = donneesCapteurs[id].filter((v) => !isNaN(v));
-        const n = releves.length;
-        if (n === 0) return;
+    Object.keys(donneesCapteurs).forEach((id) => {
+      const releves = donneesCapteurs[id].filter((v) => !isNaN(v));
+      const n = releves.length;
+      if (n === 0) return;
 
-        const max = Math.max(...releves);
-        const min = Math.min(...releves);
-        const moyenne = releves.reduce((a, b) => a + b, 0) / n;
-        sommeDesMoyennes += moyenne;
+      const max = Math.max(...releves);
+      const min = Math.min(...releves);
+      const moyenne = releves.reduce((a, b) => a + b, 0) / n;
+      sommeDesMoyennes += moyenne;
 
-        const stabilite = max - min;
-        const sommeCarresSomme = releves.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
-        const ecartTypeExp = n > 1 ? Math.sqrt(sommeCarresSomme / (n - 1)) : 0;
+      const stabilite = max - min;
+      const sommeCarresSomme = releves.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
+      const ecartTypeExp = n > 1 ? Math.sqrt(sommeCarresSomme / (n - 1)) : 0;
 
-        statsCapteurs[id] = { moyenne, stabilite, ecartTypeExp, n };
-      });
-
-      const Xair = N > 0 ? sommeDesMoyennes / N : 0;
-      const toutesLesStabilites = Object.values(statsCapteurs).map((s) => s.stabilite);
-      const SXM = toutesLesStabilites.length > 0 ? Math.max(...toutesLesStabilites) : 0;
-      const sommeEcartTypeExpCarre = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.ecartTypeExp, 2), 0);
-      const Sr = N > 0 ? Math.sqrt(sommeEcartTypeExpCarre / N) : 0;
-
-      const premierId = Object.keys(statsCapteurs)[0];
-      const nGenerique = premierId ? statsCapteurs[premierId].n : 1;
-      const sommeVarianceInterCapteurs = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.moyenne - Xair, 2), 0);
-      const partieDroiteSR = N > 1 ? (1 / (N - 1)) * sommeVarianceInterCapteurs : 0;
-      const SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
-
-      creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
-    })
-    .catch((err) => {
-      console.error("Erreur ODS :", err);
-      conteneurTableau.innerHTML = `<p class="erreur-ods">Erreur lors de la lecture du fichier.</p>`;
+      statsCapteurs[id] = { moyenne, stabilite, ecartTypeExp, n };
     });
+
+    const Xair = nombreCapteurs > 0 ? sommeDesMoyennes / nombreCapteurs : 0;
+    const toutesLesStabilites = Object.values(statsCapteurs).map((s) => s.stabilite);
+    const SXM = toutesLesStabilites.length > 0 ? Math.max(...toutesLesStabilites) : 0;
+    const sommeEcartTypeExpCarre = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.ecartTypeExp, 2), 0);
+    const Sr = nombreCapteurs > 0 ? Math.sqrt(sommeEcartTypeExpCarre / nombreCapteurs) : 0;
+
+    const premierId = Object.keys(statsCapteurs)[0];
+    const nGenerique = premierId ? statsCapteurs[premierId].n : 1;
+    const sommeVarianceInterCapteurs = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.moyenne - Xair, 2), 0);
+    const partieDroiteSR = nombreCapteurs > 1 ? (1 / (nombreCapteurs - 1)) * sommeVarianceInterCapteurs : 0;
+    const SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
+
+    // Fonction d'affichage du tableau statistique
+    creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
+
+  } catch (err) {
+    console.error("Erreur d'analyse ODS en Page 2 :", err);
+    conteneurTableau.innerHTML = `<p class="erreur-ods">Erreur lors de la génération des statistiques du rapport.</p>`;
+  }
 }
 
+// ==========================================================
+// INTERNE : COMPILATION ET RENDU DU TABLEAU NF X 15-140
+// ==========================================================
 function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
   const conteneurTableau = document.querySelector(".conteneur-tableau");
   if (!conteneurTableau) return;
@@ -217,7 +232,7 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
   Object.keys(statsCapteurs).forEach((id) => {
     const s = statsCapteurs[id];
     const ecartConsigne = Math.abs(s.moyenne - tempConsigne);
-    const estConforme = ecartConsigne + s.stabilite / 2 <= emt;
+    const estConforme = ecartConsigne + (s.stabilite / 2) <= emt;
 
     if (!estConforme) enceinteConforme = false;
 
@@ -251,7 +266,7 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
         </tr>
         <tr class="ligne-globale texte-gras conclusion-globale-taille ${enceinteConforme ? "ligne-conforme" : "ligne-non-conforme"}">
           <td class="cellule-commune">Conclusion Enceinte (NF X 15-140)</td>
-          <td colspan="4" class="cellule-commune aligne-centre texte-couleur-statut">${enceinteConforme ? "ENCEINTE CONFORME" : "ENCEINTE NON CONFORME"}</td>
+          <td colspan="4" class="cellule-commune aligne-centre texte-temps-statut">${enceinteConforme ? "ENCEINTE CONFORME" : "ENCEINTE NON CONFORME"}</td>
         </tr>
       </tbody>
     </table>

@@ -513,7 +513,7 @@ window.addEventListener("mouseup", () => { estEnTrainDeGlisser = false; });
 window.addEventListener("touchend", () => { estEnTrainDeGlisser = false; });
 
 // ==========================================================
-// 5. SAUVEGARDE ET REDIRECTION SECURISÉE
+// 5. SAUVEGARDE ET REDIRECTION SECURISÉE AVEC CONVERSION EN BASE64
 // ==========================================================
 function sauvegarderToutEtDiriger() {
   const corpsTableau = document.getElementById("corpsTableauODS");
@@ -587,23 +587,19 @@ function sauvegarderToutEtDiriger() {
     }
   }
 
-  const tableauODS = corpsTableau?.closest("table");
-  const ongletTableau = document.getElementById("onglet3");
-
-  if (tableauODS && ongletTableau && pointsSelectionnes >= 31) {
-    const styleInitial = ongletTableau.style.display;
-    ongletTableau.style.display = "block";
-    html2canvas(tableauODS, { backgroundColor: "#ffffff", scale: 2, useCORS: true })
-      .then((canvas) => {
-        localStorage.setItem("imageTableauSelection", canvas.toDataURL("image/png"));
-        ongletTableau.style.display = styleInitial;
-        window.location.href = "index-page2-rapport.html";
-      })
-      .catch((err) => {
-        console.error("Erreur html2canvas:", err);
-        ongletTableau.style.display = styleInitial;
-        window.location.href = "index-page2-rapport.html";
-      });
+  // MODIFICATION ICI : Traitement et stockage sécurisé du fichier ODS en Base64 au lieu d'html2canvas
+  if (fichierActuelPourFiltrage) {
+    const lecteurEnBase64 = new FileReader();
+    lecteurEnBase64.onload = function(e) {
+      try {
+        const base64String = e.target.result.split(',')[1] || e.target.result;
+        localStorage.setItem("fichierOdsBase64", base64String);
+      } catch (err) {
+        console.error("Erreur lors du stockage du fichier en Base64 :", err);
+      }
+      window.location.href = "index-page2-rapport.html";
+    };
+    lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
   } else {
     window.location.href = "index-page2-rapport.html";
   }
