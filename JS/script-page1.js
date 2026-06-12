@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reserveCible.addEventListener("dragover", (e) => e.preventDefault());
     reserveCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.setData("text/plain");
+      const idElement = e.dataTransfer.getData("text/plain");
       const elementGlisse = document.getElementById(idElement);
       if (elementGlisse) remettreDansReserve(elementGlisse, reserveCible);
     });
@@ -195,11 +195,25 @@ function genererLeGraphique() {
   const zoneGeneration = document.querySelector(".zone-generation-graphique");
   if (!zoneGeneration) return;
 
+  // Injection du canvas et du bouton rouge centrés verticalement
   zoneGeneration.innerHTML = `
-    <div class="conteneur-graphique-cadre" style="width: 100%; height: 450px; position: relative;">
-      <canvas id="graphiqueTemperatures"></canvas>
+    <div style="display: flex; flex-direction: column; width: 100%; align-items: center;">
+      <div class="conteneur-graphique-cadre" style="width: 100%; height: 450px; position: relative;">
+        <canvas id="graphiqueTemperatures"></canvas>
+      </div>
+      <div style="margin-top: 15px; width: 100%; text-align: center;">
+        <button id="btn-reset-zoom" type="button" class="btn btn-danger" style="background-color: red; color: white; font-weight: bold; padding: 12px 24px; font-size: 16px; border: none; cursor: pointer;">
+          Réinitialiser le Zoom
+        </button>
+      </div>
     </div>
   `;
+
+  // Liaison immédiate de l'événement clic sur le bouton créé
+  const btnResetZoom = document.getElementById("btn-reset-zoom");
+  if (btnResetZoom) {
+    btnResetZoom.addEventListener("click", reinitialiserZoomGraphique);
+  }
 
   const pasPeriode = parseInt(document.getElementById("periode")?.value) || 1;
   let labelsFiltres = [];
@@ -384,8 +398,7 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
               const pointsVisibles = Math.round(maxIndex - minIndex + 1);
               
               if (pointsVisibles < 31) {
-                chart.resetZoom();
-                alert(`⚠️ Zoom refusé (${pointsVisibles} points sur 31) : Le graphique doit afficher au minimum 31 points de mesure consécutifs.`);
+                alert(`⚠️ Attention : La zone sélectionnée sur le graphique contient moins de 31 points (${pointsVisibles} points actuellement).`);
               }
             }
           },
@@ -593,5 +606,16 @@ function sauvegarderToutEtDiriger() {
       });
   } else {
     window.location.href = "index-page2-rapport.html";
+  }
+}
+
+// ==========================================================
+// FONCTION REINITIALISER LE ZOOM ACTIVE
+// ==========================================================
+function reinitialiserZoomGraphique() {
+  if (monGraphiqueInstance && typeof monGraphiqueInstance.resetZoom === "function") {
+    monGraphiqueInstance.resetZoom();
+  } else {
+    console.warn("Le plugin de zoom Chart.js n'est pas encore actif.");
   }
 }
