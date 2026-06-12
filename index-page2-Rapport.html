@@ -22,7 +22,7 @@
     <div class="container">
       <div id="zone-impression-pdf">
         
-        <div class="section-pdf">
+        <div class="page-pdf">
           <p><strong class="Rap">Informations Générales :</strong></p>
           
           <div id="bloc-rapport">
@@ -40,21 +40,15 @@
             <p><strong>Température de consigne visée :</strong> <span id="report-tdeconsigne"></span> °C</p>
             <p><strong>Écart Maximum Toléré (EMT) :</strong> ± <span id="report-valeur"></span> °C</p>
            
-            <p><strong>Période de debut :</strong> De <span id="report-filtreHeureDebut"></span></p>
-            <p><strong>Période de fin:</strong> De <span id="report-filtreHeureFin"></span></p>
+            <p><strong>Période de début :</strong> <span id="report-filtreHeureDebut"></span></p>
+            <p><strong>Période de fin :</strong> <span id="report-filtreHeureFin"></span></p>
            
-            
-
-            
-
             <h2>4. Mode Opératoire</h2>
             <div id="report-message">Non renseigné</div>
           </div>
         </div>
 
-        <div class="saut-de-page"></div>
-
-        <div class="section-pdf">
+        <div class="page-pdf">
           <p><strong class="Sonde">Positionnement des sondes :</strong></p>
           <div class="zone-carte" id="carte-rapport">
             <img src="images/MAP frigo.png" alt="Carte" />
@@ -66,7 +60,9 @@
               <canvas id="graphiqueTemperatures"></canvas>
             </div>
           </div>
+        </div>
 
+        <div class="page-pdf">
           <p><strong class="Sonde">Résultats selon la norme NF X 15 140 :</strong></p>
           <div class="conteneur-tableau"></div> 
         </div>
@@ -75,12 +71,12 @@
     </div>
 
     <div class="actions-zone">
-      <button onclick="telechargerPDFDirect()">Télécharger en PDF</button>
+      <button id="btn-telecharger-pdf" onclick="telechargerPDFDirect()">Télécharger en PDF</button>
       <br />
       <a href="index.html">← Retour au formulaire</a>
     </div>
 
-    <script src="JS/script-fond.js"></script>
     <script src="JS/script-page2.js"></script>
+    <script src="JS/script-fond.js"></script>
   </body>
 </html>

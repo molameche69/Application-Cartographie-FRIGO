@@ -3,6 +3,14 @@ let monGraphiqueInstance = null;
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Démarrage du script de rendu du rapport conforme NF X 15-140...");
 
+  // Le bouton est directement cliquable avec cette méthode
+  const btnPdf = document.getElementById("btn-telecharger-pdf");
+  if (btnPdf) {
+    btnPdf.disabled = false;
+    btnPdf.style.opacity = "1";
+    btnPdf.style.cursor = "pointer";
+  }
+
   // ==========================================================
   // 1. INJECTION DES CHAMPS TEXTES DEPUIS LE LOCALSTORAGE
   // ==========================================================
@@ -71,9 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
         imgSonde.style.top = sonde.top;
         imgSonde.style.transform = "translate(-50%, -50%)";
         
-        // Taille d'icône stricte pour le rapport
-        imgSonde.style.width = "32px";
-        imgSonde.style.height = "32px";
+        imgSonde.style.width = "28px";
+        imgSonde.style.height = "28px";
         imgSonde.style.objectFit = "contain";
 
         carteRapport.appendChild(imgSonde);
@@ -95,25 +102,15 @@ function chargerDonneesODSRapport() {
 
   if (!imageZoomee) {
     if (canvasRapport) canvasRapport.classList.add("masque");
-    const imgExistante = document.querySelector(".graphique-image-zoom");
-    if (imgExistante) imgExistante.classList.add("masque");
   } else if (canvasRapport) {
     const wrapper = canvasRapport.closest(".wrapper-canvas");
     if (wrapper) {
-      wrapper.innerHTML = `<img src="${imageZoomee}" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" style="width:100%; height:100%; display:block;" />`;
+      wrapper.innerHTML = `<img src="${imageZoomee}" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" />`;
     }
   }
 
-  let conteneurTableau = document.querySelector(".conteneur-tableau");
-  if (!conteneurTableau) {
-    const zoneImpression = document.getElementById("zone-impression-pdf") || document.body;
-    conteneurTableau = document.createElement("div");
-    conteneurTableau.className = "conteneur-tableau";
-    zoneImpression.appendChild(conteneurTableau);
-  }
-
-  conteneurTableau.classList.remove("masque");
-  conteneurTableau.classList.add("affiche-bloc");
+  const conteneurTableau = document.querySelector(".conteneur-tableau");
+  if (!conteneurTableau) return;
 
   const filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
   const filtreFin = localStorage.getItem("filtreHeureFin") || "";
@@ -130,7 +127,6 @@ function chargerDonneesODSRapport() {
       const json = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
       const donneesCapteurs = {};
-      const tousLesHorodatages = new Set();
 
       for (let i = 1; i < json.length; i++) {
         const ligne = json[i];
@@ -146,20 +142,17 @@ function chargerDonneesODSRapport() {
 
           if (!donneesCapteurs[id]) donneesCapteurs[id] = [];
           donneesCapteurs[id].push(parseFloat(ligne[2]));
-          tousLesHorodatages.add(tempsAffiche);
         }
       }
 
-      const nombreCapteurs = Object.keys(donneesCapteurs).length;
-      if (nombreCapteurs === 0) {
+      const statsCapteurs = {};
+      let sommeDesMoyennes = 0;
+      let N = nombreCapteurs = Object.keys(donneesCapteurs).length;
+
+      if (N === 0) {
         conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage horaire sélectionnée.</p>`;
         return;
       }
-
-      // --- CALCULS STATISTIQUES CONFORMES ---
-      const statsCapteurs = {};
-      let sommeDesMoyennes = 0;
-      let N = nombreCapteurs;
 
       Object.keys(donneesCapteurs).forEach((id) => {
         const releves = donneesCapteurs[id].filter((v) => !isNaN(v));
@@ -198,9 +191,6 @@ function chargerDonneesODSRapport() {
     });
 }
 
-// ==========================================================
-// 4. GÉNÉRATION DU TABLEAU DE SYNTHÈSE HTML
-// ==========================================================
 function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
   const conteneurTableau = document.querySelector(".conteneur-tableau");
   if (!conteneurTableau) return;
@@ -271,55 +261,9 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
 }
 
 // ==========================================================
-// 5. EXPORTATION PDF PROPRE ET SÉCURISÉE (html2pdf.js)
+// 5. NOUVELLE METHODE NATIVE SANS CAPTURE D'ECRAN
 // ==========================================================
 function telechargerPDFDirect() {
-  const fondEtoile = document.getElementById("fond-etoile");
-  if (fondEtoile) fondEtoile.classList.add("masque");
-
-  const elementImpression = document.getElementById("zone-impression-pdf");
-  if (!elementImpression) {
-    if (fondEtoile) fondEtoile.classList.remove("masque");
-    return;
-  }
-
-  // Styles temporaires propres pour l'impression sans déformation CSS scale
-  const styleImpression = document.createElement("style");
-  styleImpression.innerHTML = `
-    .html2pdf__page-break { height: 0 !important; margin: 0 !important; padding: 0 !important; }
-    #zone-impression-pdf { padding: 0px !important; margin: 0px !important; width: 100% !important; }
-    body { margin: 0 !important; }
-    .saut-de-page { page-break-before: always !important; break-before: page !important; height: 0 !important; }
-  `;
-  document.head.appendChild(styleImpression);
-
-  const options = {
-    margin: [10, 10, 10, 10], 
-    filename: "rapport_final.pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: {
-      scale: 2,                  // Excellente netteté des textes et graphiques
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 1100          // 💡 Simule une largeur d'écran idéale pour figer la mise en page proprement
-    },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: "css" },
-  };
-
-  html2pdf()
-    .set(options)
-    .from(elementImpression)
-    .save()
-    .then(() => {
-      styleImpression.remove();
-      if (fondEtoile) fondEtoile.classList.remove("masque");
-    })
-    .catch((err) => {
-      console.error("Erreur PDF :", err);
-      styleImpression.remove();
-      if (fondEtoile) fondEtoile.classList.remove("masque");
-    });
+  // Lance instantanément l'outil d'impression du système d'exploitation
+  window.print();
 }
