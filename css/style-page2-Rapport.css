@@ -29,9 +29,11 @@ body {
 
 /* Structure des pages du rapport (Écran normal) */
 .page-section {
+  background: #ffffff;
+  padding: 10px 0;
+  margin-bottom: 40px;
   display: block;
   width: 100%;
-  margin-bottom: 40px;
 }
 
 /* ==========================================================
@@ -312,7 +314,11 @@ a:hover,
    GESTION DE L'IMPRESSION PDF (NETTOYAGE DU MÉLANGE)
    ========================================================== */
 @media print {
-  /* Supprime définitivement les arrières-plans sombres */
+  @page {
+    size: a4 portrait;
+    margin: 12mm 15mm 12mm 15mm; /* Marges de page optimisées */
+  }
+
   body, .container, #zone-impression-pdf {
     background: #ffffff !important;
     background-color: #ffffff !important;
@@ -323,55 +329,72 @@ a:hover,
     box-shadow: none !important;
   }
 
-  /* Disparition des éléments d'interface sur le document final */
-  .actions-zone, .Titre img, #fond-etoile {
+  .actions-zone, .Titre, #fond-etoile {
     display: none !important;
   }
 
-  /* Force chaque bloc page-section à s'isoler sur une page dédiée */
+  /* FORÇAGE STRICT DES SAUTS DE PAGES SANS INTERRUPTIONS INDÉSIRABLES */
   .page-section {
-    page-break-after: always !important;
-    break-after: page !important;
+    page-break-before: always !important;
+    break-before: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     display: block !important;
-    margin: 0 0 30px 0 !important;
+    width: 100% !important;
+    margin: 0 0 20px 0 !important;
+    padding-top: 5mm !important;
+    box-sizing: border-box !important;
   }
 
-  /* Sécurise l'affichage des composants graphiques */
-  .conteneur-graphique, .zone-carte, #bloc-rapport {
+  /* Évite une première page blanche en haut du fichier */
+  .page-section:first-child {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    padding-top: 0 !important;
+  }
+
+  /* Verrouille l'en-tête pour qu'il reste soudé aux tableaux ou éléments */
+  .Rap, .Sonde, #bloc-rapport h2 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Empêche les éléments internes de se diviser */
+  #bloc-rapport, .zone-carte, .conteneur-graphique {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-bottom: 15px !important;
   }
 
-  /* Réduction contrôlée de la hauteur du graphique pour le stabiliser sur la page 2 */
+  /* Redimensionnement du graphique pour garantir la tenue sur une page A4 */
   .wrapper-canvas {
-    height: 380px !important; 
+    height: 310px !important; 
   }
 
-  /* CORRECTION DU TABLEAU : Désactivation complète du mode sticky et des blocages de lignes */
-  .tab-donnees th, .table-rapport-spec th {
-    position: static !important; /* Neutralise le bug de clonage html2pdf */
-    background: #f1f1f1 !important;
-  }
-
-  /* Autorise le grand tableau à s'écouler librement sur plusieurs pages sans se mélanger */
+  /* PROTECTION ABSOLUE DU TABLEAU : Interdiction complète de se couper en deux */
   .conteneur-tableau {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
   }
 
   table, .tab-donnees, .table-rapport-spec {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    width: 100% !important;
   }
 
-  /* Empêche uniquement les lignes individuelles de se couper en deux */
   tr {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .tab-donnees th, .table-rapport-spec th {
+    position: static !important; 
+    background: #f1f1f1 !important;
   }
 }
 
