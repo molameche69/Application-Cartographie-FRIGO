@@ -1,6 +1,3 @@
-// ==========================================================
-// VARIABLES GLOBALES (PAGE 1)
-// ==========================================================
 let monGraphiqueInstance = null;
 let estEnTrainDeGlisser = false;
 let ligneDebutSelection = null;
@@ -9,7 +6,7 @@ let fichierActuelPourFiltrage = null;
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
 window.sondeEnCoursDeToucher = null;
 
-// Tableau global pour stocker les IDs des capteurs exclus manuellement
+
 let capteursExclusManuellement = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -54,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   marqueurs.forEach((marqueur) => {
-    // Système de clic manuel historique pour la carte
     marqueur.addEventListener("click", () => {
       gererBasculeCapteur(marqueur.id);
     });
@@ -136,7 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Fonction centralisée de bascule d'activation d'un capteur
 function gererBasculeCapteur(idCapteur) {
   const index = capteursExclusManuellement.indexOf(idCapteur);
   if (index > -1) {
@@ -145,7 +140,6 @@ function gererBasculeCapteur(idCapteur) {
     capteursExclusManuellement.push(idCapteur);
   }
 
-  // Appliquer le style visuel aux marqueurs de la carte s'ils existent
   const marqueur = document.getElementById(idCapteur);
   if (marqueur) {
     if (capteursExclusManuellement.includes(idCapteur)) {
@@ -157,7 +151,6 @@ function gererBasculeCapteur(idCapteur) {
     }
   }
 
-  // Appliquer le style visuel aux boutons de la liste de contrôle
   const boutonControle = document.getElementById(`btn-exclure-${idCapteur}`);
   if (boutonControle) {
     if (capteursExclusManuellement.includes(idCapteur)) {
@@ -436,7 +429,6 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
             const ci = legend.chart;
             const fullLabel = ci.data.datasets[index].label;
             
-            // CORRECTION ICI : Extraction par Regex de l'identifiant technique exact à la fin de la chaîne
             const regexMatch = fullLabel.match(/([A-Z0-9]+)$/i);
             const idCapteur = regexMatch ? regexMatch[1].trim() : fullLabel.replace("Capteur ", "").trim();
 
@@ -489,7 +481,6 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 
   capteursExclusManuellement.forEach(idExclu => {
     datasetsFournis.forEach((dataset, idx) => {
-      // CORRECTION ICI : Même traitement par Regex pour comparer des identifiants purs
       const regexMatch = dataset.label.match(/([A-Z0-9]+)$/i);
       const idNettoyed = regexMatch ? regexMatch[1].trim() : dataset.label.replace("Capteur ", "").trim();
 
@@ -598,9 +589,6 @@ function appliquerSelectionVisuelle(conteneur, ligneDebut, ligneFin) {
 window.addEventListener("mouseup", () => { estEnTrainDeGlisser = false; });
 window.addEventListener("touchend", () => { estEnTrainDeGlisser = false; });
 
-// ==========================================================
-// ACTION FINALE : INTERCEPTION STRICTE DES FILTRES ET ENVOI
-// ==========================================================
 function sauvegarderToutEtDiriger() {
   const corpsTableau = document.getElementById("corpsTableauODS");
   let pointsSelectionnes = [];
@@ -686,7 +674,6 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
-  // Sauvegarde des exclusions dynamiques synchronisées pour la page 3 rapport
   localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursExclusManuellement));
 
   const carteCible = document.getElementById("carte-cible");
@@ -728,15 +715,16 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-const USER_CORRECT = "Auralyon"; 
-const CODE_CORRECT = "Auralyon2026!"; 
-
 window.addEventListener("DOMContentLoaded", () => {
   const conteneurAuth = document.getElementById("bloc-authentification");
   if (sessionStorage.getItem("estConnecte") === "true") {
-    conteneurAuth.style.display = "none";
+    if (conteneurAuth) conteneurAuth.style.display = "none";
   }
 });
+
+
+const USER_CORRECT = "Auralyon";
+const CODE_CORRECT = "Auralyon2026!";
 
 function validerCode() {
   const userSaisi = document.getElementById("identifiantAcces").value.trim();
@@ -745,14 +733,18 @@ function validerCode() {
   const conteneurAuth = document.getElementById("bloc-authentification");
   const erreur = document.getElementById("erreur-code");
 
+
   if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
     sessionStorage.setItem("estConnecte", "true");
-    conteneurAuth.style.opacity = "0";
-    setTimeout(() => {
-      conteneurAuth.style.display = "none";
-    }, 400);
+    if (erreur) erreur.style.display = "none";
+    if (conteneurAuth) {
+      conteneurAuth.style.opacity = "0";
+      setTimeout(() => {
+        conteneurAuth.style.display = "none";
+      }, 400);
+    }
   } else {
-    erreur.style.display = "block";
+    if (erreur) erreur.style.display = "block";
     document.getElementById("codeAcces").value = "";
     document.getElementById("codeAcces").focus();
   }
@@ -760,6 +752,7 @@ function validerCode() {
 
 function verifierTouche(event) {
   if (event.key === "Enter") {
+    event.preventDefault();
     validerCode();
   }
 }

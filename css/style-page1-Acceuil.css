@@ -14,7 +14,6 @@ body {
   background-color: #f4f4f9;
 }
 
-
 .Identifiant {
   position: fixed;
   top: 0;
@@ -25,7 +24,6 @@ body {
   z-index: 99999;
   font-family: sans-serif;
 }
-
 
 .Identifiant p {
   display: flex;
@@ -49,7 +47,6 @@ body {
   transition: opacity 0.4s ease;
 }
 
-/* Boîte centrale - Vos couleurs */
 .boite-connexion {
   background: radial-gradient(circle at center, #e0e0e0, #b5b5b5);
   padding: 40px;
@@ -62,7 +59,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Titre H2 - Vos couleurs */
 .boite-connexion h2 {
   color: black;
   margin-top: 0;
@@ -75,7 +71,6 @@ body {
   padding: 10px;
 }
 
-/* Corps de la connexion */
 .corps-connexion {
   text-align: left;
 }
@@ -87,7 +82,6 @@ body {
   margin-bottom: 20px;
 }
 
-/* Groupes de champs (Labels + Inputs) */
 .groupe-champ {
   margin-bottom: 15px;
 }
@@ -103,7 +97,6 @@ body {
 .groupe-champ .requis {
   color: #ef4444;
 }
-
 
 .boite-connexion input {
   width: 100%;
@@ -122,7 +115,6 @@ body {
   outline: none;
   border-color: #38bdf8;
 }
-
 
 .boite-connexion .btn-connexion {
   background-color: white;
@@ -144,7 +136,6 @@ body {
   border-color: #0ea5e9;
 }
 
-/* Texte d'erreur - Vos couleurs */
 .message-erreur {
   color: #ef4444;
   font-size: 14px;
@@ -154,6 +145,7 @@ body {
   font-family: sans-serif;
   font-weight: bold;
 }
+
 .Titre {
   display: flex;
   justify-content: center;
@@ -195,9 +187,6 @@ body {
   margin-right: auto;
 }
 
-/* ==========================================================
-   3. STRUCTURE DES ONGLETS
-   ========================================================== */
 .systeme-onglets {
   max-width: 1900px;
   width: 95%;
@@ -230,7 +219,6 @@ body {
   border-bottom: 3px solid #dc3545;
 }
 
-/* CORRECTION : Cache tous les onglets par défaut pour éviter les superpositions */
 .contenu-onglet {
   display: none;
   padding: 15px;
@@ -240,14 +228,10 @@ body {
   border-radius: 4px;
 }
 
-/* CORRECTION : Force l'affichage du premier onglet à l'ouverture de la page */
 #onglet1 {
   display: block;
 }
 
-/* ==========================================================
-   4. ONGLET 1 : FICHE TECHNIQUE & FORMULAIRE
-   ========================================================== */
 .tech {
   display: flex;
   justify-content: center;
@@ -288,9 +272,6 @@ input {
   resize: vertical;
 }
 
-/* ==========================================================
-   5. ONGLET 2 : CARTOGRAPHIE & DRAG & DROP
-   ========================================================== */
 .Carto {
   display: flex;
   justify-content: center;
@@ -353,9 +334,6 @@ input {
   transform: translate(-50%, -50%);
 }
 
-/* ==========================================================
-   6. ONGLET 3 : ANALYSE THERMIQUE & RECHERCHE DE FICHIERS
-   ========================================================== */
 #bloc-graphique i {
   color: beige;
   display: flex;
@@ -365,7 +343,6 @@ input {
   margin: 0 auto 40px auto;
 }
 
-/* Style pour l'outil de sélection de fichier personnalisé */
 .zone-import-file {
   display: flex;
   flex-direction: column;
@@ -374,23 +351,19 @@ input {
   margin: 20px auto 30px auto;
 }
 
-/* On cache la structure système par défaut de l'input */
 #selecteur-fichier {
   display: none;
 }
 
-/* Customisation du label en un bouton d'import élégant */
 .btn-import {
-  background-color: #ffc107; /* Jaune ambre */
+  background-color: #ffc107;
   color: #212529;
   padding: 12px 28px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-  transition:
-    background-color 0.2s,
-    transform 0.1s;
+  transition: background-color 0.2s, transform 0.1s;
   display: inline-block;
   font-size: 16px;
 }
@@ -409,7 +382,6 @@ input {
   font-size: 14px;
 }
 
-/* MODIFICATION : Largeur augmentée à 1600px pour harmoniser avec le tableau élargi */
 .zone-filtres {
   max-width: 1600px;
   width: 95%;
@@ -444,7 +416,6 @@ input {
   width: auto;
 }
 
-/* MODIFICATION : Largeur augmentée à 1600px pour la zone du bouton */
 .zone-generation-graphique {
   max-width: 1600px;
   width: 95%;
@@ -455,7 +426,7 @@ input {
 }
 
 #btn-generer-graphique {
-  background-color: #28a745; /* Vert pour se distinguer */
+  background-color: #28a745;
   color: white;
   border: none;
   padding: 15px 30px;
@@ -464,10 +435,7 @@ input {
   cursor: pointer;
   font-weight: bold;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition:
-    background-color 0.2s,
-    opacity 0.2s,
-    transform 0.1s;
+  transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
 }
 
 #btn-generer-graphique:hover:not(:disabled) {
@@ -478,7 +446,6 @@ input {
   transform: scale(0.98);
 }
 
-/* État grisé tant qu'aucun document n'est analysé par le script */
 #btn-generer-graphique:disabled {
   background-color: #6c757d;
   cursor: not-allowed;
@@ -486,7 +453,6 @@ input {
   box-shadow: none;
 }
 
-/* MODIFICATION : Largeur augmentée à 1600px pour que le graphique soit aussi large que le tableau */
 .conteneur-graphique-cadre {
   max-width: 1600px;
   width: 95%;
@@ -497,7 +463,6 @@ input {
   height: 400px;
 }
 
-/* MODIFICATION : Passage du max-width de 1000px à 1600px pour élargir proprement le tableau */
 .conteneur-tableau-ods {
   max-width: 1600px;
   width: 95%;
@@ -505,7 +470,7 @@ input {
   background: white;
   padding: 15px;
   border-radius: 8px;
-  max-height: 450px; /* Augmenté légèrement pour le confort visuel */
+  max-height: 450px;
   overflow-y: auto;
   color: #333;
 }
@@ -527,9 +492,6 @@ input {
   font-weight: bold;
 }
 
-/* ==========================================================
-   7. BOUTONS GENERAUX
-   ========================================================== */
 button {
   background-color: #007bff;
   color: white;
@@ -560,9 +522,6 @@ button:hover {
   background-color: #973e3e;
 }
 
-/* ==========================================================
-   8. MEDIA QUERIES : ADAPTATION RESPONSIVE (MOBILE)
-   ========================================================== */
 @media (max-width: 768px) {
   body {
     margin: 15px;

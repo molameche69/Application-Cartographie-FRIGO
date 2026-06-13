@@ -1,8 +1,4 @@
 let monGraphiqueInstance = null;
-
-// ==========================================================
-// OUTIL UNIVERSEL DE CONVERSION D'HEURE (EXCEL OU STANDARD)
-// ==========================================================
 function formaterHeure(valeur) {
   if (!valeur) return "";
   let valStr = valeur.toString().trim().replace(",", ".");
@@ -127,7 +123,7 @@ function chargerDonneesODSRapport() {
   const filtreFin = formaterHeure(localStorage.getItem("filtreHeureFin") || "");
   const fichierBase64 = localStorage.getItem("fichierOdsBase64");
 
-  // RECUPERATION DES EXCLUSIONS DYNAMIQUES DE LA PAGE 1
+  
   let exclusManuellement = [];
   try {
     const stock = localStorage.getItem("capteursExclusManuellement");
@@ -161,9 +157,7 @@ function chargerDonneesODSRapport() {
       if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
         const id = ligne[0].toString().trim();
         
-        // ==========================================================
-        // DÉSACTIVATION MANUELLE ET DYNAMIQUE DES CAPTEURS EXCLUS
-        // ==========================================================
+        
         if (id === "E80A0600102E" || id === "Capteur E80A0600102E" || exclusManuellement.includes(id)) {
           continue; 
         }
@@ -260,9 +254,6 @@ function chargerDonneesODSRapport() {
   }
 }
 
-// ==========================================================
-// INTERNE : COMPILATION ET RENDU DU TABLEAU NF X 15-140
-// ==========================================================
 function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
   const conteneurTableau = document.querySelector(".conteneur-tableau");
   if (!conteneurTableau) return;
