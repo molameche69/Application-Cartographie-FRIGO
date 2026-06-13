@@ -127,6 +127,15 @@ function chargerDonneesODSRapport() {
   const filtreFin = formaterHeure(localStorage.getItem("filtreHeureFin") || "");
   const fichierBase64 = localStorage.getItem("fichierOdsBase64");
 
+  // RECUPERATION DES EXCLUSIONS DYNAMIQUES DE LA PAGE 1
+  let exclusManuellement = [];
+  try {
+    const stock = localStorage.getItem("capteursExclusManuellement");
+    if (stock) exclusManuellement = JSON.parse(stock);
+  } catch (e) {
+    console.error("Erreur de lecture des exclusions :", e);
+  }
+
   if (!fichierBase64) {
     conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucun fichier de relevés disponible. Veuillez importer un fichier en page 1.</p>`;
     return;
@@ -153,9 +162,9 @@ function chargerDonneesODSRapport() {
         const id = ligne[0].toString().trim();
         
         // ==========================================================
-        // DÉSACTIVATION MANUELLE DU CAPTEUR D'AMBIANCE
+        // DÉSACTIVATION MANUELLE ET DYNAMIQUE DES CAPTEURS EXCLUS
         // ==========================================================
-        if (id === "E80A0600102E" || id === "Capteur E80A0600102E") {
+        if (id === "E80A0600102E" || id === "Capteur E80A0600102E" || exclusManuellement.includes(id)) {
           continue; 
         }
         
@@ -183,7 +192,6 @@ function chargerDonneesODSRapport() {
     const statsCapteurs = {};
     const tempConsigneValidation = parseFloat(localStorage.getItem("tdeconsigne")) || 5.0;
 
-    // Variables pour la synthèse globale (uniquement les sondes de l'enceinte)
     let sommeDesMoyennesUtiles = 0;
     let nombreCapteursUtiles = 0;
     let toutesLesStabilitesUtiles = [];
@@ -202,10 +210,8 @@ function chargerDonneesODSRapport() {
       const sommeCarresSomme = releves.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
       const ecartTypeExp = n > 1 ? Math.sqrt(sommeCarresSomme / (n - 1)) : 0;
 
-      // ON GARDE TOUT LE MONDE POUR LE TABLEAU VISUEL
       statsCapteurs[id] = { moyenne, stabilite, ecartTypeExp, n, estAmbiance: false };
 
-      // MAIS ON FILTRE UNIQUEMENT POUR LE CALCUL DES LIGNES GLOBALES DU BAS
       if (Math.abs(moyenne - tempConsigneValidation) <= 7.0) {
         sommeDesMoyennesUtiles += moyenne;
         nombreCapteursUtiles++;
@@ -213,7 +219,7 @@ function chargerDonneesODSRapport() {
         sommeEcartTypeExpCarreUtiles += Math.pow(ecartTypeExp, 2);
         listeSondesUtiles.push({ moyenne, ecartTypeExp, n });
       } else {
-        statsCapteurs[id].estAmbiance = true; // Flag pour l'affichage si besoin
+        statsCapteurs[id].estAmbiance = true; 
       }
     });
 
@@ -222,7 +228,6 @@ function chargerDonneesODSRapport() {
       return;
     }
 
-    // Calculs de synthèse (Si aucune sonde froide n'est trouvée, fallback sur toutes pour éviter le crash)
     let effectifCalcul = nombreCapteursUtiles > 0 ? nombreCapteursUtiles : Object.keys(statsCapteurs).length;
     let Xair = nombreCapteursUtiles > 0 ? (sommeDesMoyennesUtiles / nombreCapteursUtiles) : Object.values(statsCapteurs).reduce((a,b)=>a+b.moyenne,0)/effectifCalcul;
     let SXM = toutesLesStabilitesUtiles.length > 0 ? Math.max(...toutesLesStabilitesUtiles) : Math.max(...Object.values(statsCapteurs).map(s=>s.stabilite));
@@ -286,7 +291,6 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
     const ecartConsigne = Math.abs(s.moyenne - tempConsigne);
     const estConforme = ecartConsigne + (s.stabilite / 2) <= emt;
 
-    // Seules les sondes utiles (hors ambiance) définissent la conformité globale de l'enceinte
     if (!s.estAmbiance && !estConforme) {
       enceinteConforme = false;
     }

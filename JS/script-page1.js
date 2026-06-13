@@ -9,6 +9,9 @@ let fichierActuelPourFiltrage = null;
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
 window.sondeEnCoursDeToucher = null;
 
+// Tableau global pour stocker les IDs des capteurs exclus manuellement
+let capteursExclusManuellement = [];
+
 document.addEventListener("DOMContentLoaded", () => {
   const marqueurs = document.querySelectorAll(".marqueur-draggable");
   const carteCible = document.getElementById("carte-cible");
@@ -51,21 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   marqueurs.forEach((marqueur) => {
-    // Système de clic manuel pour activer/désactiver complètement un capteur
+    // Système de clic manuel historique pour la carte
     marqueur.addEventListener("click", () => {
-      marqueur.classList.toggle("capteur-desactive");
-      
-      if (marqueur.classList.contains("capteur-desactive")) {
-        marqueur.style.opacity = "0.3";
-        marqueur.style.filter = "grayscale(100%)";
-      } else {
-        marqueur.style.opacity = "1";
-        marqueur.style.filter = "none";
-      }
-      
-      if (donneesGraphesEnMemoire.labelsX.length > 0) {
-        genererLeGraphique();
-      }
+      gererBasculeCapteur(marqueur.id);
     });
 
     marqueur.addEventListener("touchstart", (e) => {
@@ -145,6 +136,44 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// Fonction centralisée de bascule d'activation d'un capteur
+function gererBasculeCapteur(idCapteur) {
+  const index = capteursExclusManuellement.indexOf(idCapteur);
+  if (index > -1) {
+    capteursExclusManuellement.splice(index, 1);
+  } else {
+    capteursExclusManuellement.push(idCapteur);
+  }
+
+  // Appliquer le style visuel aux marqueurs de la carte s'ils existent
+  const marqueur = document.getElementById(idCapteur);
+  if (marqueur) {
+    if (capteursExclusManuellement.includes(idCapteur)) {
+      marqueur.style.opacity = "0.3";
+      marqueur.style.filter = "grayscale(100%)";
+    } else {
+      marqueur.style.opacity = "1";
+      marqueur.style.filter = "none";
+    }
+  }
+
+  // Appliquer le style visuel aux boutons de la liste de contrôle
+  const boutonControle = document.getElementById(`btn-exclure-${idCapteur}`);
+  if (boutonControle) {
+    if (capteursExclusManuellement.includes(idCapteur)) {
+      boutonControle.style.backgroundColor = "#6c757d";
+      boutonControle.textContent = `🔴 ${idCapteur} (Masqué)`;
+    } else {
+      boutonControle.style.backgroundColor = "#007BFF";
+      boutonControle.textContent = `🟢 ${idCapteur} (Actif)`;
+    }
+  }
+
+  if (donneesGraphesEnMemoire.labelsX.length > 0) {
+    genererLeGraphique();
+  }
+}
+
 function changerOnglet(evenement, idOnglet) {
   const contenus = document.getElementsByClassName("contenu-onglet");
   for (let i = 0; i < contenus.length; i++) {
@@ -167,11 +196,14 @@ function reinitialiserMarqueurs() {
       marqueur.style.position = "";
       marqueur.style.left = "";
       marqueur.style.top = "";
-      marqueur.classList.remove("capteur-desactive");
       marqueur.style.opacity = "1";
       marqueur.style.filter = "none";
     });
   }
+  capteursExclusManuellement = [];
+  const conteneurListe = document.getElementById("liste-capteurs-options");
+  if (conteneurListe) conteneurListe.innerHTML = "";
+  
   localStorage.removeItem("positionsSondes");
   localStorage.removeItem("capteursExclusManuellement");
 }
@@ -187,6 +219,7 @@ function importerNouveauFichier(evenement) {
   if (txtNomFichier) txtNomFichier.textContent = `Fichier chargé : ${fichier.name}`;
   if (btnGenerer) btnGenerer.disabled = false;
 
+  capteursExclusManuellement = [];
   chargerDonneesODS(fichier);
 }
 
@@ -216,8 +249,6 @@ function genererLeGraphique() {
   let labelsFiltres = [];
   let datasetsFiltres = [];
 
-  const capteursDesactives = Array.from(document.querySelectorAll(".marqueur-draggable.capteur-desactive")).map(m => m.id);
-
   if (pasPeriode > 1) {
     labelsFiltres = donneesGraphesEnMemoire.labelsX.filter((_, idx) => idx % pasPeriode === 0);
     datasetsFiltres = donneesGraphesEnMemoire.datasets.map(dataset => {
@@ -230,12 +261,6 @@ function genererLeGraphique() {
     labelsFiltres = donneesGraphesEnMemoire.labelsX;
     datasetsFiltres = donneesGraphesEnMemoire.datasets;
   }
-
-  // Filtrage graphique dynamique selon l'exclusion manuelle au clic
-  datasetsFiltres = datasetsFiltres.filter(dataset => {
-    const idNet = dataset.label.replace("Capteur ", "").trim();
-    return !capteursDesactives.includes(idNet);
-  });
 
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
 }
@@ -404,7 +429,31 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
         x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } },
       },
       plugins: {
-        legend: { position: "top" },
+        legend: { 
+          position: "top",
+          onClick: function(e, legendItem, legend) {
+            const index = legendItem.datasetIndex;
+            const ci = legend.chart;
+            const fullLabel = ci.data.datasets[index].label;
+            
+            // CORRECTION ICI : Extraction par Regex de l'identifiant technique exact à la fin de la chaîne
+            const regexMatch = fullLabel.match(/([A-Z0-9]+)$/i);
+            const idCapteur = regexMatch ? regexMatch[1].trim() : fullLabel.replace("Capteur ", "").trim();
+
+            if (ci.isDatasetVisible(index)) {
+              ci.hide(index);
+              legendItem.hidden = true;
+              if (!capteursExclusManuellement.includes(idCapteur)) {
+                capteursExclusManuellement.push(idCapteur);
+              }
+            } else {
+              ci.show(index);
+              legendItem.hidden = false;
+              capteursExclusManuellement = capteursExclusManuellement.filter(id => id !== idCapteur);
+            }
+            localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursExclusManuellement));
+          }
+        },
         annotation: {
           annotations: {
             ligneMin: {
@@ -436,6 +485,21 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
         },
       },
     },
+  });
+
+  capteursExclusManuellement.forEach(idExclu => {
+    datasetsFournis.forEach((dataset, idx) => {
+      // CORRECTION ICI : Même traitement par Regex pour comparer des identifiants purs
+      const regexMatch = dataset.label.match(/([A-Z0-9]+)$/i);
+      const idNettoyed = regexMatch ? regexMatch[1].trim() : dataset.label.replace("Capteur ", "").trim();
+
+      if (idNettoyed === idExclu) {
+        monGraphiqueInstance.hide(idx);
+        if(monGraphiqueInstance.legend.legendItems[idx]) {
+          monGraphiqueInstance.legend.legendItems[idx].hidden = true;
+        }
+      }
+    });
   });
 }
 
@@ -622,8 +686,8 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
-  const capteursDesactives = Array.from(document.querySelectorAll(".marqueur-draggable.capteur-desactive")).map(m => m.id);
-  localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursDesactives));
+  // Sauvegarde des exclusions dynamiques synchronisées pour la page 3 rapport
+  localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursExclusManuellement));
 
   const carteCible = document.getElementById("carte-cible");
   if (carteCible) {
