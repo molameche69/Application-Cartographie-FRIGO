@@ -585,3 +585,19 @@ button:hover {
     width: 100%;
   }
 }
+
+.zone-periode input {
+  width: auto; /* Permet à l'input de reprendre sa largeur native standard */
+  padding: 6px; 
+  text-align: center; 
+  border-radius: 4px; 
+  border: 1px solid #ccc; 
+  font-weight: bold;
+}
+
+.zone-periode p{
+  color: beige;
+  display: flex;
+  margin-top: auto;
+}
+

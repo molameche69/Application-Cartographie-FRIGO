@@ -9,21 +9,10 @@ window.sondeEnCoursDeToucher = null;
 let capteursExclusManuellement = [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  const marqueurs = document.querySelectorAll(".marqueur-draggable");
   const carteCible = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible");
 
-  marqueurs.forEach((marqueur) => {
-    marqueur.setAttribute("draggable", "true");
-    marqueur.addEventListener("dragstart", (e) => {
-      e.dataTransfer.setData("text/plain", e.target.id);
-      e.target.style.opacity = "0.5";
-    });
-    marqueur.addEventListener("dragend", (e) => {
-      e.target.style.opacity = "1";
-    });
-  });
-
+  // Initialisation des zones de dépôt (Drag & Drop)
   if (carteCible) {
     carteCible.addEventListener("dragover", (e) => e.preventDefault());
     carteCible.addEventListener("drop", (e) => {
@@ -49,57 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  marqueurs.forEach((marqueur) => {
-    marqueur.addEventListener("click", () => {
-      gererBasculeCapteur(marqueur.id);
-    });
-
-    marqueur.addEventListener("touchstart", (e) => {
-      window.sondeEnCoursDeToucher = e.target;
-      e.target.style.opacity = "0.5";
-    }, { passive: true });
-
-    marqueur.addEventListener("touchmove", (e) => {
-      if (!window.sondeEnCoursDeToucher) return;
-      const touch = e.touches[0];
-      const sonde = window.sondeEnCoursDeToucher;
-      sonde.style.position = "fixed";
-      sonde.style.left = touch.clientX + "px";
-      sonde.style.top = touch.clientY + "px";
-      sonde.style.transform = "translate(-50%, -50%)";
-      sonde.style.zIndex = "1000";
-    }, { passive: true });
-
-    marqueur.addEventListener("touchend", (e) => {
-      const sonde = window.sondeEnCoursDeToucher;
-      if (!sonde) return;
-
-      sonde.style.opacity = "1";
-      sonde.style.position = "";
-      sonde.style.left = "";
-      sonde.style.top = "";
-      sonde.style.transform = "";
-      sonde.style.zIndex = "";
-
-      const touch = e.changedTouches[0];
-      const limitesCarte = carteCible.getBoundingClientRect();
-
-      if (
-        touch.clientX >= limitesCarte.left &&
-        touch.clientX <= limitesCarte.right &&
-        touch.clientY >= limitesCarte.top &&
-        touch.clientY <= limitesCarte.bottom
-      ) {
-        const xPourcentage = ((touch.clientX - limitesCarte.left) / limitesCarte.width) * 100;
-        const yPourcentage = ((touch.clientY - limitesCarte.top) / limitesCarte.height) * 100;
-        placerSonde(sonde, carteCible, xPourcentage, yPourcentage);
-      } else {
-        remettreDansReserve(sonde, reserveCible);
-      }
-      window.sondeEnCoursDeToucher = null;
-    });
-  });
-
+  // Liaison des inputs de configuration
   const inputPeriode = document.getElementById("periode");
   const inputConsigne = document.getElementById("tdeconsigne");
   const inputEMT = document.getElementById("valeur");
@@ -119,22 +58,98 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputHeureFin = document.getElementById("heureFin");
   if (inputHeureDebut) inputHeureDebut.addEventListener("input", synchroniserPlageHoraireSurGraphique);
   if (inputHeureFin) inputHeureFin.addEventListener("input", synchroniserPlageHoraireSurGraphique);
+});
 
-  function placerSonde(sonde, carte, x, y) {
-    carte.appendChild(sonde);
-    sonde.style.position = "absolute";
-    sonde.style.left = x + "%";
-    sonde.style.top = y + "%";
-    sonde.style.margin = "0px";
-  }
+/**
+ * Attache les écouteurs d'événements souris et tactiles sur un marqueur.
+ * À appeler impérativement lors de la création DYNAMIQUE de chaque sonde.
+ */
+function configurerEvenementsMarqueur(marqueur) {
+  if (!marqueur) return;
 
-  function remettreDansReserve(sonde, reserve) {
-    reserve.appendChild(sonde);
+  marqueur.setAttribute("draggable", "true");
+
+  // Drag & Drop Bureau
+  marqueur.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/plain", e.target.id);
+    e.target.style.opacity = "0.5";
+  });
+
+  marqueur.addEventListener("dragend", (e) => {
+    e.target.style.opacity = "1";
+  });
+
+  // Clic standard pour exclusion
+  marqueur.addEventListener("click", () => {
+    gererBasculeCapteur(marqueur.id);
+  });
+
+  // Support Tactile (Mobile / Tablette)
+  marqueur.addEventListener("touchstart", (e) => {
+    window.sondeEnCoursDeToucher = e.target;
+    e.target.style.opacity = "0.5";
+  }, { passive: true });
+
+  marqueur.addEventListener("touchmove", (e) => {
+    if (!window.sondeEnCoursDeToucher) return;
+    const touch = e.touches[0];
+    const sonde = window.sondeEnCoursDeToucher;
+    sonde.style.position = "fixed";
+    sonde.style.left = touch.clientX + "px";
+    sonde.style.top = touch.clientY + "px";
+    sonde.style.transform = "translate(-50%, -50%)";
+    sonde.style.zIndex = "1000";
+  }, { passive: true });
+
+  marqueur.addEventListener("touchend", (e) => {
+    const sonde = window.sondeEnCoursDeToucher;
+    if (!sonde) return;
+
+    sonde.style.opacity = "1";
     sonde.style.position = "";
     sonde.style.left = "";
     sonde.style.top = "";
-  }
-});
+    sonde.style.transform = "";
+    sonde.style.zIndex = "";
+
+    const touch = e.changedTouches[0];
+    const carteCible = document.getElementById("carte-cible");
+    const reserveCible = document.getElementById("reserve-cible");
+
+    if (carteCible && reserveCible) {
+      const limitesCarte = carteCible.getBoundingClientRect();
+
+      if (
+        touch.clientX >= limitesCarte.left &&
+        touch.clientX <= limitesCarte.right &&
+        touch.clientY >= limitesCarte.top &&
+        touch.clientY <= limitesCarte.bottom
+      ) {
+        const xPourcentage = ((touch.clientX - limitesCarte.left) / limitesCarte.width) * 100;
+        const yPourcentage = ((touch.clientY - limitesCarte.top) / limitesCarte.height) * 100;
+        placerSonde(sonde, carteCible, xPourcentage, yPourcentage);
+      } else {
+        remettreDansReserve(sonde, reserveCible);
+      }
+    }
+    window.sondeEnCoursDeToucher = null;
+  });
+}
+
+function placerSonde(sonde, carte, x, y) {
+  carte.appendChild(sonde);
+  sonde.style.position = "absolute";
+  sonde.style.left = x + "%";
+  sonde.style.top = y + "%";
+  sonde.style.margin = "0px";
+}
+
+function remettreDansReserve(sonde, reserve) {
+  reserve.appendChild(sonde);
+  sonde.style.position = "";
+  sonde.style.left = "";
+  sonde.style.top = "";
+}
 
 function synchroniserPlageHoraireSurGraphique() {
   if (!monGraphiqueInstance) return;
@@ -142,14 +157,11 @@ function synchroniserPlageHoraireSurGraphique() {
   let debut = document.getElementById("heureDebut")?.value.trim() || "";
   let fin = document.getElementById("heureFin")?.value.trim() || "";
 
-  // Correction automatique : remplace 'H' ou 'h' par ':' pour correspondre aux données du graphique
   debut = debut.replace(/[Hh]/g, ":");
   fin = fin.replace(/[Hh]/g, ":");
 
-  // Complète si l'utilisateur n'a écrit que l'heure ou les minutes (ex: "21" -> "21:00:00")
   if (debut && debut.length === 2) debut += ":00:00";
   if (debut && debut.length === 5) debut += ":00";
-  
   if (fin && fin.length === 2) fin += ":00:00";
   if (fin && fin.length === 5) fin += ":00";
 
@@ -175,7 +187,6 @@ function synchroniserPlageHoraireSurGraphique() {
     indexMax = temp;
   }
 
-  // Applique le zoom de manière fluide sur l'axe X
   monGraphiqueInstance.zoomScale('x', { min: indexMin, max: indexMax }, 'default');
 }
 
@@ -228,7 +239,7 @@ function changerOnglet(evenement, idOnglet) {
 }
 
 function reinitialiserMarqueurs() {
-  const reserve = document.getElementById("reserve-cible");
+  const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   const tousLesMarqueurs = document.querySelectorAll(".marqueur-draggable");
   if (reserve) {
     tousLesMarqueurs.forEach((marqueur) => {
@@ -408,8 +419,46 @@ function chargerDonneesODS(fichierDynamique = null) {
         activerSelectionSouris(corpsTableau);
       }
 
-      const listeLabelsX = Array.from(tousLesHorodatages).sort();
+      const listelabelsX = Array.from(tousLesHorodatages).sort();
       const listeIdsCapteurs = Object.keys(donneesCapteurs);
+
+      // Génération automatique des éléments pastilles de sondes dans l'onglet 2 si vides
+      const conteneurSondes = document.getElementById("liste-sondes-disponibles");
+      if (conteneurSondes && conteneurSondes.children.length === 0) {
+        const couleursPastilles = [
+          "#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231", 
+          "#911EB4", "#42D4F4", "#F032E6", "#FABED4"
+        ];
+
+        listeIdsCapteurs.forEach((id, index) => {
+          const numeroSonde = index + 1;
+          if (numeroSonde <= 9) {
+            const ligneSonde = document.createElement("div");
+            ligneSonde.className = "ligne-sonde-item";
+            ligneSonde.style.display = "flex";
+            ligneSonde.style.alignItems = "center";
+            ligneSonde.style.marginBottom = "10px";
+            ligneSonde.style.gap = "12px";
+
+            const divSonde = document.createElement("div");
+            divSonde.className = "marqueur-draggable pastille-numero";
+            divSonde.id = id;
+            divSonde.textContent = numeroSonde;
+            divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
+
+            const textNom = document.createElement("span");
+            textNom.className = "texte-nom-sonde";
+            textNom.textContent = id;
+            textNom.style.fontWeight = "bold";
+            textNom.style.color = "#333";
+
+            ligneSonde.appendChild(divSonde);
+            ligneSonde.appendChild(textNom);
+            conteneurSondes.appendChild(ligneSonde);
+            configurerEvenementsMarqueur(divSonde);
+          }
+        });
+      }
 
       const couleursCourbes = [
         { border: "#007BFF", bg: "rgba(0, 123, 255, 0.02)" },
@@ -418,7 +467,7 @@ function chargerDonneesODS(fichierDynamique = null) {
       ];
 
       const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
-        const dataPoints = listeLabelsX.map((temps) => donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null);
+        const dataPoints = listelabelsX.map((temps) => donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null);
         const couleur = couleursCourbes[index % couleursCourbes.length];
 
         return {
@@ -434,7 +483,7 @@ function chargerDonneesODS(fichierDynamique = null) {
         };
       });
 
-      donneesGraphesEnMemoire = { labelsX: listeLabelsX, datasets: datasetsGraphique };
+      donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
 
       if (!document.getElementById("btn-generer-graphique") && document.getElementById("graphiqueTemperatures")) {
         genererLeGraphique();
@@ -480,8 +529,7 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
             const ci = legend.chart;
             const fullLabel = ci.data.datasets[index].label;
             
-            const regexMatch = fullLabel.match(/([A-Z0-9]+)$/i);
-            const idCapteur = regexMatch ? regexMatch[1].trim() : fullLabel.replace("Capteur ", "").trim();
+            const idCapteur = fullLabel.replace("Capteur ", "").trim();
 
             if (ci.isDatasetVisible(index)) {
               ci.hide(index);
@@ -532,9 +580,7 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 
   capteursExclusManuellement.forEach(idExclu => {
     datasetsFournis.forEach((dataset, idx) => {
-      const regexMatch = dataset.label.match(/([A-Z0-9]+)$/i);
-      const idNettoyed = regexMatch ? regexMatch[1].trim() : dataset.label.replace("Capteur ", "").trim();
-
+      const idNettoyed = dataset.label.replace("Capteur ", "").trim();
       if (idNettoyed === idExclu) {
         monGraphiqueInstance.hide(idx);
         if(monGraphiqueInstance.legend.legendItems[idx]) {
@@ -574,7 +620,6 @@ function mettreAJourSeuilsAutomatiques() {
 
 function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
-  conteneurTableau.onmousedown = null;
 
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
@@ -607,8 +652,7 @@ function activerSelectionSouris(conteneurTableau) {
     const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
     lignes.forEach((l) => (l.style.backgroundColor = ""));
     ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
-    e.preventDefault(); 
-  }, { passive: false });
+  }, { passive: true });
 
   conteneurTableau.addEventListener("touchmove", (e) => {
     if (!estEnTrainDeGlisser || !ligneDebutSelection) return;
@@ -621,8 +665,7 @@ function activerSelectionSouris(conteneurTableau) {
     if (!ligneActuelle || ligneActuelle.parentNode !== conteneurTableau) return;
 
     appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
-    e.preventDefault();
-  }, { passive: false });
+  }, { passive: true });
 }
 
 function appliquerSelectionVisuelle(conteneur, ligneDebut, ligneFin) {
@@ -735,9 +778,14 @@ function sauvegarderToutEtDiriger() {
   if (carteCible) {
     const donneesSondes = [];
     carteCible.querySelectorAll(".marqueur-draggable").forEach((sonde) => {
-      if (sonde.id !== "marqueur1") {
-        donneesSondes.push({ id: sonde.id, src: sonde.getAttribute("src"), left: sonde.style.left, top: sonde.style.top });
-      }
+      // MODIFICATION : Sauvegarde complète des styles de pastille (couleur de fond et texte du numéro)
+      donneesSondes.push({ 
+        id: sonde.id, 
+        left: sonde.style.left, 
+        top: sonde.style.top,
+        numero: sonde.textContent,
+        couleurFond: window.getComputedStyle(sonde).backgroundColor || sonde.style.backgroundColor
+      });
     });
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
@@ -790,22 +838,8 @@ function validerCode() {
   if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
     sessionStorage.setItem("estConnecte", "true");
     if (erreur) erreur.style.display = "none";
-    if (conteneurAuth) {
-      conteneurAuth.style.opacity = "0";
-      setTimeout(() => {
-        conteneurAuth.style.display = "none";
-      }, 400);
-    }
+    if (conteneurAuth) conteneurAuth.style.display = "none";
   } else {
     if (erreur) erreur.style.display = "block";
-    document.getElementById("codeAcces").value = "";
-    document.getElementById("codeAcces").focus();
-  }
-}
-
-function verifierTouche(event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    validerCode();
   }
 }

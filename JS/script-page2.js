@@ -77,23 +77,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // CORRECTION : Reconstruction des pastilles dynamiques (div colorés) sur la MAP du rapport
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
 
   if (carteRapport && sondesStockees) {
     try {
       JSON.parse(sondesStockees).forEach((sonde) => {
-        const imgSonde = document.createElement("img");
-        imgSonde.src = sonde.src;
-        imgSonde.className = "sonde-icone";
-        imgSonde.style.position = "absolute";
-        imgSonde.style.left = sonde.left;
-        imgSonde.style.top = sonde.top;
-        imgSonde.style.transform = "translate(-50%, -50%)";
-        imgSonde.style.width = "28px";
-        imgSonde.style.height = "28px";
-        imgSonde.style.objectFit = "contain";
-        carteRapport.appendChild(imgSonde);
+        const divSonde = document.createElement("div");
+        divSonde.id = sonde.id;
+        divSonde.textContent = sonde.numero || "";
+        
+        // Application des styles pour recréer la pastille ronde à l'identique
+        divSonde.style.position = "absolute";
+        divSonde.style.left = sonde.left;
+        divSonde.style.top = sonde.top;
+        divSonde.style.transform = "translate(-50%, -50%)";
+        
+        // Dimensions et forme de la pastille
+        divSonde.style.width = "28px";
+        divSonde.style.height = "28px";
+        divSonde.style.borderRadius = "50%";
+        divSonde.style.backgroundColor = sonde.couleurFond || "#007BFF";
+        
+        // Style du texte à l'intérieur du rond
+        divSonde.style.color = "white";
+        divSonde.style.fontWeight = "bold";
+        divSonde.style.display = "flex";
+        divSonde.style.alignItems = "center";
+        divSonde.style.justifyContent = "center";
+        divSonde.style.fontSize = "14px";
+        
+        // Sécurités pour forcer l'affichage lors de l'export PDF / Impression
+        divSonde.style.zIndex = "100";
+        divSonde.style.webkitPrintColorAdjust = "exact";
+        divSonde.style.printColorAdjust = "exact";
+        
+        carteRapport.appendChild(divSonde);
       });
     } catch (e) {
       console.error("Erreur d'injection des sondes :", e);
@@ -123,7 +143,6 @@ function chargerDonneesODSRapport() {
   const filtreFin = formaterHeure(localStorage.getItem("filtreHeureFin") || "");
   const fichierBase64 = localStorage.getItem("fichierOdsBase64");
 
-  
   let exclusManuellement = [];
   try {
     const stock = localStorage.getItem("capteursExclusManuellement");
@@ -157,8 +176,7 @@ function chargerDonneesODSRapport() {
       if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
         const id = ligne[0].toString().trim();
         
-        
-        if (id === "E80A0600102E" || id === "Capteur E80A0600102E" || exclusManuellement.includes(id)) {
+        if (exclusManuellement.includes(id)) {
           continue; 
         }
         

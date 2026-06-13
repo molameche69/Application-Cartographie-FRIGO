@@ -15,7 +15,7 @@
 
 <body>
 
-<canvas id="fond-etoile"></canvas>
+  <canvas id="fond-etoile"></canvas>
 
   <div class="Identifiant" id="bloc-authentification">
     <div id="ecran-verrouillage">
@@ -38,7 +38,7 @@
 
         <button type="button" class="btn-connexion" onclick="validerCode()">Se connecter</button>
         
-        <div id="erreur-code" class="message-erreur" style="display: none; color: red; margin-top: 10px;">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
+        <div id="erreur-code" class="message-erreur">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
 
       </div>
     </div>
@@ -97,7 +97,7 @@
         </div>
       </div>
         
-      <div id="onglet2" class="contenu-onglet" style="display:none;">
+      <div id="onglet2" class="contenu-onglet cache">
         <div class="Carto">
           <i>Cartographie</i>
         </div>
@@ -105,15 +105,8 @@
         <div class="container-global">
           <div class="reserve-images" id="reserve-cible">
             <h3>Sondes à placer :</h3>
-            <img src="images/Sondes/1.png" class="marqueur-draggable" id="marqueur1" alt="Sonde 1" />
-            <img src="images/Sondes/2.jpg" class="marqueur-draggable" id="marqueur2" alt="Sonde 2" />
-            <img src="images/Sondes/3.jpg" class="marqueur-draggable" id="marqueur3" alt="Sonde 3" />
-            <img src="images/Sondes/4.jpg" class="marqueur-draggable" id="marqueur4" alt="Sonde 4" />
-            <img src="images/Sondes/5.jpg" class="marqueur-draggable" id="marqueur5" alt="Sonde 5" />
-            <img src="images/Sondes/6.jpg" class="marqueur-draggable" id="marqueur6" alt="Sonde 6" />
-            <img src="images/Sondes/7.jpg" class="marqueur-draggable" id="marqueur7" alt="Sonde 7" />
-            <img src="images/Sondes/8.jpg" class="marqueur-draggable" id="marqueur8" alt="Sonde 8" />
-            <img src="images/Sondes/9.jpg" class="marqueur-draggable" id="marqueur9" alt="Sonde 9" />
+            
+            <div id="liste-sondes-disponibles"></div>
 
             <button type="button" onclick="reinitialiserMarqueurs()">
               Réinitialiser les marqueurs
@@ -126,7 +119,7 @@
         </div>
       </div>
 
-      <div id="onglet3" class="contenu-onglet" style="display:none;">
+      <div id="onglet3" class="contenu-onglet cache">
         <div id="bloc-graphique">
           <i>Analyse Thermique depuis Fichier personnalisé</i>
 
@@ -138,9 +131,9 @@
             <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
           </div>
 
-          <div class="zone-periode" style="margin: 15px 0; display: flex; align-items: center; gap: 10px;">
-            <label for="periode" style="color: #fff; font-weight: bold; font-size: 14px;">Périodicité d'affichage :</label>
-            <input type="number" id="periode" name="periode" value="1" min="1" style="width: 60px; padding: 6px; text-align: center; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;" />
+          <div class="zone-periode">
+            <label for="periode"><p>Périodicité d'affichage :</p></label>
+            <input type="number" id="periode" name="periode" value="1" min="1" />
           </div>
 
           <div class="zone-generation-graphique">
