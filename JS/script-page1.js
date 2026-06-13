@@ -51,6 +51,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   marqueurs.forEach((marqueur) => {
+    // Système de clic manuel pour activer/désactiver complètement un capteur
+    marqueur.addEventListener("click", () => {
+      marqueur.classList.toggle("capteur-desactive");
+      
+      if (marqueur.classList.contains("capteur-desactive")) {
+        marqueur.style.opacity = "0.3";
+        marqueur.style.filter = "grayscale(100%)";
+      } else {
+        marqueur.style.opacity = "1";
+        marqueur.style.filter = "none";
+      }
+      
+      if (donneesGraphesEnMemoire.labelsX.length > 0) {
+        genererLeGraphique();
+      }
+    });
+
     marqueur.addEventListener("touchstart", (e) => {
       window.sondeEnCoursDeToucher = e.target;
       e.target.style.opacity = "0.5";
@@ -150,9 +167,13 @@ function reinitialiserMarqueurs() {
       marqueur.style.position = "";
       marqueur.style.left = "";
       marqueur.style.top = "";
+      marqueur.classList.remove("capteur-desactive");
+      marqueur.style.opacity = "1";
+      marqueur.style.filter = "none";
     });
   }
   localStorage.removeItem("positionsSondes");
+  localStorage.removeItem("capteursExclusManuellement");
 }
 
 function importerNouveauFichier(evenement) {
@@ -195,6 +216,8 @@ function genererLeGraphique() {
   let labelsFiltres = [];
   let datasetsFiltres = [];
 
+  const capteursDesactives = Array.from(document.querySelectorAll(".marqueur-draggable.capteur-desactive")).map(m => m.id);
+
   if (pasPeriode > 1) {
     labelsFiltres = donneesGraphesEnMemoire.labelsX.filter((_, idx) => idx % pasPeriode === 0);
     datasetsFiltres = donneesGraphesEnMemoire.datasets.map(dataset => {
@@ -207,6 +230,12 @@ function genererLeGraphique() {
     labelsFiltres = donneesGraphesEnMemoire.labelsX;
     datasetsFiltres = donneesGraphesEnMemoire.datasets;
   }
+
+  // Filtrage graphique dynamique selon l'exclusion manuelle au clic
+  datasetsFiltres = datasetsFiltres.filter(dataset => {
+    const idNet = dataset.label.replace("Capteur ", "").trim();
+    return !capteursDesactives.includes(idNet);
+  });
 
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
 }
@@ -246,7 +275,7 @@ function chargerDonneesODS(fichierDynamique = null) {
         const ligne = donneesJson[i];
         if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
           const idCapteur = ligne[0].toString().trim();
-          
+
           let tempsAffiche = "";
           let tempsBrutTexte = "";
 
@@ -293,7 +322,6 @@ function chargerDonneesODS(fichierDynamique = null) {
 
           const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
 
-          // Intégration de l'attribut data-time pour sécuriser la sélection visuelle du tableau
           htmlLignes += `
             <tr data-time="${tempsAffiche}" style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer;">
               <td style="padding: 8px; font-weight: bold; color: #333;">${idCapteur}</td>
@@ -536,13 +564,11 @@ function sauvegarderToutEtDiriger() {
   if (filtreDebut.length === 5) filtreDebut += ":00";
   if (filtreFin.length === 5) filtreFin += ":00";
 
-  // Priorité 1 : Si l'utilisateur a fait une sélection manuelle glissée sur les lignes du tableau
   if (pointsSelectionnes.length >= 31) {
     pointsSelectionnes.sort();
     filtreDebut = pointsSelectionnes[0];
     filtreFin = pointsSelectionnes[pointsSelectionnes.length - 1];
   } 
-  // Priorité 2 : Si l'utilisateur a utilisé le Zoom interactif du graphique Chart.js
   else if (monGraphiqueInstance) {
     const xAxis = monGraphiqueInstance.scales.x;
     if (xAxis && xAxis.min !== undefined && xAxis.max !== undefined) {
@@ -564,6 +590,11 @@ function sauvegarderToutEtDiriger() {
       }
     }
   }
+
+  const inputHeureDebut = document.getElementById("heureDebut");
+  const inputHeureFin = document.getElementById("heureFin");
+  if (inputHeureDebut) inputHeureDebut.value = filtreDebut;
+  if (inputHeureFin) inputHeureFin.value = filtreFin;
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
@@ -591,11 +622,16 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
+  const capteursDesactives = Array.from(document.querySelectorAll(".marqueur-draggable.capteur-desactive")).map(m => m.id);
+  localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursDesactives));
+
   const carteCible = document.getElementById("carte-cible");
   if (carteCible) {
     const donneesSondes = [];
     carteCible.querySelectorAll(".marqueur-draggable").forEach((sonde) => {
-      donneesSondes.push({ id: sonde.id, src: sonde.getAttribute("src"), left: sonde.style.left, top: sonde.style.top });
+      if (sonde.id !== "marqueur1") {
+        donneesSondes.push({ id: sonde.id, src: sonde.getAttribute("src"), left: sonde.style.left, top: sonde.style.top });
+      }
     });
     localStorage.setItem("positionsSondes", JSON.stringify(donneesSondes));
   }
@@ -629,43 +665,37 @@ function reinitialiserZoomGraphique() {
 }
 
 const USER_CORRECT = "Auralyon"; 
-    const CODE_CORRECT = "Auralyon2026!"; 
+const CODE_CORRECT = "Auralyon2026!"; 
 
-    // Au chargement de la page, on vérifie si l'utilisateur s'est déjà connecté
-    window.addEventListener("DOMContentLoaded", () => {
-      const conteneurAuth = document.getElementById("bloc-authentification");
-      
-      if (sessionStorage.getItem("estConnecte") === "true") {
-        // Si déjà connecté, on masque directement l'écran de connexion sans animation
-        conteneurAuth.style.display = "none";
-      }
-    });
+window.addEventListener("DOMContentLoaded", () => {
+  const conteneurAuth = document.getElementById("bloc-authentification");
+  if (sessionStorage.getItem("estConnecte") === "true") {
+    conteneurAuth.style.display = "none";
+  }
+});
 
-    function validerCode() {
-      const userSaisi = document.getElementById("identifiantAcces").value.trim();
-      const codeSaisi = document.getElementById("codeAcces").value;
-      
-      const conteneurAuth = document.getElementById("bloc-authentification");
-      const erreur = document.getElementById("erreur-code");
+function validerCode() {
+  const userSaisi = document.getElementById("identifiantAcces").value.trim();
+  const codeSaisi = document.getElementById("codeAcces").value;
+  
+  const conteneurAuth = document.getElementById("bloc-authentification");
+  const erreur = document.getElementById("erreur-code");
 
-      if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
-        // 1. On enregistre le statut de connexion dans le navigateur
-        sessionStorage.setItem("estConnecte", "true");
+  if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
+    sessionStorage.setItem("estConnecte", "true");
+    conteneurAuth.style.opacity = "0";
+    setTimeout(() => {
+      conteneurAuth.style.display = "none";
+    }, 400);
+  } else {
+    erreur.style.display = "block";
+    document.getElementById("codeAcces").value = "";
+    document.getElementById("codeAcces").focus();
+  }
+}
 
-        // 2. On applique l'effet de transition visuelle
-        conteneurAuth.style.opacity = "0";
-        setTimeout(() => {
-          conteneurAuth.style.display = "none";
-        }, 400);
-      } else {
-        erreur.style.display = "block";
-        document.getElementById("codeAcces").value = "";
-        document.getElementById("codeAcces").focus();
-      }
-    }
-
-    function verifierTouche(event) {
-      if (event.key === "Enter") {
-        validerCode();
-      }
-    }
+function verifierTouche(event) {
+  if (event.key === "Enter") {
+    validerCode();
+  }
+}

@@ -152,6 +152,13 @@ function chargerDonneesODSRapport() {
       if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
         const id = ligne[0].toString().trim();
         
+        // ==========================================================
+        // DÉSACTIVATION MANUELLE DU CAPTEUR D'AMBIANCE
+        // ==========================================================
+        if (id === "E80A0600102E" || id === "Capteur E80A0600102E") {
+          continue; 
+        }
+        
         let tempsAffiche = "";
         if (ligne[1] instanceof Date) {
           const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
