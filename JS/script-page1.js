@@ -627,3 +627,33 @@ function reinitialiserZoomGraphique() {
     monGraphiqueInstance.resetZoom();
   }
 }
+
+const USER_CORRECT = "Auralyon"; 
+ const CODE_CORRECT = "Auralyon2026!"; 
+
+    function validerCode() {
+      const userSaisi = document.getElementById("identifiantAcces").value.trim();
+      const codeSaisi = document.getElementById("codeAcces").value;
+      
+      // On cible le conteneur complet qui fait le fond gris
+      const conteneurAuth = document.getElementById("bloc-authentification");
+      const erreur = document.getElementById("erreur-code");
+
+      if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
+        // Applique l'effet de fondu sur tout le bloc d'authentification
+        conteneurAuth.style.opacity = "0";
+        setTimeout(() => {
+          conteneurAuth.style.display = "none";
+        }, 400);
+      } else {
+        erreur.style.display = "block";
+        document.getElementById("codeAcces").value = "";
+        document.getElementById("codeAcces").focus();
+      }
+    }
+
+    function verifierTouche(event) {
+      if (event.key === "Enter") {
+        validerCode();
+  }
+}

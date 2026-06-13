@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accueil - Saisie Cartographie</title>
   <link rel="stylesheet" href="css/style-page1-Acceuil.css" />
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,6 +14,33 @@
 </head>
 
 <body>
+
+<div class="Identifiant" id="bloc-authentification">
+  <div id="ecran-verrouillage">
+    <div class="boite-connexion">
+      
+      <div class="entete-bleue">
+        <p>Cartographie 9points</p>
+      </div>
+
+      <div class="groupe-champ">
+        <label for="identifiantAcces">Nom d'utilisateur <span class="requis">*</span></label>
+        <input type="text" id="identifiantAcces" onkeydown="verifierTouche(event)" />
+      </div>
+
+      <div class="groupe-champ">
+        <label for="codeAcces">Mot de passe <span class="requis">*</span></label>
+        <input type="password" id="codeAcces" onkeydown="verifierTouche(event)" />
+      </div>
+
+      <button type="button" class="btn-connexion" onclick="validerCode()">Se connecter</button>
+      
+      <div id="erreur-code" class="message-erreur">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
+
+    </div>
+  </div>
+</div>
+
   <canvas id="fond-etoile"></canvas>
 
   <div class="Titre">
@@ -35,39 +63,41 @@
     </div>
 
     <form id="formulaire-carto" onsubmit="return false;">
-      <div id="onglet1" class="contenu-onglet">
-        <div class="tech">
-          <i>Veuillez remplir les cases</i>
-        </div>
-        <div class="Fiche">
-          <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
-          <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur :" required />
-          <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme :" required />
-          <input type="text" id="userService" name="userService" placeholder="Service / Département :" required />
+      <div id="onglet1" class="contents-onglet">
+        <div id="onglet1" class="contenu-onglet">
+          <div class="tech">
+            <i>Veuillez remplir les cases</i>
+          </div>
+          <div class="Fiche">
+            <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
+            <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur :" required />
+            <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme :" required />
+            <input type="text" id="userService" name="userService" placeholder="Service / Département :" required />
 
-          <h2>2. Section : Identification de l'Enceinte à Contrôler</h2>
-          <input type="text" id="userReference" name="userReference" placeholder="Référence interne / Numéro de série de l'enceinte :" />
-          <input type="text" id="userCaracteristique" name="userCaracteristique" placeholder="Caractéristiques de l'appareil (Marque, Modèle, Volume) :" />
-          <input type="text" id="userLoc" name="userLoc" placeholder="Localisation de l'enceinte :" />
+            <h2>2. Section : Identification de l'Enceinte à Contrôler</h2>
+            <input type="text" id="userReference" name="userReference" placeholder="Référence interne / Numéro de série de l'enceinte :" />
+            <input type="text" id="userCaracteristique" name="userCaracteristique" placeholder="Caractéristiques de l'appareil (Marque, Modèle, Volume) :" />
+            <input type="text" id="userLoc" name="userLoc" placeholder="Localisation de l'enceinte :" />
 
-          <h2>3. Section : Spécifications Métrologiques (Les Critères)</h2>
-          <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) :" />
-          <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) :" />
+            <h2>3. Section : Spécifications Métrologiques (Les Critères)</h2>
+            <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) :" />
+            <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) :" />
 
-          <h2>4. Section : Filtres Temporels de l'Essai</h2>
-          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :" required />
-          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :" required />
+            <h2>4. Section : Filtres Temporels de l'Essai</h2>
+            <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :" required />
+            <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :" required />
 
-          <h2>5. Mode Opératoire</h2>
-          <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
+            <h2>5. Mode Opératoire</h2>
+            <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
 - La cartographie a été effectuée avec l'enceinte chargée
 - Le début des mesures commence une fois le régime établi.
 - Les points sont positionnés à 5 cm de chacune des parois.
-          </textarea>
+            </textarea>
+          </div>
         </div>
       </div>
 
-      <div id="onglet2" class="contenu-onglet">
+      <div id="onglet2" class="contenu-onglet" style="display:none;">
         <div class="Carto">
           <i>Cartographie</i>
         </div>
@@ -96,7 +126,7 @@
         </div>
       </div>
 
-      <div id="onglet3" class="contenu-onglet">
+      <div id="onglet3" class="contenu-onglet" style="display:none;">
         <div id="bloc-graphique">
           <i>Analyse Thermique depuis Fichier personnalisé</i>
 
@@ -118,8 +148,6 @@
               Générer le Graphique depuis le Tableau
             </button>
           </div>
-
-          
 
           <div class="conteneur-tableau-ods">
             <table>
@@ -145,5 +173,6 @@
 
   <script src="JS/script-fond.js"></script>
   <script src="JS/script-page1.js"></script>
+
 </body>
 </html>

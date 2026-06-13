@@ -1,6 +1,3 @@
-/* ==========================================================
-   1. STYLE GÉNÉRAL & FONDS
-   ========================================================== */
 #fond-etoile {
   position: fixed;
   top: 0;
@@ -17,9 +14,146 @@ body {
   background-color: #f4f4f9;
 }
 
-/* ==========================================================
-   2. EN-TÊTE / TITRE
-   ========================================================== */
+
+/* Conteneur plein écran - Vos couleurs */
+.Identifiant {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #c4c4c4, rgb(77, 76, 76));
+  z-index: 99999;
+  font-family: sans-serif;
+}
+
+.Identifiant p {
+  display: flex;
+  justify-content: center;
+  border: 1px solid gray;
+  background-color: rgb(66, 66, 66);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 30px;
+  font-family: sans-serif;
+}
+
+#ecran-verrouillage {
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.4s ease;
+}
+
+/* Boîte centrale - Vos couleurs */
+.boite-connexion {
+  background: radial-gradient(circle at center, #e0e0e0, #b5b5b5);
+  padding: 40px;
+  border-radius: 12px;
+  border: 1px solid grey;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 420px;
+  width: 90%;
+  box-sizing: border-box;
+}
+
+/* Titre H2 - Vos couleurs */
+.boite-connexion h2 {
+  color: black;
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 2px solid black;
+  background-color: white;
+  padding: 10px;
+}
+
+/* Corps de la connexion */
+.corps-connexion {
+  text-align: left;
+}
+
+.indication-region {
+  color: #333333;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Groupes de champs (Labels + Inputs) */
+.groupe-champ {
+  margin-bottom: 15px;
+}
+
+.groupe-champ label {
+  display: block;
+  font-size: 14px;
+  color: black;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.groupe-champ .requis {
+  color: #ef4444;
+}
+
+
+.boite-connexion input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 5px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background-color: beige;
+  color: #000; 
+  font-size: 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.boite-connexion input:focus {
+  outline: none;
+  border-color: #38bdf8;
+}
+
+
+.boite-connexion .btn-connexion {
+  background-color: white;
+  color: #0f172a;
+  border: 1px solid #475569;
+  padding: 12px 30px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 15px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.boite-connexion .btn-connexion:hover {
+  background-color: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+}
+
+/* Texte d'erreur - Vos couleurs */
+.message-erreur {
+  color: #ef4444;
+  font-size: 14px;
+  margin-top: 15px;
+  text-align: center;
+  display: none;
+  font-family: sans-serif;
+  font-weight: bold;
+}
 .Titre {
   display: flex;
   justify-content: center;
