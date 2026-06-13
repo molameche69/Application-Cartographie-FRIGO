@@ -5,13 +5,8 @@ let monGraphiqueInstance = null;
 let estEnTrainDeGlisser = false;
 let ligneDebutSelection = null;
 
-// Variable de stockage temporaire pour le fichier sélectionné
 let fichierActuelPourFiltrage = null;
-
-// Variables pour mémoriser les données brutes lues du fichier ODS
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
-
-// Variable globale temporaire pour suivre la sonde déplacée au doigt sur mobile
 window.sondeEnCoursDeToucher = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -19,9 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const carteCible = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible");
 
-  // ==========================================================
-  // A. GESTION DES SOURIS (ORDINATEUR) - DRAG & DROP
-  // ==========================================================
   marqueurs.forEach((marqueur) => {
     marqueur.setAttribute("draggable", "true");
     marqueur.addEventListener("dragstart", (e) => {
@@ -58,9 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ==========================================================
-  // B. GESTION DES ÉCRANS TACTILES (TÉLÉPHONE / TABLETTE)
-  // ==========================================================
   marqueurs.forEach((marqueur) => {
     marqueur.addEventListener("touchstart", (e) => {
       window.sondeEnCoursDeToucher = e.target;
@@ -108,14 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ==========================================================
-  // ÉCOUTEURS DYNAMIQUES POUR LA PÉRIODICITÉ ET LES CALCULS AUTOMATIQUES
-  // ==========================================================
   const inputPeriode = document.getElementById("periode");
   const inputConsigne = document.getElementById("tdeconsigne");
   const inputEMT = document.getElementById("valeur");
-  const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin = document.getElementById("heureFin");
 
   if (inputPeriode) {
     inputPeriode.addEventListener("input", () => {
@@ -124,10 +108,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-
-  // Permet de rafraîchir dynamiquement le graphique et le tableau si l'utilisateur change les heures
-  if (inputHeureDebut) inputHeureDebut.addEventListener("input", () => { if(fichierActuelPourFiltrage) chargerDonneesODS(); });
-  if (inputHeureFin) inputHeureFin.addEventListener("input", () => { if(fichierActuelPourFiltrage) chargerDonneesODS(); });
 
   if (inputConsigne) inputConsigne.addEventListener("input", mettreAJourSeuilsAutomatiques);
   if (inputEMT) inputEMT.addEventListener("input", mettreAJourSeuilsAutomatiques);
@@ -148,42 +128,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// ==========================================================
-// FONCTION UTILITAIRE DE NORMALISATION DES HEURES SALSES (Ex: 15h30 -> 15:30:00)
-// ==========================================================
-function normaliserHeureSaisie(chaineSaisie) {
-  let str = chaineSaisie.toString().trim().toLowerCase();
-  if (!str) return "";
-  
-  // Remplacer les séparateurs courants (h, H, m, M, un espace) par des deux-points
-  str = str.replace(/[hm\s]/g, ":");
-  
-  // Extraire les groupes de chiffres
-  let parties = str.split(":").filter(p => p !== "");
-  
-  if (parties.length >= 2) {
-    let h = parties[0].padStart(2, '0');
-    let m = parties[1].padStart(2, '0');
-    let s = parties[2] ? parties[2].padStart(2, '0') : "00";
-    return `${h}:${m}:${s}`;
-  }
-  return "";
-}
-
-// ==========================================================
-// 2. FONCTIONS DE NAVIGATION ET REINITIALISATION
-// ==========================================================
 function changerOnglet(evenement, idOnglet) {
   const contenus = document.getElementsByClassName("contenu-onglet");
   for (let i = 0; i < contenus.length; i++) {
     contenus[i].style.display = "none";
   }
-
   const boutons = document.getElementsByClassName("onglet-btn");
   for (let i = 0; i < boutons.length; i++) {
     boutons[i].className = boutons[i].className.replace(" actif", "");
   }
-
   document.getElementById(idOnglet).style.display = "block";
   if (evenement) evenement.currentTarget.className += " actif";
 }
@@ -216,9 +169,6 @@ function importerNouveauFichier(evenement) {
   chargerDonneesODS(fichier);
 }
 
-// ==========================================================
-// ACTION DU BOUTON POUR INJECTER ET FILTRER SELON LA PERIODE
-// ==========================================================
 function genererLeGraphique() {
   const zoneGeneration = document.querySelector(".zone-generation-graphique");
   if (!zoneGeneration) return;
@@ -261,18 +211,13 @@ function genererLeGraphique() {
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
 }
 
-// ==========================================================
-// 3. PARSING DU FICHIER LOCAL AVEC SELECTION HORAIRE ROBUSTE
-// ==========================================================
 function chargerDonneesODS(fichierDynamique = null) {
-  let valeurSaisieDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let valeurSaisieFin = document.getElementById("heureFin")?.value.trim() || "";
+  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
 
-  // Transformation intelligente (ex: 15h30 -> 15:30:00)
-  let filtreDebut = normaliserHeureSaisie(valeurSaisieDebut);
-  let filtreFin = normaliserHeureSaisie(valeurSaisieFin);
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length === 5) filtreFin += ":00";
 
-  // Sauvegarde des versions normalisées pour la page 2
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
 
@@ -289,9 +234,9 @@ function chargerDonneesODS(fichierDynamique = null) {
   promesseLecture
     .then((buffer) => {
       const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: "array", raw: true });
+      const workbook = XLSX.read(data, { type: "array", cellDates: true });
       const feuille = workbook.Sheets[workbook.SheetNames[0]];
-      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1, raw: true });
+      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
       const donneesCapteurs = {};
       const tousLesHorodatages = new Set();
@@ -301,35 +246,45 @@ function chargerDonneesODS(fichierDynamique = null) {
         const ligne = donneesJson[i];
         if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
           const idCapteur = ligne[0].toString().trim();
-          let tempsBrut = ligne[1].toString().trim();
+          
           let tempsAffiche = "";
+          let tempsBrutTexte = "";
 
-          let numExcel = parseFloat(tempsBrut);
-          if (!isNaN(numExcel) && numExcel.toString() === tempsBrut) {
-            let totalSecondes = Math.round((numExcel % 1) * 24 * 3600);
-            let heures = Math.floor(totalSecondes / 3600);
-            let minutes = Math.floor((totalSecondes % 3600) / 60);
-            let secondes = totalSecondes % 60;
-            tempsAffiche = String(heures).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(secondes).padStart(2, '0');
+          if (ligne[1] instanceof Date) {
+            const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
+            const mm = String(ligne[1].getUTCMinutes()).padStart(2, '0');
+            const ss = String(ligne[1].getUTCSeconds()).padStart(2, '0');
+            tempsAffiche = `${hh}:${mm}:${ss}`;
+            tempsBrutTexte = ligne[1].toISOString().replace("T", " ").replace("Z", "").substring(0, 19);
+          } else if (typeof ligne[1] === "number" || !isNaN(ligne[1])) {
+            const num = parseFloat(ligne[1]);
+            const dateUt = new Date(Math.round((num - 25569) * 86400 * 1000));
+            const hh = String(dateUt.getUTCHours()).padStart(2, '0');
+            const mm = String(dateUt.getUTCMinutes()).padStart(2, '0');
+            const ss = String(dateUt.getUTCSeconds()).padStart(2, '0');
+            tempsAffiche = `${hh}:${mm}:${ss}`;
+            const aaaa = dateUt.getUTCFullYear();
+            const mmois = String(dateUt.getUTCMonth() + 1).padStart(2, '0');
+            const jj = String(dateUt.getUTCDate()).padStart(2, '0');
+            tempsBrutTexte = `${aaaa}-${mmois}-${jj} ${tempsAffiche}`;
           } else {
-            let match = tempsBrut.match(/(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-            if (match) {
-              let h = match[1].padStart(2, '0');
-              let m = match[2].padStart(2, '0');
-              let s = match[3] ? match[3].padStart(2, '0') : "00";
-              tempsAffiche = `${h}:${m}:${s}`;
+            let tempsBrut = ligne[1].toString().trim();
+            if (tempsBrut.includes("T")) {
+              tempsAffiche = tempsBrut.split("T")[1].replace("Z", "").substring(0, 8);
+              tempsBrutTexte = tempsBrut.replace("T", " ").replace("Z", "");
+            } else if (tempsBrut.includes(" ") && tempsBrut.indexOf(":") > 0) {
+              tempsAffiche = tempsBrut.split(" ")[1].substring(0, 8);
+              tempsBrutTexte = tempsBrut;
             } else {
               tempsAffiche = tempsBrut.substring(0, 8);
+              tempsBrutTexte = tempsBrut;
             }
           }
 
-          tempsAffiche = tempsAffiche.substring(0, 8);
-
-          // Filtrage strict : ignorer la ligne si elle est hors limites
           if (filtreDebut && tempsAffiche < filtreDebut) continue;
           if (filtreFin && tempsAffiche > filtreFin) continue;
 
-          let valeurTemp = parseFloat(ligne[2].toString().replace(",", "."));
+          const valeurTemp = parseFloat(ligne[2]);
           const unite = ligne[3] || "°C";
 
           if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
@@ -338,10 +293,11 @@ function chargerDonneesODS(fichierDynamique = null) {
 
           const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
 
+          // Intégration de l'attribut data-time pour sécuriser la sélection visuelle du tableau
           htmlLignes += `
-            <tr style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer;">
+            <tr data-time="${tempsAffiche}" style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer;">
               <td style="padding: 8px; font-weight: bold; color: #333;">${idCapteur}</td>
-              <td style="padding: 8px;">${tempsAffiche}</td>
+              <td style="padding: 8px;">${tempsBrutTexte}</td>
               <td style="padding: 8px; font-weight: bold; color: ${couleurTemp};">${valeurTemp.toFixed(2)}</td>
               <td style="padding: 8px; color: #888;">${unite}</td>
             </tr>
@@ -351,7 +307,7 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       const corpsTableau = document.getElementById("corpsTableauODS");
       if (corpsTableau) {
-        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide pour cette plage horaire.</td></tr>';
+        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
         activerSelectionSouris(corpsTableau);
       }
 
@@ -383,15 +339,13 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       donneesGraphesEnMemoire = { labelsX: listeLabelsX, datasets: datasetsGraphique };
 
-      // Génération automatique du graphique rafraîchi
-      genererLeGraphique();
+      if (!document.getElementById("btn-generer-graphique") && document.getElementById("graphiqueTemperatures")) {
+        genererLeGraphique();
+      }
     })
     .catch((error) => console.error("Erreur critique d'analyse :", error));
 }
 
-// ==========================================================
-// CONFIGURATION INITIALE ET RENDU CHART.JS
-// ==========================================================
 function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
   const canvas = document.getElementById("graphiqueTemperatures");
   if (!canvas) return;
@@ -418,7 +372,7 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       scales: {
-        y: { title: { display: true, text: "Température (°C)" }, min: 0, max: 30 },
+        y: { title: { display: true, text: "Température (°C)" } },
         x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } },
       },
       plugins: {
@@ -457,9 +411,6 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
   });
 }
 
-// ==========================================================
-// RENDU EN DIRECT LOGIQUE : CALCUL DES SEUILS VIA CONSIGNE ET EMT
-// ==========================================================
 function mettreAJourSeuilsAutomatiques() {
   if (!monGraphiqueInstance) return;
 
@@ -487,9 +438,6 @@ function mettreAJourSeuilsAutomatiques() {
   monGraphiqueInstance.update();
 }
 
-// ==========================================================
-// 4. SYSTEME DE SÉLECTION VISUELLE DU TABLEAU (SOURIS & TACTILE MOBILE)
-// ==========================================================
 function activerSelectionSouris(conteneurTableau) {
   if (!conteneurTableau) return;
   conteneurTableau.onmousedown = null;
@@ -559,34 +507,67 @@ window.addEventListener("mouseup", () => { estEnTrainDeGlisser = false; });
 window.addEventListener("touchend", () => { estEnTrainDeGlisser = false; });
 
 // ==========================================================
-// 5. SAUVEGARDE ET REDIRECTION SECURISÉE AVEC CONVERSION EN BASE64
+// ACTION FINALE : INTERCEPTION STRICTE DES FILTRES ET ENVOI
 // ==========================================================
 function sauvegarderToutEtDiriger() {
   const corpsTableau = document.getElementById("corpsTableauODS");
-  let pointsSelectionnes = 0;
+  let pointsSelectionnes = [];
 
   if (corpsTableau) {
     const lignes = corpsTableau.querySelectorAll("tr");
     lignes.forEach((ligne) => {
       if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
-        pointsSelectionnes++;
+        const t = ligne.getAttribute("data-time");
+        if (t) pointsSelectionnes.push(t);
       }
     });
   }
 
-  if (pointsSelectionnes > 0 && pointsSelectionnes < 31) {
-    alert(`⚠️ Sélection insuffisante (${pointsSelectionnes} points sur 31) : Vous devez sélectionner au minimum 31 points de mesure dans le tableau pour valider le rapport.`);
+  if (pointsSelectionnes.length > 0 && pointsSelectionnes.length < 31) {
+    alert(`⚠️ Sélection insuffisante (${pointsSelectionnes.length} points sur 31) : Vous devez sélectionner au minimum 31 points de mesure dans le tableau pour valider le rapport.`);
     return; 
   }
 
   localStorage.removeItem("imageGraphiqueZoome");
   localStorage.removeItem("imageTableauSelection");
 
-  let filtreDebut = normaliserHeureSaisie(document.getElementById("heureDebut")?.value || "");
-  let filtreFin = normaliserHeureSaisie(document.getElementById("heureFin")?.value || "");
+  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length === 5) filtreFin += ":00";
+
+  // Priorité 1 : Si l'utilisateur a fait une sélection manuelle glissée sur les lignes du tableau
+  if (pointsSelectionnes.length >= 31) {
+    pointsSelectionnes.sort();
+    filtreDebut = pointsSelectionnes[0];
+    filtreFin = pointsSelectionnes[pointsSelectionnes.length - 1];
+  } 
+  // Priorité 2 : Si l'utilisateur a utilisé le Zoom interactif du graphique Chart.js
+  else if (monGraphiqueInstance) {
+    const xAxis = monGraphiqueInstance.scales.x;
+    if (xAxis && xAxis.min !== undefined && xAxis.max !== undefined) {
+      const labels = monGraphiqueInstance.data.labels;
+      if (xAxis.min > 0 || xAxis.max < labels.length - 1) {
+        const minIdx = Math.max(0, Math.floor(xAxis.min));
+        const maxIdx = Math.min(labels.length - 1, Math.ceil(xAxis.max));
+        const pointsVisibles = maxIdx - minIdx + 1;
+        
+        if (pointsVisibles < 31) {
+          alert(`⚠️ Zone zoomée insuffisante (${pointsVisibles} points) : Vous devez sélectionner au minimum 31 points de mesure sur le graphique pour valider le rapport.`);
+          return;
+        }
+        
+        if (labels[minIdx] && labels[maxIdx]) {
+          filtreDebut = labels[minIdx].substring(0, 8);
+          filtreFin = labels[maxIdx].substring(0, 8);
+        }
+      }
+    }
+  }
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin", filtreFin);
+  
   localStorage.setItem("username", document.getElementById("username")?.value || "");
   localStorage.setItem("userEntreprise", document.getElementById("userEntreprise")?.value || "");
   localStorage.setItem("userService", document.getElementById("userService")?.value || "");
@@ -605,11 +586,8 @@ function sauvegarderToutEtDiriger() {
   if (!isNaN(consigne) && !isNaN(emt)) {
     localStorage.setItem("seuilMaxManuel", (consigne + emt).toString());
     localStorage.setItem("seuilMinManuel", (consigne - emt).toString());
-  } else {
-    localStorage.setItem("seuilMaxManuel", "");
-    localStorage.setItem("seuilMinManuel", "");
   }
-  
+
   localStorage.setItem("periode", document.getElementById("periode")?.value || "");
   localStorage.setItem("userMessage", document.getElementById("userMessage")?.value || "");
 
@@ -634,12 +612,8 @@ function sauvegarderToutEtDiriger() {
   if (fichierActuelPourFiltrage) {
     const lecteurEnBase64 = new FileReader();
     lecteurEnBase64.onload = function(e) {
-      try {
-        const base64String = e.target.result.split(',')[1] || e.target.result;
-        localStorage.setItem("fichierOdsBase64", base64String);
-      } catch (err) {
-        console.error("Erreur lors du stockage du fichier en Base64 :", err);
-      }
+      const base64String = e.target.result.split(',')[1] || e.target.result;
+      localStorage.setItem("fichierOdsBase64", base64String);
       window.location.href = "index-page2-rapport.html";
     };
     lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
@@ -648,13 +622,8 @@ function sauvegarderToutEtDiriger() {
   }
 }
 
-// ==========================================================
-// FONCTION REINITIALISER LE ZOOM ACTIVE
-// ==========================================================
 function reinitialiserZoomGraphique() {
   if (monGraphiqueInstance && typeof monGraphiqueInstance.resetZoom === "function") {
     monGraphiqueInstance.resetZoom();
-  } else {
-    console.warn("Le plugin de zoom Chart.js n'est pas encore actif.");
   }
 }

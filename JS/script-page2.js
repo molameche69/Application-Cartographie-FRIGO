@@ -1,185 +1,328 @@
+let monGraphiqueInstance = null;
+
 // ==========================================================
-// VARIABLES GLOBALES (PAGE 2)
+// OUTIL UNIVERSEL DE CONVERSION D'HEURE (EXCEL OU STANDARD)
 // ==========================================================
-let graphiqueRapportInstance = null;
+function formaterHeure(valeur) {
+  if (!valeur) return "";
+  let valStr = valeur.toString().trim().replace(",", ".");
+  let num = Number(valStr);
+  
+  if (!isNaN(num) && !valStr.includes(":")) {
+    let fractionDuJour = num % 1;
+    let totalSecondes = Math.round(fractionDuJour * 24 * 3600);
+    let heures = Math.floor(totalSecondes / 3600) % 24;
+    let minutes = Math.floor((totalSecondes % 3600) / 60);
+    let secondes = totalSecondes % 60;
+    return String(heures).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(secondes).padStart(2, '0');
+  }
+  
+  let tempsNet = valStr.includes("T") ? valStr.split("T")[1].replace("Z", "") : valStr;
+  let match = tempsNet.match(/(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (match) {
+    let h = match[1].padStart(2, '0');
+    let m = match[2].padStart(2, '0');
+    let s = match[3] ? match[3].padStart(2, '0') : "00";
+    return `${h}:${m}:${s}`;
+  }
+  
+  return valStr.substring(0, 8);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Récupération et affichage des métadonnées de l'utilisateur
-  chargerMetadataRapport();
+  console.log("Démarrage du script de rendu du rapport conforme NF X 15-140...");
 
-  // 2. Reconstruction de la carte et positionnement des sondes
-  reconstruireCarteSondes();
+  const btnPdf = document.getElementById("btn-telecharger-pdf");
+  if (btnPdf) {
+    btnPdf.disabled = false;
+    btnPdf.style.opacity = "1";
+    btnPdf.style.cursor = "pointer";
+  }
 
-  // 3. Récupération du fichier ODS et reconstruction des données
-  reconstruireDonneesEtGraphique();
+  const champs = {
+    "report-username": "username",
+    "report-userEntreprise": "userEntreprise",
+    "report-userService": "userService",
+    "report-userReference": "userReference",
+    "report-userCaracteristique": "userCaracteristique",
+    "report-userLoc": "userLoc",
+    "report-tdeconsigne": "tdeconsigne",
+    "report-valeur": "valeur",
+    "report-periode": "periode"
+  };
+
+  for (let id in champs) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = localStorage.getItem(champs[id]) || "Non renseigné";
+    }
+  }
+
+  const elDebut = document.getElementById("report-filtreHeureDebut");
+  const elFin = document.getElementById("report-filtreHeureFin");
+  
+  const heureDebutStockee = formaterHeure(localStorage.getItem("filtreHeureDebut"));
+  const heureFinStockee = formaterHeure(localStorage.getItem("filtreHeureFin"));
+
+  if (elDebut) {
+    elDebut.textContent = heureDebutStockee && heureDebutStockee !== "" ? heureDebutStockee : "Début de l'enregistrement";
+  }
+  if (elFin) {
+    elFin.textContent = heureFinStockee && heureFinStockee !== "" ? heureFinStockee : "Fin de l'enregistrement";
+  }
+
+  const elMessage = document.getElementById("report-message");
+  if (elMessage) {
+    const messageStocke = localStorage.getItem("userMessage");
+    if (messageStocke) {
+      elMessage.innerHTML = messageStocke.replace(/\n/g, "<br />");
+    } else {
+      elMessage.textContent = "Non renseigné";
+    }
+  }
+
+  const carteRapport = document.getElementById("carte-rapport");
+  const sondesStockees = localStorage.getItem("positionsSondes");
+
+  if (carteRapport && sondesStockees) {
+    try {
+      JSON.parse(sondesStockees).forEach((sonde) => {
+        const imgSonde = document.createElement("img");
+        imgSonde.src = sonde.src;
+        imgSonde.className = "sonde-icone";
+        imgSonde.style.position = "absolute";
+        imgSonde.style.left = sonde.left;
+        imgSonde.style.top = sonde.top;
+        imgSonde.style.transform = "translate(-50%, -50%)";
+        imgSonde.style.width = "28px";
+        imgSonde.style.height = "28px";
+        imgSonde.style.objectFit = "contain";
+        carteRapport.appendChild(imgSonde);
+      });
+    } catch (e) {
+      console.error("Erreur d'injection des sondes :", e);
+    }
+  }
+
+  chargerDonneesODSRapport();
 });
 
-// ==========================================================
-// 1. CHARGEMENT DES METADONNÉES TEXTUELLES
-// ==========================================================
-function chargerMetadataRapport() {
-  const champs = [
-    "username", "userEntreprise", "userService", "userReference", 
-    "userCaracteristique", "userLoc", "tdeconsigne", "valeur", 
-    "periode", "userMessage", "filtreHeureDebut", "filtreHeureFin"
-  ];
+function chargerDonneesODSRapport() {
+  const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
+  const canvasRapport = document.getElementById("graphiqueTemperatures");
 
-  champs.forEach(champ => {
-    const valeurStockee = localStorage.getItem(champ);
-    const elementHtml = document.getElementById(`rep-${champ}`) || document.getElementById(champ);
-    
-    if (elementHtml && valeurStockee) {
-      if (elementHtml.tagName === "INPUT" || elementHtml.tagName === "TEXTAREA") {
-        elementHtml.value = valeurStockee;
-      } else {
-        elementHtml.textContent = valeurStockee;
-      }
+  if (!imageZoomee) {
+    if (canvasRapport) canvasRapport.classList.add("masque");
+  } else if (canvasRapport) {
+    const wrapper = canvasRapport.closest(".wrapper-canvas");
+    if (wrapper) {
+      wrapper.innerHTML = `<img src="${imageZoomee}" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" />`;
     }
-  });
-
-  // Affichage de la date du jour du rapport
-  const dateEl = document.getElementById("date-rapport");
-  if (dateEl) {
-    dateEl.textContent = new Date().toLocaleDateString("fr-FR");
-  }
-}
-
-// ==========================================================
-// 2. RECONSTRUCTION DE LA CARTE DES SONDES
-// ==========================================================
-function reconstruireCarteSondes() {
-  const carteCible = document.getElementById("carte-cible-rapport");
-  const positionsSondesStr = localStorage.getItem("positionsSondes");
-
-  if (!carteCible || !positionsSondesStr) return;
-
-  try {
-    const sondes = JSON.parse(positionsSondesStr);
-    sondes.forEach(sonde => {
-      const imgSonde = document.createElement("img");
-      imgSonde.src = sonde.src;
-      imgSonde.id = sonde.id;
-      imgSonde.className = "marqueur-draggable";
-      imgSonde.style.position = "absolute";
-      imgSonde.style.left = sonde.left;
-      imgSonde.style.top = sonde.top;
-      imgSonde.style.margin = "0px";
-      imgSonde.style.width = "30px"; // Ajuste selon la taille de tes icônes
-      
-      carteCible.appendChild(imgSonde);
-    });
-  } catch (e) {
-    console.error("Erreur lors de la reconstruction de la carte :", e);
-  }
-}
-
-// ==========================================================
-// 3. EXTRACTION DU BASE64 ET RECONSTRUCTION GRAPH/TABLEAU
-// ==========================================================
-function reconstruireDonneesEtGraphique() {
-  const odsBase64 = localStorage.getItem("fichierOdsBase64");
-  const imageZoomStockee = localStorage.getItem("imageGraphiqueZoome");
-  
-  // Si une image du graphique zoomé existe, on peut l'afficher directement à la place du canvas
-  const conteneurGraph = document.getElementById("conteneur-graphique-rapport");
-  if (imageZoomStockee && conteneurGraph) {
-    conteneurGraph.innerHTML = `<img src="${imageZoomStockee}" style="max-width:100%; height:auto; display:block; margin:0 auto;" alt="Graphique de l'essai"/>`;
   }
 
-  if (!odsBase64) {
-    console.warn("Aucun fichier ODS trouvé en mémoire.");
+  const conteneurTableau = document.querySelector(".conteneur-tableau");
+  if (!conteneurTableau) return;
+
+  const filtreDebut = formaterHeure(localStorage.getItem("filtreHeureDebut") || "");
+  const filtreFin = formaterHeure(localStorage.getItem("filtreHeureFin") || "");
+  const fichierBase64 = localStorage.getItem("fichierOdsBase64");
+
+  if (!fichierBase64) {
+    conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucun fichier de relevés disponible. Veuillez importer un fichier en page 1.</p>`;
     return;
   }
 
   try {
-    // Conversion Base64 vers ArrayBuffer pour XLSX
-    const binStr = atob(odsBase64);
-    const len = binStr.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binStr.charCodeAt(i);
+    const chaineBinaire = atob(fichierBase64);
+    const longueur = chaineBinaire.length;
+    const buffer = new Uint8Array(longueur);
+    
+    for (let i = 0; i < longueur; i++) {
+      buffer[i] = chaineBinaire.charCodeAt(i);
     }
 
-    const workbook = XLSX.read(bytes.buffer, { type: "array", raw: true });
+    const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
     const feuille = workbook.Sheets[workbook.SheetNames[0]];
-    const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1, raw: true });
+    const json = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
-    let filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
-    let filtreFin = localStorage.getItem("filtreHeureFin") || "";
-    const pasPeriode = parseInt(localStorage.getItem("periode")) || 1;
+    const donneesCapteurs = {};
 
-    let htmlLignes = "";
-    let indexLigneValide = 0;
-
-    for (let i = 1; i < donneesJson.length; i++) {
-      const ligne = donneesJson[i];
+    for (let i = 1; i < json.length; i++) {
+      const ligne = json[i];
       if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
-        const idCapteur = ligne[0].toString().trim();
-        let tempsBrut = ligne[1].toString().trim();
+        const id = ligne[0].toString().trim();
+        
         let tempsAffiche = "";
-
-        // Même algorithme de décodage du temps que la Page 1
-        let numExcel = parseFloat(tempsBrut);
-        if (!isNaN(numExcel) && numExcel.toString() === tempsBrut) {
-          let totalSecondes = Math.round((numExcel % 1) * 24 * 3600);
-          let heures = Math.floor(totalSecondes / 3600);
-          let minutes = Math.floor((totalSecondes % 3600) / 60);
-          let secondes = totalSecondes % 60;
-          tempsAffiche = String(heures).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(secondes).padStart(2, '0');
+        if (ligne[1] instanceof Date) {
+          const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
+          const mm = String(ligne[1].getUTCMinutes()).padStart(2, '0');
+          const ss = String(ligne[1].getUTCSeconds()).padStart(2, '0');
+          tempsAffiche = `${hh}:${mm}:${ss}`;
         } else {
-          let match = tempsBrut.match(/(?:^|\s|T)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-          if (match) {
-            let h = match[1].padStart(2, '0');
-            let m = match[2].padStart(2, '0');
-            let s = match[3] ? match[3].padStart(2, '0') : "00";
-            tempsAffiche = `${h}:${m}:${s}`;
-          } else {
-            tempsAffiche = tempsBrut.substring(0, 8);
-          }
+          tempsAffiche = formaterHeure(ligne[1]);
         }
 
-        tempsAffiche = tempsAffiche.substring(0, 8);
-
-        // Application des filtres horaires
         if (filtreDebut && tempsAffiche < filtreDebut) continue;
         if (filtreFin && tempsAffiche > filtreFin) continue;
 
-        // Application de la périodicité (Pas de temps)
-        if (indexLigneValide % pasPeriode !== 0) {
-          indexLigneValide++;
-          continue;
-        }
-
         let valeurTemp = parseFloat(ligne[2].toString().replace(",", "."));
-        const unite = ligne[3] || "°C";
-        const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
+        if (isNaN(valeurTemp)) continue;
 
-        htmlLignes += `
-          <tr style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 8px; font-weight: bold;">${idCapteur}</td>
-            <td style="padding: 8px;">${tempsAffiche}</td>
-            <td style="padding: 8px; font-weight: bold; color: ${couleurTemp};">${valeurTemp.toFixed(2)}</td>
-            <td style="padding: 8px; color: #666;">${unite}</td>
-          </tr>
-        `;
-
-        indexLigneValide++;
+        if (!donneesCapteurs[id]) donneesCapteurs[id] = [];
+        donneesCapteurs[id].push(valeurTemp);
       }
     }
 
-    const corpsTableauRapport = document.getElementById("corpsTableauRapport");
-    if (corpsTableauRapport) {
-      corpsTableauRapport.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée filtrée.</td></tr>';
+    const statsCapteurs = {};
+    const tempConsigneValidation = parseFloat(localStorage.getItem("tdeconsigne")) || 5.0;
+
+    // Variables pour la synthèse globale (uniquement les sondes de l'enceinte)
+    let sommeDesMoyennesUtiles = 0;
+    let nombreCapteursUtiles = 0;
+    let toutesLesStabilitesUtiles = [];
+    let sommeEcartTypeExpCarreUtiles = 0;
+    let listeSondesUtiles = [];
+
+    Object.keys(donneesCapteurs).forEach((id) => {
+      const releves = donneesCapteurs[id];
+      const n = releves.length;
+      if (n === 0) return;
+
+      const moyenne = releves.reduce((a, b) => a + b, 0) / n;
+      const max = Math.max(...releves);
+      const min = Math.min(...releves);
+      const stabilite = max - min;
+      const sommeCarresSomme = releves.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
+      const ecartTypeExp = n > 1 ? Math.sqrt(sommeCarresSomme / (n - 1)) : 0;
+
+      // ON GARDE TOUT LE MONDE POUR LE TABLEAU VISUEL
+      statsCapteurs[id] = { moyenne, stabilite, ecartTypeExp, n, estAmbiance: false };
+
+      // MAIS ON FILTRE UNIQUEMENT POUR LE CALCUL DES LIGNES GLOBALES DU BAS
+      if (Math.abs(moyenne - tempConsigneValidation) <= 7.0) {
+        sommeDesMoyennesUtiles += moyenne;
+        nombreCapteursUtiles++;
+        toutesLesStabilitesUtiles.push(stabilite);
+        sommeEcartTypeExpCarreUtiles += Math.pow(ecartTypeExp, 2);
+        listeSondesUtiles.push({ moyenne, ecartTypeExp, n });
+      } else {
+        statsCapteurs[id].estAmbiance = true; // Flag pour l'affichage si besoin
+      }
+    });
+
+    if (Object.keys(statsCapteurs).length === 0) {
+      conteneurTableau.innerHTML = `<p class="erreur-filtrage">Aucune donnée trouvée pour la plage sélectionnée.</p>`;
+      return;
     }
 
+    // Calculs de synthèse (Si aucune sonde froide n'est trouvée, fallback sur toutes pour éviter le crash)
+    let effectifCalcul = nombreCapteursUtiles > 0 ? nombreCapteursUtiles : Object.keys(statsCapteurs).length;
+    let Xair = nombreCapteursUtiles > 0 ? (sommeDesMoyennesUtiles / nombreCapteursUtiles) : Object.values(statsCapteurs).reduce((a,b)=>a+b.moyenne,0)/effectifCalcul;
+    let SXM = toutesLesStabilitesUtiles.length > 0 ? Math.max(...toutesLesStabilitesUtiles) : Math.max(...Object.values(statsCapteurs).map(s=>s.stabilite));
+    
+    let Sr = 0;
+    if (nombreCapteursUtiles > 0) {
+      Sr = Math.sqrt(sommeEcartTypeExpCarreUtiles / nombreCapteursUtiles);
+    } else {
+      let sommeTotalCarre = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.ecartTypeExp, 2), 0);
+      Sr = Math.sqrt(sommeTotalCarre / effectifCalcul);
+    }
+
+    let nGenerique = listeSondesUtiles.length > 0 ? listeSondesUtiles[0].n : Object.values(statsCapteurs)[0].n;
+    let sommeVarianceInter = 0;
+    
+    if (nombreCapteursUtiles > 0) {
+      sommeVarianceInter = listeSondesUtiles.reduce((acc, s) => acc + Math.pow(s.moyenne - Xair, 2), 0);
+    } else {
+      sommeVarianceInter = Object.values(statsCapteurs).reduce((acc, s) => acc + Math.pow(s.moyenne - Xair, 2), 0);
+    }
+    
+    let partieDroiteSR = effectifCalcul > 1 ? (1 / (effectifCalcul - 1)) * sommeVarianceInter : 0;
+    let SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
+
+    creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
+
   } catch (err) {
-    console.error("Erreur globale lors de la reconstruction du rapport :", err);
+    console.error("Erreur d'analyse ODS en Page 2 :", err);
+    conteneurTableau.innerHTML = `<p class="erreur-ods">Erreur lors de la génération des statistiques du rapport.</p>`;
   }
 }
 
 // ==========================================================
-// 4. IMPRESSION / EXPORT EN PDF
+// INTERNE : COMPILATION ET RENDU DU TABLEAU NF X 15-140
 // ==========================================================
-function imprimerRapport() {
+function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
+  const conteneurTableau = document.querySelector(".conteneur-tableau");
+  if (!conteneurTableau) return;
+
+  const tempConsigne = parseFloat(localStorage.getItem("tdeconsigne")) || 0.0;
+  const emt = parseFloat(localStorage.getItem("valeur")) || 2.0;
+
+  let html = `
+    <table class="tab-donnees table-rapport-spec">
+      <thead>
+        <tr class="entete-gris">
+          <th class="cellule-commune">Capteur / Paramètre Global</th>
+          <th class="cellule-commune">Moyenne (Xmj)</th>
+          <th class="cellule-commune">Stabilité (SXj)</th>
+          <th class="cellule-commune">Écart / Consigne</th>
+          <th class="cellule-commune">Statut (NF X 15-140)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let enceinteConforme = true;
+
+  Object.keys(statsCapteurs).forEach((id) => {
+    const s = statsCapteurs[id];
+    const ecartConsigne = Math.abs(s.moyenne - tempConsigne);
+    const estConforme = ecartConsigne + (s.stabilite / 2) <= emt;
+
+    // Seules les sondes utiles (hors ambiance) définissent la conformité globale de l'enceinte
+    if (!s.estAmbiance && !estConforme) {
+      enceinteConforme = false;
+    }
+
+    html += `
+      <tr class="${s.estAmbiance ? 'ligne-ambiance-brute' : ''}">
+        <td class="cellule-commune"><span class="nom-capteur">Capteur ${id} ${s.estAmbiance ? '(Ambiance/Masqué)' : ''}</span></td>
+        <td class="cellule-commune">${s.moyenne.toFixed(3)} °C</td>
+        <td class="cellule-commune">${s.stabilite.toFixed(3)} °C</td>
+        <td class="cellule-commune">${(s.moyenne - tempConsigne).toFixed(3)} °C</td>
+        <td class="cellule-commune aligne-centre"><span class="${estConforme ? "statut-conforme" : "statut-non-conforme"} texte-gras">${estConforme ? "OK" : "X"}</span></td>
+      </tr>
+    `;
+  });
+
+  html += `
+        <tr class="ligne-globale ligne-separatrice texte-gras fond-synthese">
+          <td class="cellule-commune">Synthèse de l'air (Xair)</td>
+          <td colspan="4" class="cellule-commune">${Xair.toFixed(3)} °C (Écart global : ${(Xair - tempConsigne).toFixed(3)} °C)</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Stabilité Maximale (SXM)</td>
+          <td colspan="4" class="cellule-commune">${SXM.toFixed(3)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Répétabilité (Sr) / Reproductibilité (SR)</td>
+          <td colspan="4" class="cellule-commune">Sr : ${Sr.toFixed(3)} | SR : ${SR.toFixed(3)}</td>
+        </tr>
+        <tr class="ligne-emt texte-gras fond-synthese">
+          <td class="cellule-commune">Spécification : Consigne & EMT</td>
+          <td colspan="4" class="cellule-commune">Objectif : ${tempConsigne.toFixed(1)} °C | EMT : &plusmn; ${emt.toFixed(1)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras conclusion-globale-taille ${enceinteConforme ? "ligne-conforme" : "ligne-non-conforme"}">
+          <td class="cellule-commune">Conclusion Enceinte (NF X 15-140)</td>
+          <td colspan="4" class="cellule-commune aligne-centre texte-temps-statut">${enceinteConforme ? "ENCEINTE CONFORME" : "ENCEINTE NON CONFORME"}</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+
+  conteneurTableau.innerHTML = html;
+}
+
+function telechargerPDFDirect() {
   window.print();
 }
