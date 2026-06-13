@@ -6,7 +6,6 @@ let fichierActuelPourFiltrage = null;
 let donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
 window.sondeEnCoursDeToucher = null;
 
-
 let capteursExclusManuellement = [];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -116,6 +115,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (inputConsigne) inputConsigne.addEventListener("input", mettreAJourSeuilsAutomatiques);
   if (inputEMT) inputEMT.addEventListener("input", mettreAJourSeuilsAutomatiques);
 
+  const inputHeureDebut = document.getElementById("heureDebut");
+  const inputHeureFin = document.getElementById("heureFin");
+  if (inputHeureDebut) inputHeureDebut.addEventListener("input", synchroniserPlageHoraireSurGraphique);
+  if (inputHeureFin) inputHeureFin.addEventListener("input", synchroniserPlageHoraireSurGraphique);
+
   function placerSonde(sonde, carte, x, y) {
     carte.appendChild(sonde);
     sonde.style.position = "absolute";
@@ -131,6 +135,49 @@ document.addEventListener("DOMContentLoaded", () => {
     sonde.style.top = "";
   }
 });
+
+function synchroniserPlageHoraireSurGraphique() {
+  if (!monGraphiqueInstance) return;
+
+  let debut = document.getElementById("heureDebut")?.value.trim() || "";
+  let fin = document.getElementById("heureFin")?.value.trim() || "";
+
+  // Correction automatique : remplace 'H' ou 'h' par ':' pour correspondre aux données du graphique
+  debut = debut.replace(/[Hh]/g, ":");
+  fin = fin.replace(/[Hh]/g, ":");
+
+  // Complète si l'utilisateur n'a écrit que l'heure ou les minutes (ex: "21" -> "21:00:00")
+  if (debut && debut.length === 2) debut += ":00:00";
+  if (debut && debut.length === 5) debut += ":00";
+  
+  if (fin && fin.length === 2) fin += ":00:00";
+  if (fin && fin.length === 5) fin += ":00";
+
+  const labels = monGraphiqueInstance.data.labels;
+  if (!labels || labels.length === 0) return;
+
+  let indexMin = 0;
+  let indexMax = labels.length - 1;
+
+  if (debut) {
+    const idx = labels.findIndex(l => l >= debut);
+    if (idx !== -1) indexMin = idx;
+  }
+
+  if (fin) {
+    const idx = labels.findLastIndex(l => l <= fin);
+    if (idx !== -1) indexMax = idx;
+  }
+
+  if (indexMin > indexMax) {
+    const temp = indexMin;
+    indexMin = indexMax;
+    indexMax = temp;
+  }
+
+  // Applique le zoom de manière fluide sur l'axe X
+  monGraphiqueInstance.zoomScale('x', { min: indexMin, max: indexMax }, 'default');
+}
 
 function gererBasculeCapteur(idCapteur) {
   const index = capteursExclusManuellement.indexOf(idCapteur);
@@ -256,11 +303,15 @@ function genererLeGraphique() {
   }
 
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
+  synchroniserPlageHoraireSurGraphique();
 }
 
 function chargerDonneesODS(fichierDynamique = null) {
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin = filtreFin.replace(/[Hh]/g, ":");
 
   if (filtreDebut.length === 5) filtreDebut += ":00";
   if (filtreFin.length === 5) filtreFin += ":00";
@@ -613,6 +664,10 @@ function sauvegarderToutEtDiriger() {
 
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
   let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin = filtreFin.replace(/[Hh]/g, ":");
+
   if (filtreDebut.length === 5) filtreDebut += ":00";
   if (filtreFin.length === 5) filtreFin += ":00";
 
@@ -722,7 +777,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
 const USER_CORRECT = "Auralyon";
 const CODE_CORRECT = "Auralyon2026!";
 
@@ -732,7 +786,6 @@ function validerCode() {
   
   const conteneurAuth = document.getElementById("bloc-authentification");
   const erreur = document.getElementById("erreur-code");
-
 
   if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
     sessionStorage.setItem("estConnecte", "true");
