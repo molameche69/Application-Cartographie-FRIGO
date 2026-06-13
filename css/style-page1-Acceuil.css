@@ -15,7 +15,6 @@ body {
 }
 
 
-/* Conteneur plein écran - Vos couleurs */
 .Identifiant {
   position: fixed;
   top: 0;
@@ -26,6 +25,7 @@ body {
   z-index: 99999;
   font-family: sans-serif;
 }
+
 
 .Identifiant p {
   display: flex;

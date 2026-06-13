@@ -15,34 +15,37 @@
 
 <body>
 
-<div class="Identifiant" id="bloc-authentification">
-  <div id="ecran-verrouillage">
-    <canvas id="fond-etoile"></canvas>
-    <div class="boite-connexion">
-      
-      <div class="entete-bleue">
-        <p>Cartographie 9points</p>
+<canvas id="fond-etoile"></canvas>
+
+  <div class="Identifiant" id="bloc-authentification">
+    <div id="ecran-verrouillage">
+      <canvas id="fond-etoile"></canvas>
+      <div class="boite-connexion">
+        
+        <div class="entete-bleue">
+          <p>Cartographie 9points</p>
+        </div>
+
+        <div class="groupe-champ">
+          <label for="identifiantAcces">Nom d'utilisateur <span class="requis">*</span></label>
+          <input type="text" id="identifiantAcces" onkeydown="verifierTouche(event)" />
+        </div>
+
+        <div class="groupe-champ">
+          <label for="codeAcces">Mot de passe <span class="requis">*</span></label>
+          <input type="password" id="codeAcces" onkeydown="verifierTouche(event)" />
+        </div>
+
+        <button type="button" class="btn-connexion" onclick="validerCode()">Se connecter</button>
+        
+        <div id="erreur-code" class="message-erreur">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
+
       </div>
-
-      <div class="groupe-champ">
-        <label for="identifiantAcces">Nom d'utilisateur <span class="requis">*</span></label>
-        <input type="text" id="identifiantAcces" onkeydown="verifierTouche(event)" />
-      </div>
-
-      <div class="groupe-champ">
-        <label for="codeAcces">Mot de passe <span class="requis">*</span></label>
-        <input type="password" id="codeAcces" onkeydown="verifierTouche(event)" />
-      </div>
-
-      <button type="button" class="btn-connexion" onclick="validerCode()">Se connecter</button>
-      
-      <div id="erreur-code" class="message-erreur">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
-
     </div>
   </div>
-</div>
 
-  <canvas id="fond-etoile"></canvas>
+
+
 
   <div class="Titre">
     <img src="images/logo.png" class="logo2" alt="Logo gauche" />
@@ -63,7 +66,7 @@
       </button>
     </div>
 
-<form id="formulaire-carto" onsubmit="return false;">
+    <form id="formulaire-carto" onsubmit="return false;">
       
       <div id="onglet1" class="contenu-onglet">
         <div class="tech">
@@ -97,7 +100,6 @@
         </div>
       </div>
         
-
       <div id="onglet2" class="contenu-onglet" style="display:none;">
         <div class="Carto">
           <i>Cartographie</i>
