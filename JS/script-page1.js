@@ -458,6 +458,14 @@ function chargerDonneesODS(fichierDynamique = null) {
             divSonde.id = id;
             divSonde.textContent = numeroSonde;
             divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
+            
+            // Fixation des dimensions pour empêcher l'écrasement visuel
+            divSonde.style.width = "30px";
+            divSonde.style.height = "30px";
+            divSonde.style.flexShrink = "0";
+            divSonde.style.display = "flex";
+            divSonde.style.alignItems = "center";
+            divSonde.style.justifyContent = "center";
 
             const textNom = document.createElement("span");
             textNom.className = "texte-nom-sonde";
