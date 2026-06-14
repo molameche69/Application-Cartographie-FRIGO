@@ -77,30 +77,78 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // CORRECTION : Reconstruction des pastilles dynamiques (div colorés) sur la MAP du rapport
+  // RECONSTRUCTION DES PASTILLES ET GÉNÉRATION DE LA LÉGENDE DES SONDES
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
 
   if (carteRapport && sondesStockees) {
     try {
+      // Pour éviter les décalages, on isole la carte et on crée un conteneur flex parent autour d'elle
+      const parentDorigine = carteRapport.parentNode;
+      
+      let conteneurGlobalMap = document.getElementById("conteneur-global-carto-rapport");
+      if (!conteneurGlobalMap) {
+        conteneurGlobalMap = document.createElement("div");
+        conteneurGlobalMap.id = "conteneur-global-carto-rapport";
+        conteneurGlobalMap.style.display = "flex";
+        conteneurGlobalMap.style.alignItems = "flex-start";
+        conteneurGlobalMap.style.justifyContent = "center";
+        conteneurGlobalMap.style.gap = "30px";
+        conteneurGlobalMap.style.margin = "20px auto";
+        conteneurGlobalMap.style.width = "100%";
+        
+        parentDorigine.insertBefore(conteneurGlobalMap, carteRapport);
+        conteneurGlobalMap.appendChild(carteRapport);
+      }
+
+      carteRapport.style.position = "relative";
+      carteRapport.style.display = "inline-block";
+      carteRapport.style.flexShrink = "0";
+
+      const ancienneLegende = document.getElementById("legende-sondes-rapport");
+      if (ancienneLegende) ancienneLegende.remove();
+
+      const anciensRonds = carteRapport.querySelectorAll(".pastille-sonde-generee");
+      anciensRonds.forEach(r => r.remove());
+
+      const blocLegende = document.createElement("div");
+      blocLegende.id = "legende-sondes-rapport";
+      blocLegende.style.display = "flex";
+      blocLegende.style.flexDirection = "column";
+      blocLegende.style.gap = "10px";
+      blocLegende.style.padding = "15px";
+      blocLegende.style.border = "1px dashed #b3b3b3";
+      blocLegende.style.borderRadius = "6px";
+      blocLegende.style.backgroundColor = "#ffffff";
+      blocLegende.style.minWidth = "220px";
+      blocLegende.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)";
+      blocLegende.style.flexShrink = "0";
+
+      const titreLegende = document.createElement("h4");
+      titreLegende.textContent = "Légende des sondes :";
+      titreLegende.style.margin = "0 0 8px 0";
+      titreLegende.style.fontSize = "14px";
+      titreLegende.style.color = "#333";
+      titreLegende.style.borderBottom = "1px solid #eee";
+      titreLegende.style.paddingBottom = "5px";
+      blocLegende.appendChild(titreLegende);
+
       JSON.parse(sondesStockees).forEach((sonde) => {
         const divSonde = document.createElement("div");
         divSonde.id = sonde.id;
+        divSonde.className = "pastille-sonde-generee";
         divSonde.textContent = sonde.numero || "";
         
-        // Application des styles pour recréer la pastille ronde à l'identique
         divSonde.style.position = "absolute";
         divSonde.style.left = sonde.left;
         divSonde.style.top = sonde.top;
         divSonde.style.transform = "translate(-50%, -50%)";
         
-        // Dimensions et forme de la pastille
         divSonde.style.width = "28px";
         divSonde.style.height = "28px";
         divSonde.style.borderRadius = "50%";
         divSonde.style.backgroundColor = sonde.couleurFond || "#007BFF";
         
-        // Style du texte à l'intérieur du rond
         divSonde.style.color = "white";
         divSonde.style.fontWeight = "bold";
         divSonde.style.display = "flex";
@@ -108,15 +156,48 @@ document.addEventListener("DOMContentLoaded", () => {
         divSonde.style.justifyContent = "center";
         divSonde.style.fontSize = "14px";
         
-        // Sécurités pour forcer l'affichage lors de l'export PDF / Impression
         divSonde.style.zIndex = "100";
         divSonde.style.webkitPrintColorAdjust = "exact";
         divSonde.style.printColorAdjust = "exact";
         
         carteRapport.appendChild(divSonde);
+
+        const ligneLegende = document.createElement("div");
+        ligneLegende.style.display = "flex";
+        ligneLegende.style.alignItems = "center";
+        ligneLegende.style.gap = "12px";
+
+        const indicateurCouleur = document.createElement("div");
+        indicateurCouleur.style.width = "18px";
+        indicateurCouleur.style.height = "18px";
+        indicateurCouleur.style.borderRadius = "50%";
+        indicateurCouleur.style.backgroundColor = sonde.couleurFond || "#007BFF";
+        indicateurCouleur.style.display = "flex";
+        indicateurCouleur.style.alignItems = "center";
+        indicateurCouleur.style.justifyContent = "center";
+        indicateurCouleur.style.color = "white";
+        indicateurCouleur.style.fontSize = "11px";
+        indicateurCouleur.style.fontWeight = "bold";
+        indicateurCouleur.style.webkitPrintColorAdjust = "exact";
+        indicateurCouleur.style.printColorAdjust = "exact";
+        indicateurCouleur.textContent = sonde.numero || "";
+
+        const texteLegende = document.createElement("span");
+        texteLegende.style.fontSize = "13px";
+        texteLegende.style.color = "#444";
+        texteLegende.style.fontFamily = "sans-serif";
+        
+        const nomCapteurNettoye = sonde.id ? sonde.id.replace("sonde-deplacee-", "") : "Inconnu";
+        texteLegende.innerHTML = `<strong>Sonde ${sonde.numero} :</strong> ${nomCapteurNettoye}`;
+
+        ligneLegende.appendChild(indicateurCouleur);
+        ligneLegende.appendChild(texteLegende);
+        blocLegende.appendChild(ligneLegende);
       });
+
+      conteneurGlobalMap.appendChild(blocLegende);
     } catch (e) {
-      console.error("Erreur d'injection des sondes :", e);
+      console.error("Erreur d'injection des sondes et de la légende :", e);
     }
   }
 

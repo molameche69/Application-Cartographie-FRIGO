@@ -62,7 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /**
  * Attache les écouteurs d'événements souris et tactiles sur un marqueur.
- * À appeler impérativement lors de la création DYNAMIQUE de chaque sonde.
  */
 function configurerEvenementsMarqueur(marqueur) {
   if (!marqueur) return;
@@ -137,6 +136,7 @@ function configurerEvenementsMarqueur(marqueur) {
 }
 
 function placerSonde(sonde, carte, x, y) {
+  // Si la sonde est dans sa structure Flexbox d'origine, on extrait la pastille pour la placer sur la carte
   carte.appendChild(sonde);
   sonde.style.position = "absolute";
   sonde.style.left = x + "%";
@@ -145,7 +145,22 @@ function placerSonde(sonde, carte, x, y) {
 }
 
 function remettreDansReserve(sonde, reserve) {
-  reserve.appendChild(sonde);
+  // On cherche si la sonde possède un conteneur original .ligne-sonde-item dans la réserve
+  const toutesLesLignes = reserve.querySelectorAll(".ligne-sonde-item");
+  let insere = false;
+
+  toutesLesLignes.forEach(ligne => {
+    // Si la ligne correspond au nom/id du capteur et est vide de sa pastille
+    if (ligne.querySelector(".texte-nom-sonde")?.textContent === sonde.id && !ligne.querySelector(".marqueur-draggable")) {
+      ligne.insertBefore(sonde, ligne.firstChild);
+      insere = true;
+    }
+  });
+
+  if (!insere) {
+    reserve.appendChild(sonde);
+  }
+
   sonde.style.position = "";
   sonde.style.left = "";
   sonde.style.top = "";
@@ -241,12 +256,10 @@ function changerOnglet(evenement, idOnglet) {
 function reinitialiserMarqueurs() {
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   const tousLesMarqueurs = document.querySelectorAll(".marqueur-draggable");
+  
   if (reserve) {
     tousLesMarqueurs.forEach((marqueur) => {
-      reserve.appendChild(marqueur);
-      marqueur.style.position = "";
-      marqueur.style.left = "";
-      marqueur.style.top = "";
+      remettreDansReserve(marqueur, reserve);
       marqueur.style.opacity = "1";
       marqueur.style.filter = "none";
     });
@@ -484,10 +497,6 @@ function chargerDonneesODS(fichierDynamique = null) {
       });
 
       donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
-
-      if (!document.getElementById("btn-generer-graphique") && document.getElementById("graphiqueTemperatures")) {
-        genererLeGraphique();
-      }
     })
     .catch((error) => console.error("Erreur critique d'analyse :", error));
 }
@@ -778,7 +787,6 @@ function sauvegarderToutEtDiriger() {
   if (carteCible) {
     const donneesSondes = [];
     carteCible.querySelectorAll(".marqueur-draggable").forEach((sonde) => {
-      // MODIFICATION : Sauvegarde complète des styles de pastille (couleur de fond et texte du numéro)
       donneesSondes.push({ 
         id: sonde.id, 
         left: sonde.style.left, 

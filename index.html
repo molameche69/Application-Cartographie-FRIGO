@@ -55,11 +55,11 @@
       <button class="onglet-btn actif" onclick="changerOnglet(event, 'onglet1')">
         Fiche technique
       </button>
-      <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">
-        Cartographie
-      </button>
       <button class="onglet-btn" onclick="changerOnglet(event, 'onglet3')">
         Tableau température
+      </button>
+      <button class="onglet-btn" onclick="changerOnglet(event, 'onglet2')">
+        Cartographie
       </button>
     </div>
 
@@ -97,28 +97,6 @@
         </div>
       </div>
         
-      <div id="onglet2" class="contenu-onglet cache">
-        <div class="Carto">
-          <i>Cartographie</i>
-        </div>
-
-        <div class="container-global">
-          <div class="reserve-images" id="reserve-cible">
-            <h3>Sondes à placer :</h3>
-            
-            <div id="liste-sondes-disponibles"></div>
-
-            <button type="button" onclick="reinitialiserMarqueurs()">
-              Réinitialiser les marqueurs
-            </button>
-          </div>
-
-          <div class="zone-carte" id="carte-cible">
-            <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
-          </div>
-        </div>
-      </div>
-
       <div id="onglet3" class="contenu-onglet cache">
         <div id="bloc-graphique">
           <i>Analyse Thermique depuis Fichier personnalisé</i>
@@ -154,6 +132,28 @@
               </thead>
               <tbody id="corpsTableauODS"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="onglet2" class="contenu-onglet cache">
+        <div class="Carto">
+          <i>Cartographie</i>
+        </div>
+
+        <div class="container-global">
+          <div class="reserve-images" id="reserve-cible">
+            <h3>Sondes à placer :</h3>
+            
+            <div id="liste-sondes-disponibles"></div>
+
+            <button type="button" onclick="reinitialiserMarqueurs()">
+              Réinitialiser les marqueurs
+            </button>
+          </div>
+
+          <div class="zone-carte" id="carte-cible">
+            <img src="images/MAP frigo.png" class="image-fond" alt="Carte" />
           </div>
 
           <button type="button" class="btn-validation-rapport" onclick="sauvegarderToutEtDiriger()">
