@@ -809,6 +809,8 @@ function sauvegarderToutEtDiriger() {
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine && monGraphiqueInstance) {
     try {
+      // On force l'arrêt instantané de toute animation en cours juste pour la capture synchrone
+      monGraphiqueInstance.stop();
       localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
     } catch (e) {
       console.error("Échec de conversion du canvas :", e);
