@@ -99,6 +99,29 @@ document.addEventListener("DOMContentLoaded", () => {
     btnRecommencerTout.addEventListener("click", recommencerTout);
   }
 
+  // Écouteur pour le bouton de remise à zéro de la plage horaire (Onglet 3)
+  const btnRazOnglet3 = document.getElementById("btn-raz-onglet3");
+  if (btnRazOnglet3) {
+    btnRazOnglet3.addEventListener("click", () => {
+      // 1. Remise à zéro visuelle des champs de saisie
+      const iDebut = document.getElementById("heureDebut");
+      const iFin = document.getElementById("heureFin");
+      if (iDebut) iDebut.value = "";
+      if (iFin) iFin.value = "";
+
+      // 2. Suppression des filtres horaires dans le LocalStorage
+      localStorage.removeItem("filtreHeureDebut");
+      localStorage.removeItem("filtreHeureFin");
+
+      // 3. Relancer le graphique pour ignorer la plage horaire et reset le zoom
+      if (donneesGraphesEnMemoire.labelsX.length > 0) {
+        genererLeGraphique();
+      } else if (monGraphiqueInstance) {
+        monGraphiqueInstance.resetZoom();
+      }
+    });
+  }
+
   // Bouton Réinitialiser les marqueurs
   const btnReinitialiserMarqueurs = document.getElementById("btn-reinitialiser-marqueurs") || document.querySelector("button[onclick*='reinitialiserMarqueurs']");
   if (btnReinitialiserMarqueurs) {
@@ -288,7 +311,7 @@ function remettreDansReserve(sonde, reserve) {
   let insere = false;
 
   toutesLesLignes.forEach(ligne => {
-    const nomSondeTexte = ligne.querySelector(".texte-nom-sonde")?.textContent.trim();
+    const nomSondeTexte = inline = ligne.querySelector(".texte-nom-sonde")?.textContent.trim();
     const idSondeNettoye = sonde.id.trim();
 
     if (nomSondeTexte === idSondeNettoye) {
@@ -1083,108 +1106,7 @@ function sauvegarderToutEtDiriger() {
   }
 }
 
-function sauvegarderToutEtDiriger() {
-  // 1. VÉRIFICATION DU FORMULAIRE TECHNIQUE (ONGLET 1)
-  const formulaire = document.getElementById("formulaire-carto");
-  if (formulaire && !formulaire.checkValidity()) {
-    alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique' avant de valider le rapport.");
-    
-    const boutonOnglet1 = document.querySelector(".onglet-btn");
-    if (boutonOnglet1) {
-      changerOnglet({ currentTarget: boutonOnglet1 }, 'onglet1');
-    }
-    
-    formulaire.reportValidity();
-    return;
-  }
 
-  // 2. VÉRIFICATION DES SONDES SUR LA CARTE (ONGLET 2)
-  const carteCible = document.getElementById("carte-cible");
-  const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
-  
-  if (sondesSurLaCarte.length === 0) {
-    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Cartographie) avant de valider le rapport.");
-    
-    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
-    if (boutonsOnglets && boutonsOnglets.length >= 2) {
-      changerOnglet({ currentTarget: boutonsOnglets[1] }, 'onglet2');
-    }
-    return;
-  }
-
-  // 3. VÉRIFICATION DU GRAPHIQUE GENERÉ (ONGLET 3)
-  if (!monGraphiqueInstance) {
-    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Tableau température) avant de valider le rapport.");
-    
-    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
-    if (boutonsOnglets && boutonsOnglets.length >= 3) {
-      changerOnglet({ currentTarget: boutonsOnglets[2] }, 'onglet3');
-    }
-    return;
-  }
-
-  // Extraction des points sélectionnés
-  const corpsTableau = document.getElementById("corpsTableauODS");
-  let pointsSelectionnes = [];
-
-  if (corpsTableau) {
-    const lignes = corpsTableau.querySelectorAll("tr");
-    lignes.forEach((ligne) => {
-      if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
-        const t = ligne.getAttribute("data-time");
-        if (t) pointsSelectionnes.push(t);
-      }
-    });
-  }
-
-  localStorage.removeItem("imageGraphiqueZoome");
-
-  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
-  
-  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
-  filtreFin = filtreFin.replace(/[Hh]/g, ":");
-
-  if (filtreDebut.length === 5) filtreDebut += ":00";
-  if (filtreFin.length === 5) filtreFin += ":00";
-
-  if (pointsSelectionnes.length >= 31) {
-    pointsSelectionnes.sort();
-    filtreDebut = pointsSelectionnes[0];
-    filtreFin = pointsSelectionnes[pointsSelectionnes.length - 1];
-  } 
-
-  const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin = document.getElementById("heureFin");
-  if (inputHeureDebut) inputHeureDebut.value = filtreDebut;
-  if (inputHeureFin) inputHeureFin.value = filtreFin;
-
-  localStorage.setItem("filtreHeureDebut", filtreDebut);
-  localStorage.setItem("filtreHeureFin", filtreFin);
-  localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
-
-  const canvasOrigine = document.getElementById("graphiqueTemperatures");
-  if (canvasOrigine && monGraphiqueInstance) {
-    try {
-      monGraphiqueInstance.stop();
-      localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
-    } catch (e) {
-      console.error("Échec de conversion du canvas :", e);
-    }
-  }
-
-  if (fichierActuelPourFiltrage) {
-    const lecteurEnBase64 = new FileReader();
-    lecteurEnBase64.onload = function(e) {
-      const base64String = e.target.result.split(',')[1] || e.target.result;
-      localStorage.setItem("fichierOdsBase64", base64String);
-      window.location.href = "index-page2-rapport.html";
-    };
-    lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
-  } else {
-    window.location.href = "index-page2-rapport.html";
-  }
-}
 
 function reinitialiserZoomGraphique() {
   if (monGraphiqueInstance && typeof monGraphiqueInstance.resetZoom === "function") {

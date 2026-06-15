@@ -105,7 +105,7 @@ body {
   border-radius: 6px;
   border: 1px solid #475569;
   background-color: beige;
-  color: #000; 
+  color: #000;
   font-size: 16px;
   text-align: center;
   box-sizing: border-box;
@@ -127,7 +127,9 @@ body {
   cursor: pointer;
   width: 100%;
   margin-top: 15px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .boite-connexion .btn-connexion:hover {
@@ -363,7 +365,9 @@ input {
   cursor: pointer;
   font-weight: bold;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   display: inline-block;
   font-size: 16px;
 }
@@ -435,7 +439,10 @@ input {
   cursor: pointer;
   font-weight: bold;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s,
+    transform 0.1s;
 }
 
 #btn-generer-graphique:hover:not(:disabled) {
@@ -506,23 +513,22 @@ button:hover {
   background-color: #0056b3;
 }
 
-#bloc-graphique button {
-  display: flex;
-  background-color: red;
-  color: white;
+#btn-raz-onglet3 {
+  background-color: #6c757d !important;
+  color: white !important;
+  font-weight: bold;
+  padding: 12px 24px;
+  font-size: 16px;
   border: none;
   cursor: pointer;
-  padding: 10px 20px;
-  font-size: 20px;
-  margin: auto;
   border-radius: 4px;
+  display: inline-block;
+  margin: 5px 0 0 0 !important; /* Ajoute un léger espace au-dessus du bouton */
 }
 
-#bloc-graphique button:hover {
-  background-color: #973e3e;
+#btn-raz-onglet3:hover {
+  background-color: #5a6268 !important;
 }
-
-
 
 @media (max-width: 768px) {
   body {
@@ -588,37 +594,40 @@ button:hover {
   }
 }
 
+.conteneur-filtres-layout {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;  /* Aligne verticalement les inputs et le bouton */
+  align-items: flex-start; /* Aligne le tout sur le bord gauche */
+}
+
+.champs-horaires {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;                /* Laisse la gestion de l'espace aux styles d'inputs de zone-periode */
+  flex-grow: 1;
+}
+
+.champs-horaires input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
 .zone-periode input {
   display: flex;
-  padding: 6px; 
-  border-radius: 4px; 
-  border: 1px solid #ccc; 
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
   flex-direction: column;
   height: auto;
   width: 440px;
   font-size: 15px;
 }
 
-.zone-periode p{
+.zone-periode p {
   color: beige;
   display: flex;
   font-size: 20px;
 }
-
-#btnResetFiltres {
-    background-color: #6c757d; 
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 4px;
-    margin-top: 8px;
-    display: block; 
-}
-
-#btnResetFiltres:hover {
-    background-color: #5a6268; 
-}
-
-

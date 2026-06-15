@@ -92,14 +92,11 @@
           </textarea>
 
           <button type="button" id="btn-recommencer-tout" style="display:flex; margin: auto; background-color: #dc3545; color: white; margin-top: 10px;">
-              Tout recommencer
-            </button>
-
+            Tout recommencer
+          </button>
         </div>
       </div>
 
-
-        
       <div id="onglet3" class="contenu-onglet cache">
         <div id="bloc-graphique">
           <i>Analyse Thermique depuis Fichier personnalisé</i>
@@ -112,21 +109,30 @@
             <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
           </div>
 
-        
           <div class="zone-periode">
-          <p>Filtres Temporels de l'Essai</p>
-          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :"  />
-          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :"  />
-        </div>
-       
+            <p>Filtres Temporels de l'Essai</p>
+            
+            <div class="conteneur-filtres-layout">
+              <div class="champs-horaires">
+                <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :" />
+                <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :" />
+              </div>
 
-         <div>
-         <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
-         Générer le Graphique depuis le Tableau
-         </button>
-         </div>
+              <div class="actions-horaires">
+                <button id="btn-raz-onglet3" type="button" class="btn">
+                  Remettre les horaires à zéro
+                </button>
+              </div>
+            </div>
+          </div>
 
-<div class="zone-generation-graphique"></div>
+          <div style="display: flex; justify-content: center; margin: 30px 0;">
+            <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
+              Générer le Graphique depuis le Tableau
+            </button>
+          </div>
+
+          <div class="zone-generation-graphique"></div>
 
           <div class="conteneur-tableau-ods">
             <table>
@@ -141,9 +147,8 @@
               <tbody id="corpsTableauODS"></tbody>
             </table>
           </div>
-        </div>
-      </div>
-
+        </div> </div>
+  
       <div id="onglet2" class="contenu-onglet cache">
         <div class="Carto">
           <i>Cartographie</i>
@@ -158,7 +163,6 @@
             <button type="button" onclick="reinitialiserMarqueurs()">
               Réinitialiser les marqueurs
             </button>
-
           </div>
 
           <div class="zone-carte" id="carte-cible">
@@ -170,6 +174,7 @@
           </button>
         </div>
       </div>
+
     </form>
   </div>
 
