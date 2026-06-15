@@ -140,6 +140,7 @@ function restaurerFormulaireEtDonnees() {
     const txtNomFichier = document.getElementById("nom-fichier-choisi");
     const btnGenerer = document.getElementById("btn-generer-graphique");
     if (txtNomFichier) txtNomFichier.textContent = `Fichier chargé : ${nomFichier}`;
+    if (btnGenerer) textNomFichier = false;
     if (btnGenerer) btnGenerer.disabled = false;
 
     chargerDonneesODS(fichierActuelPourFiltrage);
@@ -291,7 +292,6 @@ function remettreDansReserve(sonde, reserve) {
     const idSondeNettoye = sonde.id.trim();
 
     if (nomSondeTexte === idSondeNettoye) {
-      // Si la pastille n'est pas déjà dedans, on la remet au début de la ligne
       if (!ligne.querySelector(`#${CSS.escape(sonde.id)}`)) {
         ligne.insertBefore(sonde, ligne.firstChild);
       }
@@ -299,7 +299,6 @@ function remettreDansReserve(sonde, reserve) {
     }
   });
 
-  // Si vraiment la ligne n'existe plus, on la recrée proprement avec son texte
   if (!insere) {
     const nouvelleLigne = document.createElement("div");
     nouvelleLigne.className = "ligne-sonde-item";
@@ -402,28 +401,23 @@ function changerOnglet(evenement, idOnglet) {
   if (evenement) evenement.currentTarget.className += " actif";
 }
 
-// Nettoie totalement la zone et reconstruit proprement la réserve à partir des données mémorisées
 function reinitialiserMarqueurs() {
   const carteCible = document.getElementById("carte-cible");
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   
   if (!reserve) return;
 
-  // 1. Supprimer tous les marqueurs présents sur la carte
   if (carteCible) {
     const marqueursSurCarte = carteCible.querySelectorAll(".marqueur-draggable");
     marqueursSurCarte.forEach(m => m.remove());
   }
 
-  // 2. Vider complètement le conteneur de la réserve pour éviter les doublons
   reserve.innerHTML = "";
   
-  // 3. Effacer les positions sauvegardées
   localStorage.removeItem("positionsSondes");
   capteursExclusManuellement = [];
   localStorage.setItem("capteursExclusManuellement", JSON.stringify([]));
 
-  // 4. Forcer le rechargement de la réserve si un fichier est en mémoire
   if (donneesGraphesEnMemoire && donneesGraphesEnMemoire.datasets && donneesGraphesEnMemoire.datasets.length > 0) {
     reconstruireReserveDepuisMemoire();
   } else if (fichierActuelPourFiltrage) {
@@ -431,7 +425,6 @@ function reinitialiserMarqueurs() {
   }
 }
 
-// Fonction utilitaire pour regénérer proprement les éléments de la réserve
 function reconstruireReserveDepuisMemoire() {
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (!reserve) return;
@@ -530,22 +523,9 @@ function genererLeGraphique() {
     btnSupprimer.addEventListener("click", supprimerGraphiqueEtTableau);
   }
 
-  const pasPeriode = parseInt(document.getElementById("periode")?.value) || 1;
-  let labelsFiltres = [];
-  let datasetsFiltres = [];
-
-  if (pasPeriode > 1) {
-    labelsFiltres = donneesGraphesEnMemoire.labelsX.filter((_, idx) => idx % pasPeriode === 0);
-    datasetsFiltres = donneesGraphesEnMemoire.datasets.map(dataset => {
-      return {
-        ...dataset,
-        data: dataset.data.filter((_, idx) => idx % pasPeriode === 0)
-      };
-    });
-  } else {
-    labelsFiltres = donneesGraphesEnMemoire.labelsX;
-    datasetsFiltres = donneesGraphesEnMemoire.datasets;
-  }
+  // Traitement direct des données originales mémorisées sans filtrage d'intervalle
+  let labelsFiltres = donneesGraphesEnMemoire.labelsX;
+  let datasetsFiltres = donneesGraphesEnMemoire.datasets;
 
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
   synchroniserPlageHoraireSurGraphique();
@@ -714,7 +694,6 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
 
-      // Reconstruction propre de la réserve (sans doublons)
       const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
       const carteCible = document.getElementById("carte-cible");
       
@@ -1006,6 +985,105 @@ function appliquerSelectionVisuelle(conteneur, debut, fin) {
 }
 
 function sauvegarderToutEtDiriger() {
+  const formulaire = document.getElementById("formulaire-carto");
+  if (formulaire && !formulaire.checkValidity()) {
+    alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique' avant de valider le rapport.");
+    
+    const boutonOnglet1 = document.querySelector(".onglet-btn");
+    if (boutonOnglet1) {
+      changerOnglet({ currentTarget: boutonOnglet1 }, 'onglet1');
+    }
+    
+    formulaire.reportValidity();
+    return;
+  }
+
+  const carteCible = document.getElementById("carte-cible");
+  const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
+  
+  if (sondesSurLaCarte.length === 0) {
+    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 2 - Cartographie) avant de valider le rapport.");
+    
+    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
+    if (boutonsOnglets && boutonsOnglets.length >= 2) {
+      changerOnglet({ currentTarget: boutonsOnglets[1] }, 'onglet2');
+    }
+    return;
+  }
+
+  if (!monGraphiqueInstance) {
+    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3 - Tableau température) avant de valider le rapport.");
+    
+    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
+    if (boutonsOnglets && boutonsOnglets.length >= 3) {
+      changerOnglet({ currentTarget: boutonsOnglets[2] }, 'onglet3');
+    }
+    return;
+  }
+
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  let pointsSelectionnes = [];
+
+  if (corpsTableau) {
+    const lignes = corpsTableau.querySelectorAll("tr");
+    lignes.forEach((ligne) => {
+      if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
+        const t = ligne.getAttribute("data-time");
+        if (t) pointsSelectionnes.push(t);
+      }
+    });
+  }
+
+  localStorage.removeItem("imageGraphiqueZoome");
+
+  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
+  
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin = filtreFin.replace(/[Hh]/g, ":");
+
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length === 5) filtreFin += ":00";
+
+  if (pointsSelectionnes.length >= 31) {
+    pointsSelectionnes.sort();
+    filtreDebut = pointsSelectionnes[0];
+    filtreFin = pointsSelectionnes[pointsSelectionnes.length - 1];
+  } 
+
+  const inputHeureDebut = document.getElementById("heureDebut");
+  const inputHeureFin = document.getElementById("heureFin");
+  if (inputHeureDebut) inputHeureDebut.value = filtreDebut;
+  if (inputHeureFin) inputHeureFin.value = filtreFin;
+
+  localStorage.setItem("filtreHeureDebut", filtreDebut);
+  localStorage.setItem("filtreHeureFin", filtreFin);
+  localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
+
+  const canvasOrigine = document.getElementById("graphiqueTemperatures");
+  if (canvasOrigine && monGraphiqueInstance) {
+    try {
+      monGraphiqueInstance.stop();
+      localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
+    } catch (e) {
+      console.error("Échec de conversion du canvas :", e);
+    }
+  }
+
+  if (fichierActuelPourFiltrage) {
+    const lecteurEnBase64 = new FileReader();
+    lecteurEnBase64.onload = function(e) {
+      const base64String = e.target.result.split(',')[1] || e.target.result;
+      localStorage.setItem("fichierOdsBase64", base64String);
+      window.location.href = "index-page2-rapport.html";
+    };
+    lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
+  } else {
+    window.location.href = "index-page2-rapport.html";
+  }
+}
+
+function sauvegarderToutEtDiriger() {
   // 1. VÉRIFICATION DU FORMULAIRE TECHNIQUE (ONGLET 1)
   const formulaire = document.getElementById("formulaire-carto");
   if (formulaire && !formulaire.checkValidity()) {
@@ -1122,7 +1200,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 const USER_CORRECT = "Auralyon";
-const CODE_CORRECT = "Auralyon2026!";
+const CODE_CORRECT = "Auralyon";
 
 function validerCode() {
   const userSaisi = document.getElementById("identifiantAcces").value.trim();

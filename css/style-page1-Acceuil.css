@@ -522,6 +522,8 @@ button:hover {
   background-color: #973e3e;
 }
 
+
+
 @media (max-width: 768px) {
   body {
     margin: 15px;
@@ -587,17 +589,20 @@ button:hover {
 }
 
 .zone-periode input {
-  width: auto; /* Permet à l'input de reprendre sa largeur native standard */
+  display: flex;
   padding: 6px; 
-  text-align: center; 
   border-radius: 4px; 
   border: 1px solid #ccc; 
-  font-weight: bold;
+  flex-direction: column;
+  height: auto;
+  width: 440px;
+  font-size: 15px;
 }
 
 .zone-periode p{
   color: beige;
   display: flex;
-  margin-top: auto;
+  font-size: 20px;
 }
+
 

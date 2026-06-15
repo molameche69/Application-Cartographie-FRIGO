@@ -84,10 +84,6 @@
           <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) * :"required />
           <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) *:"required />
 
-          <h2>4. Section : Filtres Temporels de l'Essai</h2>
-          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :"  />
-          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :"  />
-
           <h2>5. Mode Opératoire</h2>
           <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
 - La cartographie a été effectuée avec l'enceinte chargée
@@ -116,10 +112,13 @@
             <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
           </div>
 
+        
           <div class="zone-periode">
-            <label for="periode"><p>Périodicité d'affichage :</p></label>
-            <input type="number" id="periode" name="periode" value="1" min="1" />
-          </div>
+          <p>Filtres Temporels de l'Essai</p>
+          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :"  />
+          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :"  />
+        </div>
+       
 
          <div>
          <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
