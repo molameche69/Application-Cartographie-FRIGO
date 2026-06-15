@@ -528,7 +528,7 @@ function genererLeGraphique() {
           Réinitialiser le Zoom
         </button>
         <button id="btn-supprimer-donnees" type="button" class="btn" style="background-color: red; color: white; font-weight: bold; padding: 12px 24px; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
-        Supprimer et Charger un autre
+          Supprimer et Charger un autre
         </button>
       </div>
     </div>
@@ -546,12 +546,17 @@ function genererLeGraphique() {
     btnSupprimer.addEventListener("click", supprimerGraphiqueEtTableau);
   }
 
-  // Traitement direct des données originales mémorisées sans filtrage d'intervalle
   let labelsFiltres = donneesGraphesEnMemoire.labelsX;
   let datasetsFiltres = donneesGraphesEnMemoire.datasets;
 
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
   synchroniserPlageHoraireSurGraphique();
+
+  // On masque le bouton une fois le graphique généré
+  const btnGenerer = document.getElementById('btn-generer-graphique');
+  if (btnGenerer) {
+    btnGenerer.style.display = 'none';
+  }
 }
 
 function supprimerGraphiqueEtTableau() {
@@ -576,15 +581,19 @@ function supprimerGraphiqueEtTableau() {
   const txtNomFichier = document.getElementById("nom-fichier-choisi");
   if (txtNomFichier) txtNomFichier.textContent = "Aucun fichier choisi";
 
-  const btnGenerer = document.getElementById("btn-generer-graphique");
-  if (btnGenerer) btnGenerer.disabled = true;
-
   const corpsTableau = document.getElementById("corpsTableauODS");
   if (corpsTableau) {
     corpsTableau.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée chargée.</td></tr>';
   }
 
   reinitialiserMarqueurs();
+
+  // NETTOYÉ : Une seule déclaration pour btnGenerer ici
+  const btnGenerer = document.getElementById("btn-generer-graphique");
+  if (btnGenerer) {
+    btnGenerer.disabled = false;       // On le réactive pour qu'il soit cliquable au prochain fichier
+    btnGenerer.style.display = 'block'; // On le fait réapparaître !
+  }
 }
 
 function chargerDonneesODS(fichierDynamique = null) {
@@ -1125,11 +1134,18 @@ const USER_CORRECT = "Auralyon";
 const CODE_CORRECT = "Auralyon";
 
 function validerCode() {
-  const userSaisi = document.getElementById("identifiantAcces").value.trim();
-  const codeSaisi = document.getElementById("codeAcces").value;
-  
+  const inputUser = document.getElementById("identifiantAcces");
+  const inputCode = document.getElementById("codeAcces");
   const conteneurAuth = document.getElementById("bloc-authentification");
   const erreur = document.getElementById("erreur-code");
+
+  if (!inputUser || !inputCode) {
+    console.error("Les champs de connexion sont introuvables dans le HTML.");
+    return;
+  }
+
+  const userSaisi = inputUser.value.trim();
+  const codeSaisi = inputCode.value;
 
   if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
     sessionStorage.setItem("estConnecte", "true");
@@ -1137,5 +1153,13 @@ function validerCode() {
     if (conteneurAuth) conteneurAuth.style.display = "none";
   } else {
     if (erreur) erreur.style.display = "block";
+  }
+}
+
+// AJOUT DE LA FONCTION MANQUANTE POUR ÉVITER LES CRASHS QUAND ON ÉCRIT
+function verifierTouche(event) {
+  // Si l'utilisateur appuie sur "Entrée", on valide le code automatiquement
+  if (event.key === "Enter") {
+    validerCode();
   }
 }
