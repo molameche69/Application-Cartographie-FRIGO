@@ -83,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (carteRapport && sondesStockees) {
     try {
-      // Pour éviter les décalages, on isole la carte et on crée un conteneur flex parent autour d'elle
       const parentDorigine = carteRapport.parentNode;
       
       let conteneurGlobalMap = document.getElementById("conteneur-global-carto-rapport");
@@ -206,15 +205,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function chargerDonneesODSRapport() {
   const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
-  const canvasRapport = document.getElementById("graphiqueTemperatures");
+  const imgRapport = document.getElementById("graphiqueTemperatures");
 
   if (!imageZoomee) {
-    if (canvasRapport) canvasRapport.classList.add("masque");
-  } else if (canvasRapport) {
-    const wrapper = canvasRapport.closest(".wrapper-canvas");
-    if (wrapper) {
-      wrapper.innerHTML = `<img src="${imageZoomee}" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" />`;
-    }
+    if (imgRapport) imgRapport.style.display = "none";
+  } else if (imgRapport) {
+    // Modification directe du src de la balise <img> du HTML
+    imgRapport.src = imageZoomee;
+    imgRapport.style.display = "block";
   }
 
   const conteneurTableau = document.querySelector(".conteneur-tableau");

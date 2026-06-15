@@ -552,12 +552,13 @@ function genererLeGraphique() {
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
   synchroniserPlageHoraireSurGraphique();
 
-  // On masque le bouton une fois le graphique généré
-  const btnGenerer = document.getElementById('btn-generer-graphique');
+  
+ const btnGenerer = document.getElementById('btn-generer-graphique');
   if (btnGenerer) {
-    btnGenerer.style.display = 'none';
+    btnGenerer.style.display = 'none'; // Le bouton disparaît proprement
   }
 }
+
 
 function supprimerGraphiqueEtTableau() {
   if (monGraphiqueInstance) {
@@ -1092,30 +1093,40 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("filtreHeureFin", filtreFin);
   localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
 
+  // --- CAPTURE SÉCURISÉE DU CANVAS (PAGE 1) ---
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
-  if (canvasOrigine && monGraphiqueInstance) {
+  if (canvasOrigine) {
     try {
-      monGraphiqueInstance.stop();
-      localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
+      // Extraction synchrone directe de l'élément HTML5 Canvas
+      const imageBase64 = canvasOrigine.toDataURL("image/png", 1.0);
+      localStorage.setItem("imageGraphiqueZoome", imageBase64);
     } catch (e) {
-      console.error("Échec de conversion du canvas :", e);
+      console.error("Échec de conversion directe du canvas :", e);
+      // En cas d'échec, méthode alternative via l'instance Chart.js
+      if (monGraphiqueInstance) {
+        localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
+      }
     }
   }
 
-  if (fichierActuelPourFiltrage) {
-    const lecteurEnBase64 = new FileReader();
-    lecteurEnBase64.onload = function(e) {
-      const base64String = e.target.result.split(',')[1] || e.target.result;
-      localStorage.setItem("fichierOdsBase64", base64String);
+  // --- REDIRECTION AVEC TIMEOUT POUR SÉCURISER L'ÉCRITURE DU LOCALSTORAGE ---
+  const procederRedirection = () => {
+    if (fichierActuelPourFiltrage) {
+      const lecteurEnBase64 = new FileReader();
+      lecteurEnBase64.onload = function(e) {
+        const base64String = e.target.result.split(',')[1] || e.target.result;
+        localStorage.setItem("fichierOdsBase64", base64String);
+        window.location.href = "index-page2-rapport.html";
+      };
+      lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
+    } else {
       window.location.href = "index-page2-rapport.html";
-    };
-    lecteurEnBase64.readAsDataURL(fichierActuelPourFiltrage);
-  } else {
-    window.location.href = "index-page2-rapport.html";
-  }
+    }
+  };
+
+  // On attend 150ms avant de quitter la page pour laisser le buffer se vider proprement
+  setTimeout(procederRedirection, 150);
 }
-
-
 
 function reinitialiserZoomGraphique() {
   if (monGraphiqueInstance && typeof monGraphiqueInstance.resetZoom === "function") {
