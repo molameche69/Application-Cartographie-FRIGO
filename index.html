@@ -71,9 +71,9 @@
         </div>
         <div class="Fiche">
           <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
-          <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur :" required />
-          <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme :" required />
-          <input type="text" id="userService" name="userService" placeholder="Service / Département :" required />
+          <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur : *" required />
+          <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme *:" required />
+          <input type="text" id="userService" name="userService" placeholder="Service / Département *:" required />
 
           <h2>2. Section : Identification de l'Enceinte à Contrôler</h2>
           <input type="text" id="userReference" name="userReference" placeholder="Référence interne / Numéro de série de l'enceinte :" />
@@ -81,12 +81,12 @@
           <input type="text" id="userLoc" name="userLoc" placeholder="Localisation de l'enceinte :" />
 
           <h2>3. Section : Spécifications Métrologiques (Les Critères)</h2>
-          <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) :" />
-          <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) :" />
+          <input type="number" step="any" id="tdeconsigne" name="tdeconsigne" placeholder="Température de consigne visée (°C) * :"required />
+          <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) *:"required />
 
           <h2>4. Section : Filtres Temporels de l'Essai</h2>
-          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :" required />
-          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :" required />
+          <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début de l'analyse (Ex: 14:40:00) :"  />
+          <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin de l'analyse (Ex: 15:30:00) :"  />
 
           <h2>5. Mode Opératoire</h2>
           <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
@@ -94,8 +94,15 @@
 - Le début des mesures commence une fois le régime établi.
 - Les points sont positionnés à 5 cm de chacune des parois.
           </textarea>
+
+          <button type="button" id="btn-recommencer-tout" style="display:flex; margin: auto; background-color: #dc3545; color: white; margin-top: 10px;">
+              Tout recommencer
+            </button>
+
         </div>
       </div>
+
+
         
       <div id="onglet3" class="contenu-onglet cache">
         <div id="bloc-graphique">
@@ -114,11 +121,13 @@
             <input type="number" id="periode" name="periode" value="1" min="1" />
           </div>
 
-          <div class="zone-generation-graphique">
-            <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
-              Générer le Graphique depuis le Tableau
-            </button>
-          </div>
+         <div>
+         <button type="button" id="btn-generer-graphique" onclick="genererLeGraphique()" disabled>
+         Générer le Graphique depuis le Tableau
+         </button>
+         </div>
+
+<div class="zone-generation-graphique"></div>
 
           <div class="conteneur-tableau-ods">
             <table>
@@ -150,6 +159,7 @@
             <button type="button" onclick="reinitialiserMarqueurs()">
               Réinitialiser les marqueurs
             </button>
+
           </div>
 
           <div class="zone-carte" id="carte-cible">
