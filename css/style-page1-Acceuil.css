@@ -605,4 +605,20 @@ button:hover {
   font-size: 20px;
 }
 
+#btnResetFiltres {
+    background-color: #6c757d; 
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-top: 8px;
+    display: block; 
+}
+
+#btnResetFiltres:hover {
+    background-color: #5a6268; 
+}
+
 
