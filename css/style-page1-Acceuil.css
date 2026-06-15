@@ -423,7 +423,7 @@ input {
 .zone-generation-graphique {
   max-width: 1600px;
   width: 95%;
-  margin: 30px auto;
+  margin: 20px auto;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -443,6 +443,8 @@ input {
     background-color 0.2s,
     opacity 0.2s,
     transform 0.1s;
+  margin: 0 auto;
+  display: block;
 }
 
 #btn-generer-graphique:hover:not(:disabled) {
@@ -522,8 +524,8 @@ button:hover {
   border: none;
   cursor: pointer;
   border-radius: 4px;
-  display: inline-block;
-  margin: 5px 0 0 0 !important; /* Ajoute un léger espace au-dessus du bouton */
+  display: block;
+  margin: 15px auto 0 auto !important; /* Centré horizontalement avec une marge au-dessus */
 }
 
 #btn-raz-onglet3:hover {
@@ -594,40 +596,52 @@ button:hover {
   }
 }
 
+.zone-periode {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centre tout le contenu à l'intérieur verticalement */
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
 .conteneur-filtres-layout {
   display: flex;
+  flex-direction: column;
+  align-items: center; /* Aligne les inputs et le bouton RAZ sur l'axe central */
   gap: 10px;
-  flex-direction: column;  /* Aligne verticalement les inputs et le bouton */
-  align-items: flex-start; /* Aligne le tout sur le bord gauche */
+  width: 100%;
 }
 
 .champs-horaires {
   display: flex;
   flex-direction: column;
-  gap: 0px;                /* Laisse la gestion de l'espace aux styles d'inputs de zone-periode */
-  flex-grow: 1;
+  align-items: center; /* Aligne les champs de texte au milieu */
+  gap: 10px;
+  width: 100%;
 }
 
 .champs-horaires input {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   padding: 10px;
   box-sizing: border-box;
 }
 
 .zone-periode input {
-  display: flex;
-  padding: 6px;
+  text-align: center; /* Aligne le texte indicatif/saisi au centre des inputs */
+  padding: 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
-  flex-direction: column;
   height: auto;
-  width: 440px;
+  width: 100%;
+  max-width: 440px;
   font-size: 15px;
 }
 
 .zone-periode p {
   color: beige;
-  display: flex;
+  text-align: center;
   font-size: 20px;
+  margin-bottom: 15px;
 }
