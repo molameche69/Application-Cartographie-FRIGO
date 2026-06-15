@@ -1025,7 +1025,7 @@ function sauvegarderToutEtDiriger() {
   const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
   
   if (sondesSurLaCarte.length === 0) {
-    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 2 - Cartographie) avant de valider le rapport.");
+    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Cartographie) avant de valider le rapport.");
     
     const boutonsOnglets = document.querySelectorAll(".onglet-btn");
     if (boutonsOnglets && boutonsOnglets.length >= 2) {
@@ -1036,7 +1036,7 @@ function sauvegarderToutEtDiriger() {
 
   // 3. VÉRIFICATION DU GRAPHIQUE GENERÉ (ONGLET 3)
   if (!monGraphiqueInstance) {
-    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3 - Tableau température) avant de valider le rapport.");
+    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Tableau température) avant de valider le rapport.");
     
     const boutonsOnglets = document.querySelectorAll(".onglet-btn");
     if (boutonsOnglets && boutonsOnglets.length >= 3) {
