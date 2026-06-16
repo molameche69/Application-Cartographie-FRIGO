@@ -12,6 +12,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const carteCible = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible") || document.getElementById("liste-sondes-disponibles");
 
+  // --- CORRECTION & VERROUILLAGE DU BOUTON VERT AU CHARGEMENT ---
+  const btnGenererGraphique = document.getElementById("btn-generer-graphique");
+  if (btnGenererGraphique) {
+    btnGenererGraphique.disabled = true;
+    btnGenererGraphique.style.opacity = "0.5";
+    btnGenererGraphique.style.cursor = "not-allowed";
+    btnGenererGraphique.style.pointerEvents = "none"; 
+
+    // Attribution propre de la fonction de clic en JavaScript
+    btnGenererGraphique.addEventListener("click", genererLeGraphique);
+  }
+
+  // --- ESPION AUTOMATIQUE (MutationObserver) ---
+  // Il surveille le tableau et appelle majEtatBoutonGenerer() dès que le tableau change
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  if (corpsTableau) {
+    const observateur = new MutationObserver(() => {
+      majEtatBoutonGenerer();
+    });
+    // On lui dit d'écouter les changements d'enfants (les lignes <tr>)
+    observateur.observe(corpsTableau, { childList: true });
+  }
+
   // Initialisation des zones de dépôt (Drag & Drop)
   if (carteCible) {
     carteCible.addEventListener("dragover", (e) => e.preventDefault());
@@ -103,17 +126,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRazOnglet3 = document.getElementById("btn-raz-onglet3");
   if (btnRazOnglet3) {
     btnRazOnglet3.addEventListener("click", () => {
-      // 1. Remise à zéro visuelle des champs de saisie
       const iDebut = document.getElementById("heureDebut");
       const iFin = document.getElementById("heureFin");
       if (iDebut) iDebut.value = "";
       if (iFin) iFin.value = "";
 
-      // 2. Suppression des filtres horaires dans le LocalStorage
       localStorage.removeItem("filtreHeureDebut");
       localStorage.removeItem("filtreHeureFin");
 
-      // 3. Relancer le graphique pour ignorer la plage horaire et reset le zoom
       if (donneesGraphesEnMemoire.labelsX.length > 0) {
         genererLeGraphique();
       } else if (monGraphiqueInstance) {
@@ -125,12 +145,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bouton Réinitialiser les marqueurs
   const btnReinitialiserMarqueurs = document.getElementById("btn-reinitialiser-marqueurs") || document.querySelector("button[onclick*='reinitialiserMarqueurs']");
   if (btnReinitialiserMarqueurs) {
-    btnReinitialiserMarqueurs.removeAttribute("onclick"); // Nettoyage de l'ancien attribut inline si présent
+    btnReinitialiserMarqueurs.removeAttribute("onclick");
     btnReinitialiserMarqueurs.addEventListener("click", reinitialiserMarqueurs);
   }
-
-  restaurerFormulaireEtDonnees();
 });
+
+
+function majEtatBoutonGenerer() {
+  // Ciblage strict par l'ID exact défini dans ton HTML
+  const btnGenererGraphique = document.getElementById("btn-generer-graphique");
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  const lignesTableau = corpsTableau ? corpsTableau.querySelectorAll("tr") : [];
+
+  if (btnGenererGraphique) {
+    if (lignesTableau.length > 0) {
+      // --- LE TABLEAU EST ALIMENTÉ : ON ACTIVE LE BOUTON ---
+      btnGenererGraphique.disabled = false;
+      btnGenererGraphique.style.opacity = "1";
+      btnGenererGraphique.style.cursor = "pointer";
+      btnGenererGraphique.style.pointerEvents = "auto"; 
+    } else {
+      // --- LE TABLEAU EST VIDE : ON VERROUILLE TOUT ---
+      btnGenererGraphique.disabled = true;
+      btnGenererGraphique.style.opacity = "0.5";
+      btnGenererGraphique.style.cursor = "not-allowed";
+      btnGenererGraphique.style.pointerEvents = "none"; 
+    }
+  }
+}
 
 function restaurerFormulaireEtDonnees() {
   const champs = ["username", "userEntreprise", "userService", "userReference", "userCaracteristique", "userLoc", "periode", "tdeconsigne", "valeur", "userMessage", "filtreHeureDebut", "filtreHeureFin"];
@@ -1109,7 +1151,7 @@ function sauvegarderToutEtDiriger() {
     }
   }
 
-  // --- REDIRECTION AVEC TIMEOUT POUR SÉCURISER L'ÉCRITURE DU LOCALSTORAGE ---
+
   const procederRedirection = () => {
     if (fichierActuelPourFiltrage) {
       const lecteurEnBase64 = new FileReader();
@@ -1124,7 +1166,7 @@ function sauvegarderToutEtDiriger() {
     }
   };
 
-  // On attend 150ms avant de quitter la page pour laisser le buffer se vider proprement
+ 
   setTimeout(procederRedirection, 150);
 }
 
