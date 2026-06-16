@@ -259,7 +259,6 @@ function majEtatBoutonGenerer() {
   const corpsTableau = document.getElementById("corpsTableauODS");
   const lignesTableau = corpsTableau ? corpsTableau.querySelectorAll("tr") : [];
 
-  // On ignore le tableau s'il contient uniquement la ligne de texte d'attente brute
   let tableauEstVraiementVide = false;
   if (lignesTableau.length === 0 || (lignesTableau.length === 1 && corpsTableau.textContent.includes("Aucune donnée chargée"))) {
     tableauEstVraiementVide = true;
