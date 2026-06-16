@@ -1,0 +1,148 @@
+body {
+  font-family: 'Helvetica', Arial, sans-serif;
+  color: #333333;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-pdf {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 8mm 10mm;
+  box-sizing: border-box;
+  background: #ffffff;
+  page-break-after: always;
+  position: relative;
+  transform: scale(0.6);       
+  transform-origin: top left;  
+  margin-bottom: -118mm;      
+}
+
+.conteneur-virtuel-pdf-hors-champ {
+  position: absolute !important;
+  left: -9999px !important;
+  top: 0 !important;
+  width: 210mm !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.entete-pdf {
+  margin-bottom: 8px;
+}
+
+.titre-principal {
+  font-size: 16px;
+  color: #1a1a1a;
+  margin: 0 0 2px 0;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.sous-titre-principal {
+  font-size: 10px;
+  color: #777777;
+  margin: 0;
+  font-weight: normal;
+}
+
+.separateur-bleu {
+  height: 2px;
+  background-color: #007bff;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.section-pdf {
+  margin-bottom: 12px;
+}
+
+.titre-section {
+  font-size: 10px;
+  color: #007bff;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 3px;
+  margin: 0 0 6px 0;
+  font-weight: bold;
+}
+
+.grille-infos p {
+  font-size: 8px;
+  margin: 4px 0;
+  line-height: 1.2;
+}
+
+.grille-infos strong {
+  color: #555555;
+}
+
+.bloc-message-pdf {
+  background-color: #f8f9fa;
+  border-left: 2px solid #007bff;
+  padding: 5px;
+  font-size: 7px;
+  font-family: monospace;
+  white-space: pre-line;
+  margin-top: 3px;
+  color: #222222;
+}
+
+.zone-carte-pdf {
+  text-align: center;
+  margin: 8px auto;
+  width: 100%;
+}
+
+.zone-carte-pdf img, 
+.zone-graphique-pdf img {
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 55mm;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.espace-haut-graphes {
+  margin-top: 10px !important;
+}
+
+.zone-tableau-pdf table {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 7px !important;
+  margin-top: 5px;
+  table-layout: fixed; 
+  word-wrap: break-word; 
+}
+
+.zone-tableau-pdf th {
+  background-color: #007bff !important;
+  color: #ffffff !important;
+  padding: 3px 4px !important;
+  font-weight: bold !important;
+  border: 1px solid #dddddd !important;
+}
+
+.zone-tableau-pdf td {
+  padding: 2px 4px !important;
+  border-bottom: 1px solid #eeeeee !important;
+  border-left: 1px solid #dddddd !important;
+  border-right: 1px solid #dddddd !important;
+  text-align: center;
+}
+
+.statut-conforme {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.statut-non-conforme {
+  color: #dc3545;
+  font-weight: bold;
+}

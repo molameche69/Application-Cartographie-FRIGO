@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rapport d'Analyse Thermique</title>
+    <link rel="stylesheet" href="css/style-page2-Rapport.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+  </head>
+  <body>
+    <canvas id="fond-etoile"></canvas>
+
+    <div class="Titre">
+      <img src="images/logo.png" class="logo2" alt="Logo Gauche" />
+      <i>:Rapport de Caractérisation:</i>
+      <img src="images/logo.png" class="logo1" alt="Logo Droite" />
+    </div>
+
+    <div class="container">
+      <div id="zone-impression-pdf">
+        
+        <div class="page-pdf">
+          <p><strong class="Rap">Informations Générales :</strong></p>
+          
+          <div id="bloc-rapport">
+            <h2>1. Identification de l'Opérateur & Entreprise</h2>
+            <p><strong>Opérateur :</strong> <span id="report-username"></span></p>
+            <p><strong>Entreprise / Organisme :</strong> <span id="report-userEntreprise"></span></p>
+            <p><strong>Service / Département :</strong> <span id="report-userService"></span></p>
+
+            <h2>2. Identification de l'enceinte à contrôler</h2>
+            <p><strong>N° de série / Référence interne :</strong> <span id="report-userReference"></span></p>
+            <p><strong>Caractéristiques de l'appareil :</strong> <span id="report-userCaracteristique"></span></p>
+            <p><strong>Localisation de l'enceinte :</strong> <span id="report-userLoc"></span></p>
+
+            <h2>3. Spécifications Métrologiques & Filtres</h2>
+            <p><strong>Température de consigne visée :</strong> <span id="report-tdeconsigne"></span> °C</p>
+            <p><strong>Écart Maximum Toléré (EMT) :</strong> ± <span id="report-valeur"></span> °C</p>
+           
+            <p><strong>Période de début :</strong> <span id="report-filtreHeureDebut"></span></p>
+            <p><strong>Période de fin :</strong> <span id="report-filtreHeureFin"></span></p>
+           
+            <h2>4. Mode Opératoire</h2>
+            <div id="report-message">Non renseigné</div>
+          </div>
+        </div>
+
+        <div class="page-pdf">
+          <p><strong class="Sonde">Positionnement des sondes :</strong></p>
+          <div class="zone-carte" id="carte-rapport">
+            <img src="images/MAP frigo.png" alt="Carte" />
+          </div>
+
+          <p><strong class="Sonde">Analyse des Températures :</strong></p>
+          <div class="conteneur-graphique">
+            <div class="wrapper-canvas">
+              <img id="graphiqueTemperatures" class="graphique-image-zoom graphique-rapport-img" alt="Graphique Sélectionné" />
+            </div>
+          </div>
+        </div>
+
+        <div class="page-pdf">
+          <p><strong class="Sonde">Résultats selon la norme NF X 15 140 :</strong></p>
+          <div class="conteneur-tableau"></div> 
+        </div>
+
+      </div> 
+    </div>
+
+    <div class="actions-zone">
+      <button id="btn-telecharger-pdf" onclick="telechargerPDFDirect()">Télécharger en PDF</button>
+      <br>
+      <button type="button" style="background-color: gray; border: 2px solid black;"onclick="window.history.back()">⬅️ Revenir aux saisies</button>
+    </div>
+
+    <script src="JS/script-page2.js"></script>
+    <script src="JS/script-fond.js"></script>
+  </body>
+</html>
