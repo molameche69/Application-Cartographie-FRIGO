@@ -8,34 +8,179 @@ window.sondeEnCoursDeToucher = null;
 
 let capteursExclusManuellement = [];
 
+// ========================================================
+// 💾 FONCTIONS DE SAUVEGARDE ET RESTAURATION ADAPTÉES
+// ========================================================
+
+function sauvegarderEtatGlobalPage1() {
+  // Sauvegarde uniquement des entrées de texte et configurations
+  const champs = [
+    "username", "userEntreprise", "userService", "userReference", 
+    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
+    "valeur", "heureDebut", "heureFin", "periode"
+  ];
+  champs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) sessionStorage.setItem("store_" + id, el.value);
+  });
+
+  // Sauvegarde de l'emplacement des sondes (La Map et la Réserve)
+  const listeSondes = document.getElementById("liste-sondes-disponibles");
+  const carteCible = document.getElementById("carte-cible");
+  if (listeSondes) sessionStorage.setItem("store_html_reserve", listeSondes.innerHTML);
+  if (carteCible) sessionStorage.setItem("store_html_carte", carteCible.innerHTML);
+}
+
+function restaurerEtatGlobalPage1() {
+  // 1. Restauration des inputs textuels
+  const champs = [
+    "username", "userEntreprise", "userService", "userReference", 
+    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
+    "valeur", "heureDebut", "heureFin", "periode"
+  ];
+  champs.forEach(id => {
+    const val = sessionStorage.getItem("store_" + id);
+    const el = document.getElementById(id);
+    if (el && val !== null) el.value = val;
+  });
+
+  // 2. Restauration visuelle des sondes uniquement
+  const listeSondes = document.getElementById("liste-sondes-disponibles");
+  const carteCible = document.getElementById("carte-cible");
+  const htmlReserve = sessionStorage.getItem("store_html_reserve");
+  const htmlCarte = sessionStorage.getItem("store_html_carte");
+  
+  if (listeSondes && htmlReserve) listeSondes.innerHTML = htmlReserve;
+  if (carteCible && htmlCarte) carteCible.innerHTML = htmlCarte;
+
+  if (typeof mettreAJourSeuilsAutomatiques === "function") {
+    mettreAJourSeuilsAutomatiques();
+  }
+
+  // 3. 🔄 RECONSTRUCTION DU TABLEAU DEPUIS LE FICHIER EN MÉMOIRE
+  const fichierSauvegarde = localStorage.getItem("fichierOdsBase64") || sessionStorage.getItem("store_fichier_excel_base64");
+  if (fichierSauvegarde && typeof XLSX !== "undefined") {
+    try {
+      const chaineBinaire = atob(fichierSauvegarde);
+      const longueur = chaineBinaire.length;
+      const buffer = new Uint8Array(longueur);
+      for (let i = 0; i < longueur; i++) {
+        buffer[i] = chaineBinaire.charCodeAt(i);
+      }
+      
+      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+      fichierActuelPourFiltrage = workbook; // Restaure la variable globale de filtrage
+      
+      // Détection automatique de ta fonction d'affichage du tableau
+      if (typeof afficherDonneesDansTableau === "function") {
+        afficherDonneesDansTableau(workbook);
+      } else if (typeof chargerDonneesODS === "function") {
+        chargerDonneesODS(workbook);
+      } else if (typeof tracerGraphiqueDepuisExcel === "function") {
+        tracerGraphiqueDepuisExcel(workbook);
+      }
+    } catch (err) {
+      console.error("Impossible de restaurer le tableau au retour arrière :", err);
+    }
+  }
+
+  // Force le bouton à vérifier l'état du tableau après la restauration
+  setTimeout(majEtatBoutonGenerer, 100);
+}
+
+window.addEventListener("pageshow", (event) => {
+  restaurerEtatGlobalPage1();
+});
+
 document.addEventListener("DOMContentLoaded", () => {
   const carteCible = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible") || document.getElementById("liste-sondes-disponibles");
 
-  // --- CORRECTION & VERROUILLAGE DU BOUTON VERT AU CHARGEMENT ---
+  // Liaison propre et unique du bouton vert générer
   const btnGenererGraphique = document.getElementById("btn-generer-graphique");
   if (btnGenererGraphique) {
-    btnGenererGraphique.disabled = true;
-    btnGenererGraphique.style.opacity = "0.5";
-    btnGenererGraphique.style.cursor = "not-allowed";
-    btnGenererGraphique.style.pointerEvents = "none"; 
-
-    // Attribution propre de la fonction de clic en JavaScript
-    btnGenererGraphique.addEventListener("click", genererLeGraphique);
+    btnGenererGraphique.addEventListener("click", () => {
+      genererLeGraphique(); // Uniquement sur clic manuel
+    });
   }
 
-  // --- ESPION AUTOMATIQUE (MutationObserver) ---
-  // Il surveille le tableau et appelle majEtatBoutonGenerer() dès que le tableau change
+  // Écouteur automatique via MutationObserver sur le tableau
   const corpsTableau = document.getElementById("corpsTableauODS");
   if (corpsTableau) {
     const observateur = new MutationObserver(() => {
       majEtatBoutonGenerer();
     });
-    // On lui dit d'écouter les changements d'enfants (les lignes <tr>)
     observateur.observe(corpsTableau, { childList: true });
   }
 
-  // Initialisation des zones de dépôt (Drag & Drop)
+  // On écoute les modifications sur les inputs pour sauvegarder les textes au fur et à mesure
+  document.querySelectorAll("input, textarea").forEach(input => {
+    input.addEventListener("input", sauvegarderEtatGlobalPage1);
+  });
+
+  // Liaison spécifique pour les changements d'inputs qui nécessitent des actions
+  const inputPeriode = document.getElementById("periode");
+  const inputConsigne = document.getElementById("tdeconsigne");
+  const inputEMT = document.getElementById("valeur");
+
+  if (inputPeriode) {
+    inputPeriode.addEventListener("input", () => {
+      localStorage.setItem("periode", inputPeriode.value);
+      if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire.labelsX.length > 0) {
+        genererLeGraphique(); 
+      }
+    });
+  }
+  if (inputConsigne) {
+    inputConsigne.addEventListener("input", () => {
+      localStorage.setItem("tdeconsigne", inputConsigne.value);
+      if (typeof mettreAJourSeuilsAutomatiques === "function") mettreAJourSeuilsAutomatiques();
+    });
+  }
+  if (inputEMT) {
+    inputEMT.addEventListener("input", () => {
+      localStorage.setItem("valeur", inputEMT.value);
+      if (typeof mettreAJourSeuilsAutomatiques === "function") mettreAJourSeuilsAutomatiques();
+    });
+  }
+
+  const inputHeureDebut = document.getElementById("heureDebut");
+  const inputHeureFin = document.getElementById("heureFin");
+  
+  if (inputHeureDebut) {
+    inputHeureDebut.addEventListener("input", () => {
+      localStorage.setItem("filtreHeureDebut", inputHeureDebut.value);
+      if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
+    });
+  }
+  if (inputHeureFin) {
+    inputHeureFin.addEventListener("input", () => {
+      localStorage.setItem("filtreHeureFin", inputHeureFin.value);
+      if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
+    });
+  }
+
+  // Intercepte le chargement du fichier pour le stocker en mémoire locale pour le retour arrière
+  const selecteurFichier = document.querySelector("input[type='file']");
+  if (selecteurFichier) {
+    selecteurFichier.addEventListener("change", (evenement) => {
+      const fichier = evenement.target.files[0];
+      if (!fichier) return;
+      const lecteur = new FileReader();
+      lecteur.onload = function(e) {
+        try {
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+          sessionStorage.setItem("store_fichier_excel_base64", base64);
+          localStorage.setItem("fichierOdsBase64", base64);
+        } catch (erreurEnregistrement) {
+          console.warn("Fichier trop lourd pour le stockage de secours :", erreurEnregistrement);
+        }
+      };
+      lecteur.readAsArrayBuffer(fichier);
+    });
+  }
+
+  // Drag & Drop des sondes
   if (carteCible) {
     carteCible.addEventListener("dragover", (e) => e.preventDefault());
     carteCible.addEventListener("drop", (e) => {
@@ -47,7 +192,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const xPourcentage = ((e.clientX - limitesCarte.left) / limitesCarte.width) * 100;
         const yPourcentage = ((e.clientY - limitesCarte.top) / limitesCarte.height) * 100;
         placerSonde(elementGlisse, carteCible, xPourcentage, yPourcentage);
-        sauvegarderEtatSondes();
+        if (typeof sauvegarderEtatSondes === "function") sauvegarderEtatSondes();
+        sauvegarderEtatGlobalPage1(); 
       }
     });
   }
@@ -60,69 +206,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const elementGlisse = document.getElementById(idElement);
       if (elementGlisse) {
         remettreDansReserve(elementGlisse, reserveCible);
-        sauvegarderEtatSondes();
+        if (typeof sauvegarderEtatSondes === "function") sauvegarderEtatSondes();
+        sauvegarderEtatGlobalPage1();
       }
     });
   }
 
-  // Liaison des inputs de configuration et sauvegarde en temps réel
-  const inputPeriode = document.getElementById("periode");
-  const inputConsigne = document.getElementById("tdeconsigne");
-  const inputEMT = document.getElementById("valeur");
-
-  if (inputPeriode) {
-    inputPeriode.addEventListener("input", () => {
-      localStorage.setItem("periode", inputPeriode.value);
-      if (donneesGraphesEnMemoire.labelsX.length > 0) {
-        genererLeGraphique(); 
-      }
-    });
-  }
-
-  if (inputConsigne) {
-    inputConsigne.addEventListener("input", () => {
-      localStorage.setItem("tdeconsigne", inputConsigne.value);
-      mettreAJourSeuilsAutomatiques();
-    });
-  }
-  
-  if (inputEMT) {
-    inputEMT.addEventListener("input", () => {
-      localStorage.setItem("valeur", inputEMT.value);
-      mettreAJourSeuilsAutomatiques();
-    });
-  }
-
-  const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin = document.getElementById("heureFin");
-  
-  if (inputHeureDebut) {
-    inputHeureDebut.addEventListener("input", () => {
-      localStorage.setItem("filtreHeureDebut", inputHeureDebut.value);
-      synchroniserPlageHoraireSurGraphique();
-    });
-  }
-  if (inputHeureFin) {
-    inputHeureFin.addEventListener("input", () => {
-      localStorage.setItem("filtreHeureFin", inputHeureFin.value);
-      synchroniserPlageHoraireSurGraphique();
-    });
-  }
-
-  // Écouteurs pour les champs de la fiche technique
-  ["username", "userEntreprise", "userService", "userReference", "userCaracteristique", "userLoc", "userMessage"].forEach(id => {
-    const input = document.getElementById(id);
-    if (input) {
-      input.addEventListener("input", () => localStorage.setItem(id, input.value));
-    }
-  });
-
+  // Bouton tout recommencer
   const btnRecommencerTout = document.getElementById("btn-recommencer-tout");
   if (btnRecommencerTout) {
-    btnRecommencerTout.addEventListener("click", recommencerTout);
+    btnRecommencerTout.addEventListener("click", () => {
+      if (confirm("🔄 Tout réinitialiser ?")) {
+        sessionStorage.clear();
+        localStorage.clear();
+        window.location.reload();
+      }
+    });
   }
 
-  // Écouteur pour le bouton de remise à zéro de la plage horaire (Onglet 3)
+  // Bouton de remise à zéro de la plage horaire
   const btnRazOnglet3 = document.getElementById("btn-raz-onglet3");
   if (btnRazOnglet3) {
     btnRazOnglet3.addEventListener("click", () => {
@@ -130,14 +232,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const iFin = document.getElementById("heureFin");
       if (iDebut) iDebut.value = "";
       if (iFin) iFin.value = "";
-
       localStorage.removeItem("filtreHeureDebut");
       localStorage.removeItem("filtreHeureFin");
-
-      if (donneesGraphesEnMemoire.labelsX.length > 0) {
+      if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire.labelsX.length > 0) {
         genererLeGraphique();
-      } else if (monGraphiqueInstance) {
-        monGraphiqueInstance.resetZoom();
       }
     });
   }
@@ -146,26 +244,34 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnReinitialiserMarqueurs = document.getElementById("btn-reinitialiser-marqueurs") || document.querySelector("button[onclick*='reinitialiserMarqueurs']");
   if (btnReinitialiserMarqueurs) {
     btnReinitialiserMarqueurs.removeAttribute("onclick");
-    btnReinitialiserMarqueurs.addEventListener("click", reinitialiserMarqueurs);
+    btnReinitialiserMarqueurs.addEventListener("click", () => {
+      if (typeof reinitialiserMarqueurs === "function") reinitialiserMarqueurs();
+      sauvegarderEtatGlobalPage1();
+    });
   }
+  
+  // Sécurité au chargement
+  majEtatBoutonGenerer();
 });
 
-
 function majEtatBoutonGenerer() {
-  // Ciblage strict par l'ID exact défini dans ton HTML
   const btnGenererGraphique = document.getElementById("btn-generer-graphique");
   const corpsTableau = document.getElementById("corpsTableauODS");
   const lignesTableau = corpsTableau ? corpsTableau.querySelectorAll("tr") : [];
 
+  // On ignore le tableau s'il contient uniquement la ligne de texte d'attente brute
+  let tableauEstVraiementVide = false;
+  if (lignesTableau.length === 0 || (lignesTableau.length === 1 && corpsTableau.textContent.includes("Aucune donnée chargée"))) {
+    tableauEstVraiementVide = true;
+  }
+
   if (btnGenererGraphique) {
-    if (lignesTableau.length > 0) {
-      // --- LE TABLEAU EST ALIMENTÉ : ON ACTIVE LE BOUTON ---
+    if (!tableauEstVraiementVide) {
       btnGenererGraphique.disabled = false;
       btnGenererGraphique.style.opacity = "1";
       btnGenererGraphique.style.cursor = "pointer";
       btnGenererGraphique.style.pointerEvents = "auto"; 
     } else {
-      // --- LE TABLEAU EST VIDE : ON VERROUILLE TOUT ---
       btnGenererGraphique.disabled = true;
       btnGenererGraphique.style.opacity = "0.5";
       btnGenererGraphique.style.cursor = "not-allowed";

@@ -35,30 +35,33 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPdf.style.cursor = "pointer";
   }
 
+  // --- CORRECTION : LIEN DIRECT AVEC LE SESSIONSTORAGE DE LA PAGE 1 ---
   const champs = {
-    "report-username": "username",
-    "report-userEntreprise": "userEntreprise",
-    "report-userService": "userService",
-    "report-userReference": "userReference",
-    "report-userCaracteristique": "userCaracteristique",
-    "report-userLoc": "userLoc",
-    "report-tdeconsigne": "tdeconsigne",
-    "report-valeur": "valeur",
-    "report-periode": "periode"
+    "report-username": "store_username",
+    "report-userEntreprise": "store_userEntreprise",
+    "report-userService": "store_userService",
+    "report-userReference": "store_userReference",
+    "report-userCaracteristique": "store_userCaracteristique",
+    "report-userLoc": "store_userLoc",
+    "report-tdeconsigne": "store_tdeconsigne",
+    "report-valeur": "store_valeur",
+    "report-periode": "store_periode"
   };
 
   for (let id in champs) {
     const el = document.getElementById(id);
     if (el) {
-      el.textContent = localStorage.getItem(champs[id]) || "Non renseigné";
+      // On cherche d'abord dans sessionStorage (Page 1 moderne), sinon backup sur localStorage
+      el.textContent = sessionStorage.getItem(champs[id]) || localStorage.getItem(champs[id].replace("store_", "")) || "Non renseigné";
     }
   }
 
   const elDebut = document.getElementById("report-filtreHeureDebut");
   const elFin = document.getElementById("report-filtreHeureFin");
   
-  const heureDebutStockee = formaterHeure(localStorage.getItem("filtreHeureDebut"));
-  const heureFinStockee = formaterHeure(localStorage.getItem("filtreHeureFin"));
+  // Correction des filtres temporels également
+  const heureDebutStockee = formaterHeure(sessionStorage.getItem("store_heureDebut") || localStorage.getItem("filtreHeureDebut"));
+  const heureFinStockee = formaterHeure(sessionStorage.getItem("store_heureFin") || localStorage.getItem("filtreHeureFin"));
 
   if (elDebut) {
     elDebut.textContent = heureDebutStockee && heureDebutStockee !== "" ? heureDebutStockee : "Début de l'enregistrement";
@@ -69,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const elMessage = document.getElementById("report-message");
   if (elMessage) {
-    const messageStocke = localStorage.getItem("userMessage");
+    const messageStocke = sessionStorage.getItem("store_userMessage") || localStorage.getItem("userMessage");
     if (messageStocke) {
       elMessage.innerHTML = messageStocke.replace(/\n/g, "<br />");
     } else {
@@ -77,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // RECONSTRUCTION DES PASTILLES ET GÉNÉRATION DE LA LÉGENDE DES SONDES
   const carteRapport = document.getElementById("carte-rapport");
   const sondesStockees = localStorage.getItem("positionsSondes");
 
