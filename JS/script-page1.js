@@ -254,11 +254,15 @@ document.addEventListener("DOMContentLoaded", () => {
   majEtatBoutonGenerer();
 });
 
+// ========================================================
+// 🟢 FONCTION MAJETATBOUTONGENERER AVEC FILTRAGE DE SÉCURITÉ
+// ========================================================
 function majEtatBoutonGenerer() {
   const btnGenererGraphique = document.getElementById("btn-generer-graphique");
   const corpsTableau = document.getElementById("corpsTableauODS");
   const lignesTableau = corpsTableau ? corpsTableau.querySelectorAll("tr") : [];
 
+  // On ignore le tableau s'il contient uniquement la ligne de texte d'attente brute
   let tableauEstVraiementVide = false;
   if (lignesTableau.length === 0 || (lignesTableau.length === 1 && corpsTableau.textContent.includes("Aucune donnée chargée"))) {
     tableauEstVraiementVide = true;
@@ -276,44 +280,6 @@ function majEtatBoutonGenerer() {
       btnGenererGraphique.style.cursor = "not-allowed";
       btnGenererGraphique.style.pointerEvents = "none"; 
     }
-  }
-}
-
-function restaurerFormulaireEtDonnees() {
-  const champs = ["username", "userEntreprise", "userService", "userReference", "userCaracteristique", "userLoc", "periode", "tdeconsigne", "valeur", "userMessage", "filtreHeureDebut", "filtreHeureFin"];
-  champs.forEach(id => {
-    const input = document.getElementById(id);
-    const valeurSauvegardee = localStorage.getItem(id);
-    if (input && valeurSauvegardee !== null) {
-      input.value = valeurSauvegardee;
-    }
-  });
-
-  const exclus = localStorage.getItem("capteursExclusManuellement");
-  if (exclus) {
-    capteursExclusManuellement = JSON.parse(exclus);
-  }
-
-  const fichierBase64 = localStorage.getItem("fichierOdsBase64");
-  const nomFichier = localStorage.getItem("nomFichierCharge") || "Données mémorisées.ods";
-  
-  if (fichierBase64) {
-    const byteCharacters = atob(fichierBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: "application/vnd.oasis.opendocument.spreadsheet" });
-    fichierActuelPourFiltrage = new File([blob], nomFichier, { type: "application/vnd.oasis.opendocument.spreadsheet" });
-
-    const txtNomFichier = document.getElementById("nom-fichier-choisi");
-    const btnGenerer = document.getElementById("btn-generer-graphique");
-    if (txtNomFichier) txtNomFichier.textContent = `Fichier chargé : ${nomFichier}`;
-    if (btnGenerer) textNomFichier = false;
-    if (btnGenerer) btnGenerer.disabled = false;
-
-    chargerDonneesODS(fichierActuelPourFiltrage);
   }
 }
 
@@ -340,6 +306,7 @@ function recommencerTout() {
   }
 
   localStorage.clear();
+  sessionStorage.clear();
 
   fichierActuelPourFiltrage = null;
   donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
@@ -458,7 +425,7 @@ function remettreDansReserve(sonde, reserve) {
   let insere = false;
 
   toutesLesLignes.forEach(ligne => {
-    const nomSondeTexte = inline = ligne.querySelector(".texte-nom-sonde")?.textContent.trim();
+    const nomSondeTexte = ligne.querySelector(".texte-nom-sonde")?.textContent.trim();
     const idSondeNettoye = sonde.id.trim();
 
     if (nomSondeTexte === idSondeNettoye) {
@@ -559,16 +526,38 @@ function gererBasculeCapteur(idCapteur) {
 }
 
 function changerOnglet(evenement, idOnglet) {
+  const contenuCible = document.getElementById(idOnglet);
+  if (!contenuCible) {
+    console.warn(`changerOnglet : l'onglet "${idOnglet}" est introuvable dans le HTML.`);
+    return;
+  }
+
+  // 1. On masque TOUS les onglets de manière stricte
   const contenus = document.getElementsByClassName("contenu-onglet");
   for (let i = 0; i < contenus.length; i++) {
-    contenus[i].style.display = "none";
+    contenus[i].style.setProperty("display", "none", "important"); // Force la disparition en CSS
+    contenus[i].classList.add("cache");
   }
+
+  // 2. On retire l'état actif sur tous les boutons d'onglets
   const boutons = document.getElementsByClassName("onglet-btn");
   for (let i = 0; i < boutons.length; i++) {
-    boutons[i].className = boutons[i].className.replace(" actif", "");
+    boutons[i].classList.remove("actif");
   }
-  document.getElementById(idOnglet).style.display = "block";
-  if (evenement) evenement.currentTarget.className += " actif";
+
+  // 3. On affiche UNIQUEMENT l'onglet demandé
+  if (idOnglet === "onglet1") {
+    contenuCible.style.setProperty("display", "block", "important"); // L'introduction repasse en block
+  } else {
+    // Pour les onglets 2, 3, 4 qui contiennent des formulaires ou structures globales
+    contenuCible.style.setProperty("display", "block", "important"); 
+  }
+  contenuCible.classList.remove("cache");
+
+  // 4. On ajoute la classe actif sur le bouton cliqué
+  if (evenement && evenement.currentTarget) {
+    evenement.currentTarget.classList.add("actif");
+  }
 }
 
 function reinitialiserMarqueurs() {
@@ -658,6 +647,19 @@ function importerNouveauFichier(evenement) {
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (reserve) reserve.innerHTML = "";
   
+  // 💾 SAUVEGARDE DE SECOURS POUR LE TABLEAU (RETOUR ARRIÈRE)
+  const lecteur = new FileReader();
+  lecteur.onload = function(e) {
+    try {
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+      sessionStorage.setItem("store_fichier_excel_base64", base64);
+      localStorage.setItem("fichierOdsBase64", base64);
+    } catch (err) {
+      console.warn("Fichier volumineux pour le stockage local de secours", err);
+    }
+  };
+  lecteur.readAsArrayBuffer(fichier);
+
   chargerDonneesODS(fichier);
 }
 
@@ -699,10 +701,9 @@ function genererLeGraphique() {
   genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
   synchroniserPlageHoraireSurGraphique();
 
-  
- const btnGenerer = document.getElementById('btn-generer-graphique');
+  const btnGenerer = document.getElementById('btn-generer-graphique');
   if (btnGenerer) {
-    btnGenerer.style.display = 'none'; // Le bouton disparaît proprement
+    btnGenerer.style.display = 'none';
   }
 }
 
@@ -736,11 +737,10 @@ function supprimerGraphiqueEtTableau() {
 
   reinitialiserMarqueurs();
 
-  // NETTOYÉ : Une seule déclaration pour btnGenerer ici
   const btnGenerer = document.getElementById("btn-generer-graphique");
   if (btnGenerer) {
-    btnGenerer.disabled = false;       // On le réactive pour qu'il soit cliquable au prochain fichier
-    btnGenerer.style.display = 'block'; // On le fait réapparaître !
+    btnGenerer.disabled = false;      
+    btnGenerer.style.display = 'block'; 
   }
 }
 
@@ -1166,41 +1166,56 @@ function appliquerSelectionVisuelle(conteneur, debut, fin) {
 
 function sauvegarderToutEtDiriger() {
   const formulaire = document.getElementById("formulaire-carto");
+  const boutonsOnglets = document.querySelectorAll(".onglet-btn");
+
+  // 1. VÉRIFICATION DE LA FICHE TECHNIQUE (ONGLET 2)
   if (formulaire && !formulaire.checkValidity()) {
     alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique' avant de valider le rapport.");
     
-    const boutonOnglet1 = document.querySelector(".onglet-btn");
-    if (boutonOnglet1) {
-      changerOnglet({ currentTarget: boutonOnglet1 }, 'onglet1');
+    // Redirection stricte vers l'onglet 2 (Fiche technique)
+    const boutonFicheTech = boutonsOnglets[1]; // Index 1 = 2ème bouton
+    if (boutonFicheTech) {
+      changerOnglet({ currentTarget: boutonFicheTech }, 'onglet2');
+    } else {
+      changerOnglet(null, 'onglet2');
     }
     
     formulaire.reportValidity();
     return;
   }
 
+  // 2. VÉRIFICATION DES SONDES PLACÉES (ONGLET 4)
   const carteCible = document.getElementById("carte-cible");
   const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
   
   if (sondesSurLaCarte.length === 0) {
-    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 2 - Cartographie) avant de valider le rapport.");
+    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 4 - Cartographie) avant de valider le rapport.");
     
-    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
-    if (boutonsOnglets && boutonsOnglets.length >= 2) {
-      changerOnglet({ currentTarget: boutonsOnglets[1] }, 'onglet2');
+    // Redirection stricte vers l'onglet 4 (Cartographie)
+    const boutonCarto = boutonsOnglets[3]; // Index 3 = 4ème bouton
+    if (boutonCarto) {
+      changerOnglet({ currentTarget: boutonCarto }, 'onglet4');
+    } else {
+      changerOnglet(null, 'onglet4');
     }
     return;
   }
 
+  // 3. VÉRIFICATION DU GRAPHIQUE (ONGLET 3)
   if (!monGraphiqueInstance) {
     alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3 - Tableau température) avant de valider le rapport.");
     
-    const boutonsOnglets = document.querySelectorAll(".onglet-btn");
-    if (boutonsOnglets && boutonsOnglets.length >= 3) {
-      changerOnglet({ currentTarget: boutonsOnglets[2] }, 'onglet3');
+    // Redirection stricte vers l'onglet 3 (Tableau température)
+    const boutonGraphique = boutonsOnglets[2]; // Index 2 = 3ème bouton
+    if (boutonGraphique) {
+      changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
+    } else {
+      changerOnglet(null, 'onglet3');
     }
     return;
   }
 
+  // Analyse et extraction des points du tableau sélectionnés
   const corpsTableau = document.getElementById("corpsTableauODS");
   let pointsSelectionnes = [];
 
@@ -1240,22 +1255,18 @@ function sauvegarderToutEtDiriger() {
   localStorage.setItem("filtreHeureFin", filtreFin);
   localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
 
-  // --- CAPTURE SÉCURISÉE DU CANVAS (PAGE 1) ---
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine) {
     try {
-      // Extraction synchrone directe de l'élément HTML5 Canvas
       const imageBase64 = canvasOrigine.toDataURL("image/png", 1.0);
       localStorage.setItem("imageGraphiqueZoome", imageBase64);
     } catch (e) {
       console.error("Échec de conversion directe du canvas :", e);
-      // En cas d'échec, méthode alternative via l'instance Chart.js
       if (monGraphiqueInstance) {
         localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
       }
     }
   }
-
 
   const procederRedirection = () => {
     if (fichierActuelPourFiltrage) {
@@ -1271,7 +1282,6 @@ function sauvegarderToutEtDiriger() {
     }
   };
 
- 
   setTimeout(procederRedirection, 150);
 }
 
