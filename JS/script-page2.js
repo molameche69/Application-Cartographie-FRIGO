@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPdf.style.cursor = "pointer";
   }
 
-  // --- CORRECTION : LIEN DIRECT AVEC LE SESSIONSTORAGE DE LA PAGE 1 ---
   const champs = {
     "report-username": "store_username",
     "report-userEntreprise": "store_userEntreprise",
@@ -51,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
   for (let id in champs) {
     const el = document.getElementById(id);
     if (el) {
-      // On cherche d'abord dans sessionStorage (Page 1 moderne), sinon backup sur localStorage
       el.textContent = sessionStorage.getItem(champs[id]) || localStorage.getItem(champs[id].replace("store_", "")) || "Non renseigné";
     }
   }
@@ -59,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const elDebut = document.getElementById("report-filtreHeureDebut");
   const elFin = document.getElementById("report-filtreHeureFin");
   
-  // Correction des filtres temporels également
   const heureDebutStockee = formaterHeure(sessionStorage.getItem("store_heureDebut") || localStorage.getItem("filtreHeureDebut"));
   const heureFinStockee = formaterHeure(sessionStorage.getItem("store_heureFin") || localStorage.getItem("filtreHeureFin"));
 
@@ -212,7 +209,6 @@ function chargerDonneesODSRapport() {
   if (!imageZoomee) {
     if (imgRapport) imgRapport.style.display = "none";
   } else if (imgRapport) {
-    // Modification directe du src de la balise <img> du HTML
     imgRapport.src = imageZoomee;
     imgRapport.style.display = "block";
   }
@@ -230,6 +226,18 @@ function chargerDonneesODSRapport() {
     if (stock) exclusManuellement = JSON.parse(stock);
   } catch (e) {
     console.error("Erreur de lecture des exclusions :", e);
+  }
+
+  let idsSondesSurLaCarte = [];
+  const sondesStockees = localStorage.getItem("positionsSondes");
+  if (sondesStockees) {
+    try {
+      idsSondesSurLaCarte = JSON.parse(sondesStockees).map(s => {
+        return s.id ? s.id.replace("sonde-deplacee-", "").trim() : "";
+      });
+    } catch(e) {
+      console.error("Erreur parsing positionsSondes", e);
+    }
   }
 
   if (!fichierBase64) {
@@ -257,7 +265,7 @@ function chargerDonneesODSRapport() {
       if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
         const id = ligne[0].toString().trim();
         
-        if (exclusManuellement.includes(id)) {
+        if (exclusManuellement.includes(id) || (idsSondesSurLaCarte.length > 0 && !idsSondesSurLaCarte.includes(id))) {
           continue; 
         }
         
@@ -290,6 +298,9 @@ function chargerDonneesODSRapport() {
     let toutesLesStabilitesUtiles = [];
     let sommeEcartTypeExpCarreUtiles = 0;
     let listeSondesUtiles = [];
+    
+    let toutesLesMoyennesUtiles = [];
+    let tousLesEcartsConsigneUtiles = [];
 
     Object.keys(donneesCapteurs).forEach((id) => {
       const releves = donneesCapteurs[id];
@@ -311,6 +322,9 @@ function chargerDonneesODSRapport() {
         toutesLesStabilitesUtiles.push(stabilite);
         sommeEcartTypeExpCarreUtiles += Math.pow(ecartTypeExp, 2);
         listeSondesUtiles.push({ moyenne, ecartTypeExp, n });
+        
+        toutesLesMoyennesUtiles.push(moyenne);
+        tousLesEcartsConsigneUtiles.push(Math.abs(moyenne - tempConsigneValidation));
       } else {
         statsCapteurs[id].estAmbiance = true; 
       }
@@ -325,6 +339,19 @@ function chargerDonneesODSRapport() {
     let Xair = nombreCapteursUtiles > 0 ? (sommeDesMoyennesUtiles / nombreCapteursUtiles) : Object.values(statsCapteurs).reduce((a,b)=>a+b.moyenne,0)/effectifCalcul;
     let SXM = toutesLesStabilitesUtiles.length > 0 ? Math.max(...toutesLesStabilitesUtiles) : Math.max(...Object.values(statsCapteurs).map(s=>s.stabilite));
     
+    let deltaHomogeneite = 0;
+    let deltaConsigneMax = 0;
+    let uHomog = 0;
+    let uConsigne = 0;
+    
+    if (toutesLesMoyennesUtiles.length > 0) {
+      deltaHomogeneite = Math.max(...toutesLesMoyennesUtiles) - Math.min(...toutesLesMoyennesUtiles);
+      deltaConsigneMax = Math.max(...tousLesEcartsConsigneUtiles);
+      uHomog = deltaHomogeneite / Math.sqrt(3);
+      // Calcul de l'incertitude d'écart de consigne (u_consigne = Delta Theta consigne / racine(3))
+      uConsigne = deltaConsigneMax / Math.sqrt(3);
+    }
+
     let Sr = 0;
     if (nombreCapteursUtiles > 0) {
       Sr = Math.sqrt(sommeEcartTypeExpCarreUtiles / nombreCapteursUtiles);
@@ -345,7 +372,7 @@ function chargerDonneesODSRapport() {
     let partieDroiteSR = effectifCalcul > 1 ? (1 / (effectifCalcul - 1)) * sommeVarianceInter : 0;
     let SR = Math.sqrt(Math.pow(Sr, 2) * (1 - 1 / nGenerique) + partieDroiteSR);
 
-    creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR);
+    creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogeneite, deltaConsigneMax, uHomog, uConsigne);
 
   } catch (err) {
     console.error("Erreur d'analyse ODS en Page 2 :", err);
@@ -353,7 +380,7 @@ function chargerDonneesODSRapport() {
   }
 }
 
-function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
+function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogeneite, deltaConsigneMax, uHomog, uConsigne) {
   const conteneurTableau = document.querySelector(".conteneur-tableau");
   if (!conteneurTableau) return;
 
@@ -404,6 +431,22 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR) {
         <tr class="ligne-globale texte-gras fond-synthese">
           <td class="cellule-commune">Stabilité Maximale (SXM)</td>
           <td colspan="4" class="cellule-commune">${SXM.toFixed(3)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Écart d'Homogénéité Maximal</td>
+          <td colspan="4" class="cellule-commune">${deltaHomogeneite.toFixed(3)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Incertitude d'Homogénéité</td>
+          <td colspan="4" class="cellule-commune">${uHomog.toFixed(3)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Écart de Consigne Maximal</td>
+          <td colspan="4" class="cellule-commune">${deltaConsigneMax.toFixed(3)} °C</td>
+        </tr>
+        <tr class="ligne-globale texte-gras fond-synthese">
+          <td class="cellule-commune">Incertitude d'Écart de Consigne</td>
+          <td colspan="4" class="cellule-commune">${uConsigne.toFixed(3)} °C</td>
         </tr>
         <tr class="ligne-globale texte-gras fond-synthese">
           <td class="cellule-commune">Répétabilité (Sr) / Reproductibilité (SR)</td>
