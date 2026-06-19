@@ -61,36 +61,7 @@
       </div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px;">
   
-        <textarea readonly style="width: 60%; height: 600px; resize: none; padding: 15px; font-family: sans-serif; line-height: 1.5; border: 1px solid #ccc; border-radius: 4px;">
-Recommandations pour mettre en oeuvre votre cartographie.
- 
-Munissez-vous du guide d'utilisation OCEAView si vous n'êtes pas familiarisé avec ce logiciel.
- 
-1) Depuis OCEAView créez un Equipement 'Mapping_Kit_1' par exemple.
- 
-2) Ajouter les enregistreurs dédiés à la cartographie dpuis le menu 'Enregistreurs' d'OCEAView.
- 
-3) Liez vos capteurs de vos enregistreurs (1 à 9, ou 1 à 15, ou 1 à 32,...selon le kit de cartographie que vous voulez créer) à votre équipement nouvellement créé.
- 
-Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la configuration du Kit de cartographie ou si vous changez de capteurs ou d'enregistreurs pour réaliser vos cartographies.
- 
- 
-4) Depuis OCEAView lancez l'enregistrement des données sur vos capteurs avec un intervalle de mesure de 1 minute. Nommez les enregistrements en suivant le schéma suivant (ceci est un exemple vous pouvez utiliser une autre forme de nommage, l'essentiel est de pouvoir identifier ensuite où se trouve quel capteur) :
- 
-1:Milieu
-2:Haut-Devant-Gauche
-3:Haut-Devant-Droit
-4:Haut-Fond-Gauche
-5:Haut-Fond-Droit
-6:Bas-Devant-Gauche
-7:Bas-Devant-Droit
-8:Bas-Fond-Gauche
-9:Bas-Fond-Droit
- 
-5) Placez les capteurs sur votre enceinte  ou volume à cartographier. Pour vous donner une idée des emplacements possibles vous pouvez sélectionner dans cette fenêtre le nombre de points de votre cartographie dans la liste déroulante. L'image qui apparaît à droite vous aidera pour le placement.
- 
-6) Attendez au moins 30 minutes après la stabilisation. Vous pouvez surveiller la stabilisation dans OCEAView.
-        </textarea>
+        <textarea id="texte-recommandations" readonly style="width: 60%; height: 600px; resize: none; padding: 15px; font-family: sans-serif; line-height: 1.5; border: 1px solid #ccc; border-radius: 4px;"></textarea>
 
         <div class="zone-carte" id="carte-cible-intro" style="width: 35%; display: flex; justify-content: center; background-color: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <img src="images/MAP frigo.png" class="image-fond" alt="Carte" style="max-width: 100%; height: auto; object-fit: contain;" />
@@ -121,11 +92,8 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
           <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) * :" required />
 
           <h2>4. Mode Opératoire</h2>
-          <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire...">
-- La cartographie a été effectuée avec l'enceinte chargée
-- Le début des mesures commence une fois le régime établi.
-- Les points sont positionnés à 5 cm de chacune des parois.
-          </textarea>
+
+           <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire..."></textarea>
 
           <button type="button" id="btn-recommencer-tout" style="display:flex; margin: auto; background-color: #dc3545; color: white; margin-top: 10px; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px;">
             Tout recommencer

@@ -1305,6 +1305,45 @@ function reinitialiserZoomGraphique() {
   }
 }
 
+// 🌟 Chargement automatique du texte d'introduction depuis le fichier externe
+window.addEventListener("DOMContentLoaded", () => {
+  const zoneTexte = document.getElementById("texte-recommandations");
+  if (!zoneTexte) return;
+
+  // Remplacez "recommandations.txt" par son chemin exact si vous l'avez mis dans un dossier (ex: "fichiers/recommandations.txt")
+  fetch("Textarea/texte-recommandations.txt")
+    .then(reponse => {
+      if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
+      return reponse.text();
+    })
+    .then(contenu => {
+      zoneTexte.value = contenu;
+    })
+    .catch(erreur => {
+      console.error("Erreur d'affichage des recommandations :", erreur);
+      zoneTexte.value = "Erreur de chargement des recommandations d'introduction.";
+    });
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const zoneTexte = document.getElementById("userMessage");
+  if (!zoneTexte) return;
+
+  // Remplacez "recommandations.txt" par son chemin exact si vous l'avez mis dans un dossier (ex: "fichiers/recommandations.txt")
+  fetch("Textarea/Mode opératoire.txt")
+    .then(reponse => {
+      if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
+      return reponse.text();
+    })
+    .then(contenu => {
+      zoneTexte.value = contenu;
+    })
+    .catch(erreur => {
+      console.error("Erreur d'affichage des recommandations :", erreur);
+      zoneTexte.value = "Erreur de chargement des recommandations d'introduction.";
+    });
+});
+
 window.addEventListener("DOMContentLoaded", () => {
   const conteneurAuth = document.getElementById("bloc-authentification");
   if (sessionStorage.getItem("estConnecte") === "true") {
