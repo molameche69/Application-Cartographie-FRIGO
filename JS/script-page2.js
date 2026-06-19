@@ -503,6 +503,179 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogen
   }
 }
 
+function genererTableauCalculsNormePage7() {
+  const conteneur = document.getElementById("conteneur-tableau-norme-sondes");
+  if (!conteneur) return;
+
+
+  const donneesStockees = sessionStorage.getItem("store_valeurs_calculs_norme");
+  const valeursCalculs = donneesStockees ? JSON.parse(donneesStockees) : [];
+
+
+  const lignesFormules = [
+    "Coefficient d'incertitude type (u31)",
+    "Facteur de correction appliqué (N.A)",
+    "Résultat de la variance moyenne (2.16)",
+    "Écart métrologique maximal admissible (5.52)",
+    "Incertitude élargie combinée (1.06)",
+    "Valeur finale calculée stabilisée (1.08)"
+  ];
+
+  let htmlTableau = `
+    <table class="table-rapport-brute" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
+      <thead>
+        <tr style="background-color: #2F5597; color: white;">
+          <th style="padding: 7px; border: 1px solid #ddd; text-align: left;">Paramètres & Formules Analysées</th>
+          <th style="padding: 7px; border: 1px solid #ddd; text-align: center; width: 120px;">Valeur Saisie / Calculée</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  // Construction dynamique des lignes du tableau
+  lignesFormules.forEach((nomParametre, idx) => {
+    // On va chercher la valeur correspondante sauvegardée à cet index
+    const infoSaisie = valeursCalculs.find(item => item.index === idx);
+    const valeurAffichee = infoSaisie ? infoSaisie.valeur : "—";
+
+    htmlTableau += `
+      <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9f9f9'};">
+        <td style="padding: 7px; border: 1px solid #ddd; font-weight: 500;">${nomParametre}</td>
+        <td style="padding: 7px; border: 1px solid #ddd; text-align: center; font-weight: bold; color: #2F5597;">
+          ${valeurAffichee}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(genererTableauCalculsNormePage7, 200);
+});
+
+function genererTableauCalculsNormeAutomatique() {
+  const conteneur = document.getElementById("conteneur-tableau-norme-sondes");
+  if (!conteneur) return;
+
+  // Récupération des données mémorisées du graphique de la page 1
+  let datasetsActifs = [];
+  const backup = sessionStorage.getItem("store_graphes_memoire");
+  
+  if (backup) {
+    try {
+      const parsed = JSON.parse(backup);
+      if (parsed && parsed.datasets) datasetsActifs = parsed.datasets;
+    } catch (e) {
+      console.error("Erreur lors de la lecture du stockage du graphique :", e);
+    }
+  }
+
+  // Si le graphique n'est pas trouvé, on tente de lire l'instance locale
+  if ((!datasetsActifs || datasetsActifs.length === 0) && typeof monGraphiqueInstance !== "undefined" && monGraphiqueInstance && monGraphiqueInstance.data) {
+    datasetsActifs = monGraphiqueInstance.data.datasets;
+  }
+
+  if (!datasetsActifs || datasetsActifs.length === 0) {
+    conteneur.innerHTML = `<p style="color:#c00000; text-align:center; font-style:italic; font-size:11px;">
+      [En attente] Aucune donnée de graphique trouvée. Veuillez générer le graphique en Page 1.
+    </p>`;
+    return;
+  }
+
+  // Récupération de la résolution (0.031)
+  let resolutionCapteur = 0.031;
+  const stockCalculs = sessionStorage.getItem("store_valeurs_calculs_norme");
+  if (stockCalculs) {
+    try {
+      const listeCalculs = JSON.parse(stockCalculs);
+      if (listeCalculs && listeCalculs[0] && !isNaN(parseFloat(listeCalculs[0].valeur))) {
+        resolutionCapteur = parseFloat(listeCalculs[0].valeur);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  // Construction du tableau HTML exact mot pour mot
+  let htmlTableau = `
+    <table class="table-rapport-brute" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; text-align: center; font-family: Arial, sans-serif; border: 1px solid #ddd;">
+      <thead>
+        <tr style="background-color: #2F5597; color: white;">
+          <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Identification Capteur</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Moyenne (°C)</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Écart-type S_mj (°C)</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Incertitude Résolution u2 (°C)</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Incertitude Combinée uc (°C)</th>
+          <th style="padding: 8px; border: 1px solid #ddd; background-color: #1F3864;">Incertitude Élargie U (k=2) (°C)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let compteurLignes = 0;
+
+  datasetsActifs.forEach((dataset) => {
+    const nomSonde = dataset.label ? dataset.label.trim() : "";
+    
+    // Ignorer les lignes de seuil ou limites de consignes
+    if (!nomSonde || nomSonde.toLowerCase().includes("limite") || nomSonde.toLowerCase().includes("seuil") || nomSonde.toLowerCase().includes("consigne")) {
+      return;
+    }
+
+    // Extraction propre des valeurs numériques
+    const valeurs = dataset.data
+      .map(v => {
+        if (v === undefined || v === null) return NaN;
+        if (typeof v === "object" && v !== null && v.y !== undefined) return parseFloat(v.y);
+        if (typeof v === "string") v = v.replace(",", ".");
+        return parseFloat(v);
+      })
+      .filter(v => !isNaN(v));
+
+    if (valeurs.length === 0) return;
+    compteurLignes++;
+
+    // Calculs de la norme FD X 15-140
+    const somme = valeurs.reduce((acc, val) => acc + val, 0);
+    const moyenne = somme / valeurs.length;
+
+    const sommeCarres = valeurs.reduce((acc, val) => acc + Math.pow(val - moyenne, 2), 0);
+    const ecartType = Math.sqrt(sommeCarres / (valeurs.length - 1 || 1));
+
+    const u_resolution = resolutionCapteur / (2 * Math.sqrt(3));
+    const u_combinee = Math.sqrt(Math.pow(ecartType, 2) + Math.pow(u_resolution, 2));
+    const incertitudeElargie = u_combinee * 2;
+
+    htmlTableau += `
+      <tr style="background-color: ${compteurLignes % 2 === 0 ? '#ffffff' : '#f9f9f9'};">
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-align: left; color: #1F3864;">
+          ${nomSonde}
+        </td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${moyenne.toFixed(3)}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; color: #444;">${ecartType.toFixed(3)}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; color: #666;">${u_resolution.toFixed(4)}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; color: #444;">${u_combinee.toFixed(3)}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #C00000; background-color: #FFF2CC;">
+          &plusmn; ${incertitudeElargie.toFixed(3)}
+        </td>
+      </tr>
+    `;
+  });
+
+  if (compteurLignes === 0) {
+    htmlTableau += `<tr><td colspan="6" style="padding:12px; color:#888; font-style:italic;">Aucune sonde active trouvée.</td></tr>`;
+  }
+
+  htmlTableau += `</tbody></table>`;
+  conteneur.innerHTML = htmlTableau;
+}
+
+// Lancement forcé dès le chargement du DOM de la page 2
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => setTimeout(genererTableauCalculsNormeAutomatique, 200));
+} else {
+  setTimeout(genererTableauCalculsNormeAutomatique, 200);
+}
+
 function telechargerPDFDirect() {
   window.print();
 }

@@ -13,18 +13,34 @@ let capteursExclusManuellement = [];
 // ========================================================
 
 function sauvegarderEtatGlobalPage1() {
-  // Sauvegarde uniquement des entrées de texte et configurations
+  // 1. Sauvegarde des champs texte standards
   const champs = [
     "username", "userEntreprise", "userService", "userReference", 
     "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
-    "valeur", "heureDebut", "heureFin", "report-date-emission"
+    "valeur", "heureDebut", "heureFin", "periode"
   ];
   champs.forEach(id => {
     const el = document.getElementById(id);
     if (el) sessionStorage.setItem("store_" + id, el.value);
   });
 
-  // Sauvegarde de l'emplacement des sondes (La Map et la Réserve)
+  // 2. Sauvegarde des inputs de calculs de l'onglet 5
+  const inputsCalcul = document.querySelectorAll(".txt-formule");
+  const listeValeursCalculs = [];
+  inputsCalcul.forEach((tx, index) => {
+    listeValeursCalculs.push({
+      index: index,
+      valeur: tx.value || "—"
+    });
+  });
+  sessionStorage.setItem("store_valeurs_calculs_norme", JSON.stringify(listeValeursCalculs));
+
+  // 🌟 AJOUT CRUCIAL : Sauvegarde des données synchronisées du graphique pour la page 2
+  if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire && donneesGraphesEnMemoire.datasets) {
+    sessionStorage.setItem("store_graphes_memoire", JSON.stringify(donneesGraphesEnMemoire));
+  }
+
+  // 3. Sauvegarde de l'emplacement des sondes
   const listeSondes = document.getElementById("liste-sondes-disponibles");
   const carteCible = document.getElementById("carte-cible");
   if (listeSondes) sessionStorage.setItem("store_html_reserve", listeSondes.innerHTML);
@@ -701,6 +717,8 @@ function genererLeGraphique() {
   if (btnGenerer) {
     btnGenerer.style.display = 'none';
   }
+
+  sessionStorage.setItem("store_graphes_memoire", JSON.stringify(donneesGraphesEnMemoire));
 }
 
 
