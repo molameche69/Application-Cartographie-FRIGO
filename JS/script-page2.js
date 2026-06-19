@@ -1,4 +1,5 @@
 let monGraphiqueInstance = null;
+
 function formaterHeure(valeur) {
   if (!valeur) return "";
   let valStr = valeur.toString().trim().replace(",", ".");
@@ -35,25 +36,33 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPdf.style.cursor = "pointer";
   }
 
+  // Configuration de l'association entre les IDs du Rapport HTML et les clés de stockage
   const champs = {
     "report-username": "store_username",
     "report-userEntreprise": "store_userEntreprise",
     "report-userService": "store_userService",
     "report-userReference": "store_userReference",
-    "report-userCaracteristique": "store_userCaracteristique",
+    "report-userCaracteristique": "store_userCaracteristique", // Gère l'affichage de la Marque (Page 1 & Page 3)
     "report-userLoc": "store_userLoc",
     "report-tdeconsigne": "store_tdeconsigne",
     "report-valeur": "store_valeur",
-    "report-periode": "store_periode"
+    "report-periode": "store_periode",
+    "report-date-emission": "store_report-date-emission"        
   };
 
   for (let id in champs) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = sessionStorage.getItem(champs[id]) || localStorage.getItem(champs[id].replace("store_", "")) || "Non renseigné";
+   
+    const elements = document.querySelectorAll(`[id="${id}"]`);
+    
+    if (elements.length > 0) {
+      const valeurRecuperee = sessionStorage.getItem(champs[id]) || "Non renseigné";
+      
+      // On applique la marque (ou autre donnée) sur chaque zone trouvée
+      elements.forEach(el => {
+        el.textContent = valeurRecuperee;
+      });
     }
   }
-
 
   const elNomSignature = document.getElementById("report-username-signature");
   if (elNomSignature) {
@@ -113,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (ancienneLegende) ancienneLegende.remove();
 
       const anciensRonds = carteRapport.querySelectorAll(".pastille-sonde-generee");
-       anciensRonds.forEach(r => r.remove());
+      anciensRonds.forEach(r => r.remove());
 
       const blocLegende = document.createElement("div");
       blocLegende.id = "legende-sondes-rapport";
@@ -210,6 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function chargerDonneesODSRapport() {
   const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
+  
+  // ALIMENTATION DUPLICATE SYNCHRONISÉE SANS CONFLIT SUR LES DEUX PAGES CIBLES (6 ET 8)
   const imgRapportPage6 = document.getElementById("graphiqueTemperatures");
   const imgRapportPage8 = document.getElementById("graphiqueTemperaturesConformite");
 
@@ -479,7 +490,6 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogen
 
   conteneurTableau.innerHTML = html;
 
- 
   const elConclusionTexte = document.getElementById("report-statut-conclusion-texte");
   if (elConclusionTexte) {
     if (enceinteConforme) {
@@ -493,122 +503,6 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogen
     }
   }
 }
-
-
-    window.dessinerGraphiqueConformite = function(donnees) {
-      // donnees = [{nom, xmj, umj, xspec, emtMin, emtMax}]
-      const ctx = document.getElementById('graphiqueConformite');
-      if (!ctx || !donnees || !donnees.length) return;
- 
-      const labels = donnees.map((_, i) => (i + 1).toString());
-      const moyennes = donnees.map(d => d.xmj);
-      const erreurs  = donnees.map(d => d.umj);
-      const xspec    = donnees[0]?.xspec ?? 5;
-      const emtMax   = donnees[0]?.emtMax ?? (xspec + 3);
-      const emtMin   = donnees[0]?.emtMin ?? (xspec - 3);
- 
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Xmj (°C)',
-            data: moyennes,
-            backgroundColor: 'rgba(46,116,181,0.25)',
-            borderColor: '#2E74B5',
-            borderWidth: 1,
-            errorBars: erreurs
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: 'Conformité', font: { size: 12 } },
-            annotation: {
-              annotations: {
-                limiteHaute: {
-                  type: 'line', yMin: emtMax, yMax: emtMax,
-                  borderColor: '#dc3545', borderWidth: 2,
-                  label: { display: false }
-                },
-                limiteBasse: {
-                  type: 'line', yMin: emtMin, yMax: emtMin,
-                  borderColor: '#007bff', borderWidth: 2,
-                  label: { display: false }
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              title: { display: false },
-              grid: { color: '#eee' }
-            },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    };
- 
-    window.remplirTableauSondes = function(sondes) {
-      const tbody = document.getElementById('corps-tableau-sondes');
-      if (!tbody || !sondes || !sondes.length) return;
-      tbody.innerHTML = sondes.map(s => `
-        <tr>
-          <td>${s.nom || '—'}</td>
-          <td>${s.duree || '30 minutes'}</td>
-          <td>${s.releves || '—'}</td>
-        </tr>
-      `).join('');
-    };
- 
-    window.remplirTableauEtalonnage = function(sondes) {
-      const tbody = document.getElementById('corps-tableau-etalonnage');
-      if (!tbody || !sondes || !sondes.length) return;
-      tbody.innerHTML = sondes.map(s => `
-        <tr>
-          <td>${s.numeroSerie || '—'}</td>
-          <td>${s.identifiant || '—'}</td>
-          <td>${s.certificat || '—'}</td>
-          <td>${s.dateCertificat || '—'}</td>
-          <td>${s.incertitude !== undefined ? s.incertitude : '—'}</td>
-        </tr>
-      `).join('');
-    };
- 
-    window.remplirTableauCalculIndividuel = function(capteurs) {
-      const tbody = document.getElementById('corps-tableau-calcul');
-      if (!tbody || !capteurs || !capteurs.length) return;
-      tbody.innerHTML = capteurs.map(c => `
-        <tr>
-          <td>${c.nom || '—'}</td>
-          <td>${c.min !== undefined ? c.min.toFixed(2) : '—'}</td>
-          <td>${c.max !== undefined ? c.max.toFixed(2) : '—'}</td>
-          <td>${c.moyenne !== undefined ? c.moyenne.toFixed(2) : '—'}</td>
-          <td>${c.ecartType !== undefined ? c.ecartType.toFixed(2) : '—'}</td>
-          <td>${c.stabilite !== undefined ? c.stabilite.toFixed(2) : '—'}</td>
-          <td>${c.ucmesj !== undefined ? c.ucmesj.toFixed(2) : '—'}</td>
-          <td>${c.incertitude !== undefined ? c.incertitude.toFixed(2) : '—'}</td>
-          <td>${c.xmjMoinsUmj !== undefined ? c.xmjMoinsUmj.toFixed(2) : '—'}</td>
-          <td>${c.xmjPlusUmj !== undefined ? c.xmjPlusUmj.toFixed(2) : '—'}</td>
-          <td>${c.nbReleves || '—'}</td>
-          <td><span class="${c.conforme ? 'badge-ok' : 'badge-nok'}">${c.conforme ? 'OK' : 'NOK'}</span></td>
-        </tr>
-      `).join('');
-    };
- 
-    window.remplirTableauConformite = function(capteurs) {
-      const tbody = document.getElementById('corps-tableau-conformite');
-      if (!tbody || !capteurs || !capteurs.length) return;
-      tbody.innerHTML = capteurs.map(c => `
-        <tr>
-          <td>${c.nom || '—'}</td>
-          <td><span class="${c.conforme ? 'badge-ok' : 'badge-nok'}">${c.conforme ? 'OK' : 'NOK'}</span></td>
-        </tr>
-      `).join('');
-    };
 
 function telechargerPDFDirect() {
   window.print();

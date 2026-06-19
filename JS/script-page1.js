@@ -17,7 +17,7 @@ function sauvegarderEtatGlobalPage1() {
   const champs = [
     "username", "userEntreprise", "userService", "userReference", 
     "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
-    "valeur", "heureDebut", "heureFin", "periode"
+    "valeur", "heureDebut", "heureFin", "report-date-emission"
   ];
   champs.forEach(id => {
     const el = document.getElementById(id);
@@ -36,7 +36,7 @@ function restaurerEtatGlobalPage1() {
   const champs = [
     "username", "userEntreprise", "userService", "userReference", 
     "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
-    "valeur", "heureDebut", "heureFin", "periode"
+    "valeur", "heureDebut", "heureFin", "report-date-emission"
   ];
   champs.forEach(id => {
     const val = sessionStorage.getItem("store_" + id);
@@ -53,10 +53,6 @@ function restaurerEtatGlobalPage1() {
   if (listeSondes && htmlReserve) listeSondes.innerHTML = htmlReserve;
   if (carteCible && htmlCarte) carteCible.innerHTML = htmlCarte;
 
-  if (typeof mettreAJourSeuilsAutomatiques === "function") {
-    mettreAJourSeuilsAutomatiques();
-  }
-
   // 3. 🔄 RECONSTRUCTION DU TABLEAU DEPUIS LE FICHIER EN MÉMOIRE
   const fichierSauvegarde = localStorage.getItem("fichierOdsBase64") || sessionStorage.getItem("store_fichier_excel_base64");
   if (fichierSauvegarde && typeof XLSX !== "undefined") {
@@ -68,24 +64,24 @@ function restaurerEtatGlobalPage1() {
         buffer[i] = chaineBinaire.charCodeAt(i);
       }
       
-      const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
-      fichierActuelPourFiltrage = workbook; // Restaure la variable globale de filtrage
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const nomOnglet = workbook.SheetNames[0];
+      const feuille = workbook.Sheets[nomOnglet];
+      const lignesBrutes = XLSX.utils.sheet_to_json(feuille, { header: 1 });
       
-      // Détection automatique de ta fonction d'affichage du tableau
-      if (typeof afficherDonneesDansTableau === "function") {
-        afficherDonneesDansTableau(workbook);
-      } else if (typeof chargerDonneesODS === "function") {
-        chargerDonneesODS(workbook);
-      } else if (typeof tracerGraphiqueDepuisExcel === "function") {
-        tracerGraphiqueDepuisExcel(workbook);
+      // Appel de votre vraie fonction d'analyse de données
+      if (typeof analyserEtRemplirTableau === "function") {
+        analyserEtRemplirTableau(lignesBrutes);
       }
     } catch (err) {
       console.error("Impossible de restaurer le tableau au retour arrière :", err);
     }
   }
 
-  // Force le bouton à vérifier l'état du tableau après la restauration
-  setTimeout(majEtatBoutonGenerer, 100);
+  // Réassociation des événements après ré-injection du HTML
+  if (typeof reassocierEvenementsSondesApresRestauration === "function") {
+    reassocierEvenementsSondesApresRestauration();
+  }
 }
 
 window.addEventListener("pageshow", (event) => {

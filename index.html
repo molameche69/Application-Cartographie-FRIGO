@@ -60,7 +60,7 @@
       </div>
       <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px;">
   
-  <textarea readonly style="width: 60%; height: 600px; resize: none; padding: 15px; font-family: sans-serif; line-height: 1.5; border: 1px solid #ccc; border-radius: 4px;">
+        <textarea readonly style="width: 60%; height: 600px; resize: none; padding: 15px; font-family: sans-serif; line-height: 1.5; border: 1px solid #ccc; border-radius: 4px;">
 Recommandations pour mettre en oeuvre votre cartographie.
  
 Munissez-vous du guide d'utilisation OCEAView si vous n'êtes pas familiarisé avec ce logiciel.
@@ -89,15 +89,12 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
 5) Placez les capteurs sur votre enceinte  ou volume à cartographier. Pour vous donner une idée des emplacements possibles vous pouvez sélectionner dans cette fenêtre le nombre de points de votre cartographie dans la liste déroulante. L'image qui apparaît à droite vous aidera pour le placement.
  
 6) Attendez au moins 30 minutes après la stabilisation. Vous pouvez surveiller la stabilisation dans OCEAView.
-  </textarea>
+        </textarea>
 
-  <div class="zone-carte" id="carte-cible-intro" style="width: 35%; display: flex; justify-content: center; background-color: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <img src="images/MAP frigo.png" class="image-fond" alt="Carte" style="max-width: 100%; height: auto; object-fit: contain;" />
-  </div>
-
-</div>
-
-
+        <div class="zone-carte" id="carte-cible-intro" style="width: 35%; display: flex; justify-content: center; background-color: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <img src="images/MAP frigo.png" class="image-fond" alt="Carte" style="max-width: 100%; height: auto; object-fit: contain;" />
+        </div>
+      </div>
     </div>
 
     <form id="formulaire-carto" onsubmit="return false;">
@@ -108,6 +105,7 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
         </div>
         <div class="Fiche">
           <h2>1. Section : Identification de l'Opérateur & Entreprise</h2>
+          <input type="text" id="report-date-emission" name="report-date-emission" placeholder="date-emission *" required />
           <input type="text" id="username" name="username" placeholder="Nom et Prénom de l'opérateur : *" required />
           <input type="text" id="userEntreprise" name="userEntreprise" placeholder="Nom de l'entreprise / Organisme * :" required />
           <input type="text" id="userService" name="userService" placeholder="Service / Département * :" required />
@@ -134,7 +132,7 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
         </div>
       </div>
 
-     <div id="onglet3" class="contenu-onglet cache">
+      <div id="onglet3" class="contenu-onglet cache">
         <div id="bloc-graphique">
           
           <i>Analyse Thermique depuis Fichier personnalisé</i>
@@ -209,8 +207,6 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
               <button type="button" id="btn-reinitialiser-marqueurs" style="margin-top: 20px; cursor: pointer; padding: 6px 12px; width: 100%;">
                 Réinitialiser les marqueurs
               </button>
-
-              
             </div>
 
             <div class="zone-carte" id="carte-cible" style="position: relative; display: flex; justify-content: center; align-items: center; width: 600px; height: 450px; min-width: 600px; min-height: 450px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ccc;">
