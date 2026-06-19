@@ -54,6 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+
+  const elNomSignature = document.getElementById("report-username-signature");
+  if (elNomSignature) {
+    elNomSignature.textContent = sessionStorage.getItem("store_username") || localStorage.getItem("username") || "";
+  }
+
   const elDebut = document.getElementById("report-filtreHeureDebut");
   const elFin = document.getElementById("report-filtreHeureFin");
   
@@ -107,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (ancienneLegende) ancienneLegende.remove();
 
       const anciensRonds = carteRapport.querySelectorAll(".pastille-sonde-generee");
-      anciensRonds.forEach(r => r.remove());
+       anciensRonds.forEach(r => r.remove());
 
       const blocLegende = document.createElement("div");
       blocLegende.id = "legende-sondes-rapport";
@@ -204,13 +210,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function chargerDonneesODSRapport() {
   const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
-  const imgRapport = document.getElementById("graphiqueTemperatures");
+  const imgRapportPage6 = document.getElementById("graphiqueTemperatures");
+  const imgRapportPage8 = document.getElementById("graphiqueTemperaturesConformite");
 
   if (!imageZoomee) {
-    if (imgRapport) imgRapport.style.display = "none";
-  } else if (imgRapport) {
-    imgRapport.src = imageZoomee;
-    imgRapport.style.display = "block";
+    if (imgRapportPage6) imgRapportPage6.style.display = "none";
+    if (imgRapportPage8) imgRapportPage8.style.display = "none";
+  } else {
+    if (imgRapportPage6) {
+      imgRapportPage6.src = imageZoomee;
+      imgRapportPage6.style.display = "block";
+    }
+    if (imgRapportPage8) {
+      imgRapportPage8.src = imageZoomee;
+      imgRapportPage8.style.display = "block";
+    }
   }
 
   const conteneurTableau = document.querySelector(".conteneur-tableau");
@@ -348,7 +362,6 @@ function chargerDonneesODSRapport() {
       deltaHomogeneite = Math.max(...toutesLesMoyennesUtiles) - Math.min(...toutesLesMoyennesUtiles);
       deltaConsigneMax = Math.max(...tousLesEcartsConsigneUtiles);
       uHomog = deltaHomogeneite / Math.sqrt(3);
-      // Calcul de l'incertitude d'écart de consigne (u_consigne = Delta Theta consigne / racine(3))
       uConsigne = deltaConsigneMax / Math.sqrt(3);
     }
 
@@ -465,7 +478,137 @@ function creerTableauStatistiques(statsCapteurs, Xair, SXM, Sr, SR, deltaHomogen
   `;
 
   conteneurTableau.innerHTML = html;
+
+ 
+  const elConclusionTexte = document.getElementById("report-statut-conclusion-texte");
+  if (elConclusionTexte) {
+    if (enceinteConforme) {
+      elConclusionTexte.textContent = "CONFORME aux spécifications de la norme NF X 15-140.";
+      elConclusionTexte.style.color = "#375623";
+      elConclusionTexte.style.fontWeight = "bold";
+    } else {
+      elConclusionTexte.textContent = "NON CONFORME aux spécifications de la norme NF X 15-140.";
+      elConclusionTexte.style.color = "#c65911";
+      elConclusionTexte.style.fontWeight = "bold";
+    }
+  }
 }
+
+
+    window.dessinerGraphiqueConformite = function(donnees) {
+      // donnees = [{nom, xmj, umj, xspec, emtMin, emtMax}]
+      const ctx = document.getElementById('graphiqueConformite');
+      if (!ctx || !donnees || !donnees.length) return;
+ 
+      const labels = donnees.map((_, i) => (i + 1).toString());
+      const moyennes = donnees.map(d => d.xmj);
+      const erreurs  = donnees.map(d => d.umj);
+      const xspec    = donnees[0]?.xspec ?? 5;
+      const emtMax   = donnees[0]?.emtMax ?? (xspec + 3);
+      const emtMin   = donnees[0]?.emtMin ?? (xspec - 3);
+ 
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Xmj (°C)',
+            data: moyennes,
+            backgroundColor: 'rgba(46,116,181,0.25)',
+            borderColor: '#2E74B5',
+            borderWidth: 1,
+            errorBars: erreurs
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Conformité', font: { size: 12 } },
+            annotation: {
+              annotations: {
+                limiteHaute: {
+                  type: 'line', yMin: emtMax, yMax: emtMax,
+                  borderColor: '#dc3545', borderWidth: 2,
+                  label: { display: false }
+                },
+                limiteBasse: {
+                  type: 'line', yMin: emtMin, yMax: emtMin,
+                  borderColor: '#007bff', borderWidth: 2,
+                  label: { display: false }
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              title: { display: false },
+              grid: { color: '#eee' }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    };
+ 
+    window.remplirTableauSondes = function(sondes) {
+      const tbody = document.getElementById('corps-tableau-sondes');
+      if (!tbody || !sondes || !sondes.length) return;
+      tbody.innerHTML = sondes.map(s => `
+        <tr>
+          <td>${s.nom || '—'}</td>
+          <td>${s.duree || '30 minutes'}</td>
+          <td>${s.releves || '—'}</td>
+        </tr>
+      `).join('');
+    };
+ 
+    window.remplirTableauEtalonnage = function(sondes) {
+      const tbody = document.getElementById('corps-tableau-etalonnage');
+      if (!tbody || !sondes || !sondes.length) return;
+      tbody.innerHTML = sondes.map(s => `
+        <tr>
+          <td>${s.numeroSerie || '—'}</td>
+          <td>${s.identifiant || '—'}</td>
+          <td>${s.certificat || '—'}</td>
+          <td>${s.dateCertificat || '—'}</td>
+          <td>${s.incertitude !== undefined ? s.incertitude : '—'}</td>
+        </tr>
+      `).join('');
+    };
+ 
+    window.remplirTableauCalculIndividuel = function(capteurs) {
+      const tbody = document.getElementById('corps-tableau-calcul');
+      if (!tbody || !capteurs || !capteurs.length) return;
+      tbody.innerHTML = capteurs.map(c => `
+        <tr>
+          <td>${c.nom || '—'}</td>
+          <td>${c.min !== undefined ? c.min.toFixed(2) : '—'}</td>
+          <td>${c.max !== undefined ? c.max.toFixed(2) : '—'}</td>
+          <td>${c.moyenne !== undefined ? c.moyenne.toFixed(2) : '—'}</td>
+          <td>${c.ecartType !== undefined ? c.ecartType.toFixed(2) : '—'}</td>
+          <td>${c.stabilite !== undefined ? c.stabilite.toFixed(2) : '—'}</td>
+          <td>${c.ucmesj !== undefined ? c.ucmesj.toFixed(2) : '—'}</td>
+          <td>${c.incertitude !== undefined ? c.incertitude.toFixed(2) : '—'}</td>
+          <td>${c.xmjMoinsUmj !== undefined ? c.xmjMoinsUmj.toFixed(2) : '—'}</td>
+          <td>${c.xmjPlusUmj !== undefined ? c.xmjPlusUmj.toFixed(2) : '—'}</td>
+          <td>${c.nbReleves || '—'}</td>
+          <td><span class="${c.conforme ? 'badge-ok' : 'badge-nok'}">${c.conforme ? 'OK' : 'NOK'}</span></td>
+        </tr>
+      `).join('');
+    };
+ 
+    window.remplirTableauConformite = function(capteurs) {
+      const tbody = document.getElementById('corps-tableau-conformite');
+      if (!tbody || !capteurs || !capteurs.length) return;
+      tbody.innerHTML = capteurs.map(c => `
+        <tr>
+          <td>${c.nom || '—'}</td>
+          <td><span class="${c.conforme ? 'badge-ok' : 'badge-nok'}">${c.conforme ? 'OK' : 'NOK'}</span></td>
+        </tr>
+      `).join('');
+    };
 
 function telechargerPDFDirect() {
   window.print();

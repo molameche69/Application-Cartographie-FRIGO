@@ -1,148 +1,579 @@
-body {
-  font-family: 'Helvetica', Arial, sans-serif;
-  color: #333333;
+/* ================================================================
+   RESET & BASE
+   ================================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  background-color: #ffffff;
-  -webkit-font-smoothing: antialiased;
 }
-
-.page-pdf {
-  width: 210mm;
-  min-height: 297mm;
-  padding: 8mm 10mm;
-  box-sizing: border-box;
-  background: #ffffff;
-  page-break-after: always;
+ 
+body {
+  background: #1a1a2e;
+  font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+  font-size: 10pt;
+  color: #333;
+  min-height: 100vh;
+}
+ 
+/* Fond étoilé (canvas) */
+#fond-etoile {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+ 
+/* ================================================================
+   ZONE D'ACTIONS (boutons hors PDF)
+   ================================================================ */
+.actions-zone {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+ 
+.actions-zone button {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+ 
+.actions-zone button:first-child {
+  background: #2E74B5;
+  color: white;
+}
+ 
+.actions-zone button:first-child:hover {
+  opacity: 0.85;
+}
+ 
+.actions-zone button:last-child {
+  background: #6c757d;
+  color: white;
+  border: 2px solid #444 !important;
+}
+ 
+/* ================================================================
+   CONTENEUR PRINCIPAL
+   ================================================================ */
+.container {
   position: relative;
-  transform: scale(0.6);       
-  transform-origin: top left;  
-  margin-bottom: -118mm;      
-}
-
-.conteneur-virtuel-pdf-hors-champ {
-  position: absolute !important;
-  left: -9999px !important;
-  top: 0 !important;
-  width: 210mm !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-.entete-pdf {
-  margin-bottom: 8px;
-}
-
-.titre-principal {
-  font-size: 16px;
-  color: #1a1a1a;
-  margin: 0 0 2px 0;
-  font-weight: bold;
-  letter-spacing: 0.3px;
-}
-
-.sous-titre-principal {
-  font-size: 10px;
-  color: #777777;
-  margin: 0;
-  font-weight: normal;
-}
-
-.separateur-bleu {
-  height: 2px;
-  background-color: #007bff;
-  margin-bottom: 12px;
-  width: 100%;
-}
-
-.section-pdf {
-  margin-bottom: 12px;
-}
-
-.titre-section {
-  font-size: 10px;
-  color: #007bff;
-  text-transform: uppercase;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 3px;
-  margin: 0 0 6px 0;
-  font-weight: bold;
-}
-
-.grille-infos p {
-  font-size: 8px;
-  margin: 4px 0;
-  line-height: 1.2;
-}
-
-.grille-infos strong {
-  color: #555555;
-}
-
-.bloc-message-pdf {
-  background-color: #f8f9fa;
-  border-left: 2px solid #007bff;
-  padding: 5px;
-  font-size: 7px;
-  font-family: monospace;
-  white-space: pre-line;
-  margin-top: 3px;
-  color: #222222;
-}
-
-.zone-carte-pdf {
-  text-align: center;
-  margin: 8px auto;
-  width: 100%;
-}
-
-.zone-carte-pdf img, 
-.zone-graphique-pdf img {
-  max-width: 100% !important;
-  height: auto !important;
-  max-height: 55mm;
-  display: block;
+  z-index: 10;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+ 
+/* ================================================================
+   PAGES PDF  — chaque .page-pdf = une page A4
+   ================================================================ */
+.page-pdf {
+  background: #ffffff;
+  width: 100%;
+  max-width: 794px;       /* A4 à 96dpi ≈ 794px */
+  margin: 0 auto 32px;
+  padding: 0;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  position: relative;
+  page-break-after: always;
+  /* bordure subtile */
+  border: 1px solid #ddd;
+}
+ 
+/* ----------------------------------------------------------------
+   EN-TÊTE DE PAGE (logo gauche + titre droit)
+   ---------------------------------------------------------------- */
+.page-pdf::before {
+  content: '';
+  display: block;
+  /* sera géré par .page-header injecté via JS ou inline */
+}
+ 
+/* En-tête commun à toutes les pages sauf garde */
+.entete-page {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 30px 12px;
+  border-bottom: 2px solid #2E74B5;
+  margin-bottom: 24px;
+}
+ 
+.entete-page .logo-entete {
+  height: 45px;
+  width: auto;
   object-fit: contain;
 }
-
-.espace-haut-graphes {
-  margin-top: 10px !important;
+ 
+.entete-page .titre-entete {
+  font-size: 18pt;
+  font-weight: 700;
+  color: #2E74B5;
+  letter-spacing: 0.5px;
 }
-
-.zone-tableau-pdf table {
-  width: 100% !important;
-  max-width: 100% !important;
-  border-collapse: collapse !important;
-  font-size: 7px !important;
-  margin-top: 5px;
-  table-layout: fixed; 
-  word-wrap: break-word; 
+ 
+/* PIED DE PAGE */
+.pied-page {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 30px 14px;
+  border-top: 1px solid #ccc;
+  margin-top: 30px;
+  font-size: 8pt;
+  color: #666;
 }
-
-.zone-tableau-pdf th {
-  background-color: #007bff !important;
-  color: #ffffff !important;
-  padding: 3px 4px !important;
-  font-weight: bold !important;
-  border: 1px solid #dddddd !important;
+ 
+/* ================================================================
+   PAGE DE GARDE
+   ================================================================ */
+.page-garde {
+  min-height: 800px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 }
-
-.zone-tableau-pdf td {
-  padding: 2px 4px !important;
-  border-bottom: 1px solid #eeeeee !important;
-  border-left: 1px solid #dddddd !important;
-  border-right: 1px solid #dddddd !important;
+ 
+.bandeau-haut-garde {
+  background: #2E74B5;
+  height: 10px;
+  width: 100%;
+}
+ 
+.logo-garde-container {
+  padding: 30px 30px 0;
+}
+ 
+.logo-garde {
+  height: 55px;
+  width: auto;
+  object-fit: contain;
+}
+ 
+.contenu-garde {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 30px 40px;
   text-align: center;
 }
-
-.statut-conforme {
-  color: #28a745;
-  font-weight: bold;
+ 
+.ref-rapport-garde {
+  font-size: 9pt;
+  color: #555;
+  text-align: center;
+  margin-bottom: 80px;
+  padding-top: 20px;
 }
-
-.statut-non-conforme {
-  color: #dc3545;
-  font-weight: bold;
+ 
+.titre-principal-garde {
+  font-size: 26pt;
+  font-weight: 700;
+  color: #2E74B5;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+ 
+.sous-titre-garde {
+  font-size: 20pt;
+  font-weight: 600;
+  color: #2E74B5;
+  margin-bottom: 80px;
+}
+ 
+.bloc-delivre-garde {
+  text-align: left;
+  width: 100%;
+  max-width: 400px;
+  margin-top: auto;
+  padding-top: 40px;
+}
+ 
+.label-delivre {
+  font-size: 10pt;
+  color: #333;
+  margin-bottom: 4px;
+}
+ 
+.valeur-delivre {
+  font-size: 10pt;
+  font-weight: 600;
+  color: #333;
+  padding-left: 24px;
+}
+ 
+.pied-garde {
+  padding: 14px 30px;
+  border-top: 1px solid #ccc;
+  font-size: 8pt;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+ 
+/* ================================================================
+   CONTENU DES PAGES
+   ================================================================ */
+.corps-page {
+  padding: 0 30px;
+}
+ 
+/* ----------------------------------------------------------------
+   TABLE DES MATIÈRES
+   ---------------------------------------------------------------- */
+.sommaire {
+  list-style: none;
+  margin: 10px 0 0 0;
+  padding: 0;
+}
+ 
+.sommaire li {
+  display: flex;
+  align-items: baseline;
+  padding: 3px 0;
+  font-size: 10pt;
+  color: #333;
+  font-weight: 700;
+}
+ 
+.sommaire li.sous-item {
+  padding-left: 24px;
+  font-weight: 400;
+}
+ 
+.sommaire li span:first-child {
+  white-space: nowrap;
+}
+ 
+.sommaire li .points {
+  flex: 1;
+  border-bottom: 1px dotted #999;
+  margin: 0 6px;
+  height: 1em;
+}
+ 
+.sommaire li span:last-child {
+  white-space: nowrap;
+}
+ 
+/* ----------------------------------------------------------------
+   TITRES DE SECTIONS
+   ---------------------------------------------------------------- */
+.titre-section-hors-num {
+  font-size: 16pt;
+  font-weight: 700;
+  color: #2E74B5;
+  border-bottom: none;
+  margin-bottom: 16px;
+  margin-top: 4px;
+}
+ 
+h2.titre-section {
+  font-size: 16pt;
+  font-weight: 700;
+  color: #2E74B5;
+  margin-top: 24px;
+  margin-bottom: 10px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+ 
+h3 {
+  font-size: 12pt;
+  font-weight: 600;
+  color: #2E74B5;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+ 
+p {
+  font-size: 10pt;
+  line-height: 1.5;
+  color: #333;
+  margin-bottom: 6px;
+}
+ 
+ul.liste-puces {
+  margin: 6px 0 10px 30px;
+  padding: 0;
+}
+ 
+ul.liste-puces li {
+  font-size: 10pt;
+  line-height: 1.5;
+  color: #333;
+  margin-bottom: 4px;
+  list-style-type: disc;
+}
+ 
+/* ----------------------------------------------------------------
+   FIGURE / LÉGENDE
+   ---------------------------------------------------------------- */
+.legende-figure {
+  font-size: 9pt;
+  font-style: italic;
+  color: #444;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+ 
+/* ----------------------------------------------------------------
+   ZONE CARTE (placement des sondes)
+   ---------------------------------------------------------------- */
+#conteneur-global-carto-rapport {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 10px;
+}
+ 
+#carte-rapport {
+  position: relative;
+  width: 420px;
+  height: 380px;
+  border: 1px solid #ddd;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+ 
+#carte-rapport img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+ 
+/* ----------------------------------------------------------------
+   TABLEAU INDIVIDUEL (section 4.2)
+   ---------------------------------------------------------------- */
+.tableau-calcul {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+  margin-top: 10px;
+  margin-bottom: 14px;
+}
+ 
+.tableau-calcul th {
+  background: #2E74B5;
+  color: #fff;
+  padding: 6px 5px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid #1a5a9a;
+  line-height: 1.3;
+}
+ 
+.tableau-calcul td {
+  padding: 5px 5px;
+  border: 1px solid #ccc;
+  text-align: center;
+  color: #333;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+ 
+.tableau-calcul tr:nth-child(even) td {
+  background: #f0f6ff;
+}
+ 
+.tableau-calcul td:first-child {
+  text-align: left;
+  font-size: 7.5pt;
+}
+ 
+.badge-ok {
+  display: inline-block;
+  background: #28a745;
+  color: white;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 8pt;
+}
+ 
+.badge-nok {
+  display: inline-block;
+  background: #dc3545;
+  color: white;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 8pt;
+}
+ 
+/* ----------------------------------------------------------------
+   CALCULS ÉQUIPEMENT (section 4.3)
+   ---------------------------------------------------------------- */
+.bloc-calculs-equipement {
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+ 
+.bloc-calculs-equipement p {
+  font-size: 10pt;
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+}
+ 
+/* ----------------------------------------------------------------
+   GRAPHIQUE
+   ---------------------------------------------------------------- */
+.conteneur-graphique {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+}
+ 
+.wrapper-canvas {
+  width: 100%;
+  max-width: 680px;
+}
+ 
+.graphique-rapport-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+ 
+/* ----------------------------------------------------------------
+   CONFORMITÉ - tableau et graphique
+   ---------------------------------------------------------------- */
+.tableau-conformite {
+  width: 340px;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin: 12px auto 14px;
+}
+ 
+.tableau-conformite th {
+  background: #2E74B5;
+  color: #fff;
+  padding: 7px 12px;
+  text-align: center;
+  font-weight: 700;
+  border: 1px solid #1a5a9a;
+}
+ 
+.tableau-conformite td {
+  padding: 5px 12px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+ 
+.tableau-conformite tr:nth-child(even) td {
+  background: #f0f6ff;
+}
+ 
+.tableau-conformite td:first-child {
+  text-align: left;
+  font-size: 8.5pt;
+}
+ 
+/* ----------------------------------------------------------------
+   REMARQUES / CONFORMITÉ
+   ---------------------------------------------------------------- */
+.zone-signatures-word {
+  margin: 24px 0 20px;
+}
+ 
+.table-signatures-brute {
+  width: 100%;
+  border-collapse: collapse;
+}
+ 
+.table-signatures-brute td {
+  width: 50%;
+  vertical-align: top;
+  padding: 10px 14px;
+  font-size: 10pt;
+  line-height: 1.8;
+  border: 1px solid #ccc;
+}
+ 
+.mention-fin-word {
+  text-align: center;
+  margin-top: 24px;
+  font-weight: 700;
+  font-size: 10pt;
+  font-style: italic;
+  color: #333;
+}
+ 
+.mention-fin-word small {
+  font-size: 8pt;
+  font-weight: 400;
+  display: block;
+  margin-top: 4px;
+}
+ 
+/* ----------------------------------------------------------------
+   MODE OPÉRATOIRE BLOC
+   ---------------------------------------------------------------- */
+.bloc-message-word {
+  font-size: 10pt;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-line;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+ 
+/* ================================================================
+   GRAPHIQUE CONFORMITÉ (barres verticales avec incertitude)
+   ================================================================ */
+.conteneur-graphique-conformite {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 8px 10px 4px;
+  margin: 10px 0;
+}
+ 
+.conteneur-graphique-conformite canvas {
+  width: 100% !important;
+  height: 220px !important;
+}
+ 
+/* ================================================================
+   IMPRESSION / PDF
+   ================================================================ */
+@media print {
+  body {
+    background: #fff;
+  }
+ 
+  #fond-etoile { display: none; }
+  .actions-zone { display: none; }
+ 
+  .container {
+    padding: 0;
+    max-width: 100%;
+  }
+ 
+  .page-pdf {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    page-break-after: always;
+    max-width: 100%;
+  }
 }

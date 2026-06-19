@@ -2,67 +2,110 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Gabarit Impression PDF</title>
-  <link rel="stylesheet" href="css/style-page3-PDF.css">
+  <title>Rapport de Caractérisation Métrologique</title>
+  <link rel="stylesheet" href="style-rapport.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <div class="page-pdf">
-    <div class="entete-pdf">
-      <div class="titre-bloc">
-        <h1 class="titre-principal">RAPPORT DE CARACTÉRISATION</h1>
-        <h2 class="sous-titre-principal">Analyse Thermique d'Enceinte</h2>
+  <div class="page-pdf page-garde">
+    <div class="bandeau-haut"></div>
+    <div class="contenu-garde">
+      <h1 class="titre-principal">Rapport de caractérisation</h1>
+      <div class="info-enceinte-titre">( <span id="report-userCaracteristique"></span> )</div>
+      
+      <div class="bloc-delivre">
+        <p class="label-delivre">Délivré à :</p>
+        <p class="valeur-delivre" id="report-userEntreprise"></p>
       </div>
+    </div>
+  </div>
+
+  <div class="page-pdf">
+    <h2 class="titre-section-hors-num">Table des matières</h2>
+    <ul class="sommaire">
+      <li><span>1  Introduction</span><span class="points"></span><span>3</span></li>
+      <li class="sous-item"><span>1.1  Objectif</span><span class="points"></span><span>3</span></li>
+      <li class="sous-item"><span>1.2  Champ d’application</span><span class="points"></span><span>3</span></li>
+      <li><span>2  Synthèse</span><span class="points"></span><span>4</span></li>
+      <li class="sous-item"><span>2.1  Période de la caractérisation</span><span class="points"></span><span>4</span></li>
+      <li class="sous-item"><span>2.2  Identification de l’enceinte</span><span class="points"></span><span>4</span></li>
+      <li class="sous-item"><span>2.3  Norme(s) de référence</span><span class="points"></span><span>4</span></li>
+      <li class="sous-item"><span>2.4  Jugement</span><span class="points"></span><span>4</span></li>
+      <li><span>3  Conditions de fonctionnement</span><span class="points"></span><span>5</span></li>
+    </ul>
+
+    <h2 class="titre-section">1  Introduction</h2>
+    <h3>1.1  Objectif</h3>
+    <p>L’objectif de la cartographie est d’établir un « profil de température » et d’assurer que vos articles / produits sont stockés correctement dans les conditions attendues en respectant les tolérances de température définies.</p>
+    
+    <h3>1.2  Champ d’application</h3>
+    <p>OCEAMap permet de :</p>
+    <ul>
+      <li>Évaluer des performances de l’enceinte par mesure de la température durant le régime établi.</li>
+      <li>Quantifier l’homogénéité et la stabilité de l’enceinte, ainsi que l’écart de consigne et l’erreur d’indication (le cas échéant).</li>
+    </ul>
+  </div>
+
+  <div class="page-pdf">
+    <h2 class="titre-section">2  Synthèse</h2>
+    <h3>2.1  Période de la caractérisation</h3>
+    <p>Du <span id="report-filtreHeureDebut"></span> au <span id="report-filtreHeureFin"></span> pour une période de <span id="report-periode"></span>.</p>
+    
+    <h3>2.2  Identification de l’enceinte</h3>
+    <p>Référence : <span id="report-userReference"></span><br>Localisation : <span id="report-userLoc"></span></p>
+
+    <h3>2.3  Norme(s) de référence</h3>
+    <p>NF X 15-140</p>
+
+    <h3>2.4  Jugement</h3>
+    <p id="report-message">En attente d'analyse...</p>
+
+    <h2 class="titre-section">3  Conditions de fonctionnement</h2>
+    <h3>3.1  Configuration</h3>
+    <p>Consigne définie à : <span id="report-tdeconsigne"></span> °C</p>
+
+    <h3>3.2  Conditions ambiantes pendant la cartographie</h3>
+    <p>Normales et stables.</p>
+  </div>
+
+  <div class="page-pdf">
+    <h3>3.3  Placement des sondes</h3>
+    <p class="legende-figure">Figure 1 – Placement des sondes pendant la cartographie</p>
+    <div id="conteneur-global-carto-rapport">
+      <div id="carte-rapport">
+        </div>
+    </div>
+  </div>
+
+  <div class="page-pdf">
+    <h2 class="titre-section">4  Résultats</h2>
+    <h3>4.1  Contrôle de l’homogénéité</h3>
+    <p class="legende-figure">Figure 2 – Relevés des capteurs présentés avec les seuils de tolérance haut et bas</p>
+    <div class="bloc-graphique">
+      <img id="graphiqueTemperatures" src="" alt="Graphique des températures" style="width:100%; display:none;">
+    </div>
+  </div>
+
+  <div class="page-pdf">
+    <h3>4.2  Tableau de calcul individuel et de l'équipement</h3>
+    
+    <div class="conteneur-tableau"></div>
+
+    <div class="zone-signatures">
+      <table>
+        <tr>
+          <td><strong>Réalisé par :</strong><br><br><br>................................................</td>
+          <td><strong>Validé par :</strong><br><br><br>................................................</td>
+        </tr>
+      </table>
     </div>
     
-    <div class="separateur-bleu"></div>
-
-    <div class="section-pdf">
-      <h3 class="titre-section">1. Identification de l'Opérateur & Entreprise</h3>
-      <div class="grille-infos">
-        <p><strong>Opérateur :</strong> <span id="pdf-username"></span></p>
-        <p><strong>Entreprise / Organisme :</strong> <span id="pdf-userEntreprise"></span></p>
-        <p><strong>Service / Département :</strong> <span id="pdf-userService"></span></p>
-      </div>
-    </div>
-
-    <div class="section-pdf">
-      <h3 class="titre-section">2. Identification de l'enceinte à contrôler</h3>
-      <div class="grille-infos">
-        <p><strong>N° de série / Réf. interne :</strong> <span id="pdf-userReference"></span></p>
-        <p><strong>Caractéristiques appareil :</strong> <span id="pdf-userCaracteristique"></span></p>
-        <p><strong>Localisation :</strong> <span id="pdf-userLoc"></span></p>
-      </div>
-    </div>
-
-    <div class="section-pdf">
-      <h3 class="titre-section">3. Spécifications Métrologiques & Filtres</h3>
-      <div class="grille-infos">
-        <p><strong>Température de consigne :</strong> <span id="pdf-tdeconsigne"></span> °C</p>
-        <p><strong>Écart Maximum Toléré (EMT) :</strong> ± <span id="pdf-valeur"></span> °C</p>
-        <p><strong>Période de début :</strong> <span id="pdf-filtreHeureDebut"></span></p>
-        <p><strong>Période de fin :</strong> <span id="pdf-filtreHeureFin"></span></p>
-      </div>
-    </div>
-
-    <div class="section-pdf">
-      <h3 class="titre-section">4. Mode Opératoire</h3>
-      <div id="pdf-message" class="bloc-message-pdf"></div>
+    <div class="mention-fin">
+      <p>FIN DU RAPPORT<br><small>CE RAPPORT NE DOIT PAS ÊTRE REPRODUIT AUTREMENT QUE DANS SON INTÉGRALITÉ</small></p>
     </div>
   </div>
 
-  <div class="page-pdf">
-    <h3 class="titre-section">5. Positionnement des Sondes (Cartographie)</h3>
-    <div id="pdf-conteneur-carte" class="zone-carte-pdf"></div>
-
-    <h3 class="titre-section espace-haut-graphes">6. Analyse Graphique des Températures</h3>
-    <div id="pdf-conteneur-graphique" class="zone-graphique-pdf"></div>
-  </div>
-
-  <div class="page-pdf">
-    <h3 class="titre-section">7. Résultats Détaillés (Selon Norme NF X 15 140)</h3>
-    <div id="pdf-conteneur-tableau" class="zone-tableau-pdf"></div>
-  </div>
-
+  <script src="script-page2.js"></script>
 </body>
 </html>
