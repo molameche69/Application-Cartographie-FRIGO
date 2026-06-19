@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "report-userEntreprise": "store_userEntreprise",
     "report-userService": "store_userService",
     "report-userReference": "store_userReference",
-    "report-userCaracteristique": "store_userCaracteristique", // Gère l'affichage de la Marque (Page 1 & Page 3)
+    "report-userCaracteristique": "store_userCaracteristique", 
     "report-userLoc": "store_userLoc",
     "report-tdeconsigne": "store_tdeconsigne",
     "report-valeur": "store_valeur",
@@ -218,24 +218,23 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function chargerDonneesODSRapport() {
-  const imageZoomee = localStorage.getItem("imageGraphiqueZoome");
+  const imageZoomee = localStorage.getItem("imageGraphiqueZoome") || localStorage.getItem("imageGraphique");
   
-  // ALIMENTATION DUPLICATE SYNCHRONISÉE SANS CONFLIT SUR LES DEUX PAGES CIBLES (6 ET 8)
-  const imgRapportPage6 = document.getElementById("graphiqueTemperatures");
-  const imgRapportPage8 = document.getElementById("graphiqueTemperaturesConformite");
+  // 🌟 CORRECTION : On cible TOUS les graphiques de la page 6 et de la page 8 sans conflit d'ID unique
+  const tousLesGraphiques = document.querySelectorAll('[id="graphiqueTemperatures"], [id="graphiqueTemperaturesConformite"]');
 
   if (!imageZoomee) {
-    if (imgRapportPage6) imgRapportPage6.style.display = "none";
-    if (imgRapportPage8) imgRapportPage8.style.display = "none";
+    console.warn("Attention : Aucun graphique trouvé dans le localStorage.");
+    tousLesGraphiques.forEach(img => {
+      img.alt = "Aucun graphique généré (Veuillez cliquer sur 'Générer le Graphique' en page 1)";
+      img.style.border = "1px dashed #ccc";
+    });
   } else {
-    if (imgRapportPage6) {
-      imgRapportPage6.src = imageZoomee;
-      imgRapportPage6.style.display = "block";
-    }
-    if (imgRapportPage8) {
-      imgRapportPage8.src = imageZoomee;
-      imgRapportPage8.style.display = "block";
-    }
+    // On applique l'image Base64 sur chaque zone de graphique trouvée (Page 6 et Page 8)
+    tousLesGraphiques.forEach(img => {
+      img.src = imageZoomee;
+      img.style.display = "block";
+    });
   }
 
   const conteneurTableau = document.querySelector(".conteneur-tableau");
