@@ -17,7 +17,7 @@ function sauvegarderEtatGlobalPage1() {
   const champs = [
     "username", "userEntreprise", "userService", "userReference", 
     "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
-    "valeur", "heureDebut", "heureFin", "periode"
+    "valeur", "heureDebut", "heureFin", "report-date-emission"
   ];
   champs.forEach(id => {
     const el = document.getElementById(id);
@@ -169,26 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
     inputHeureFin.addEventListener("input", () => {
       localStorage.setItem("filtreHeureFin", inputHeureFin.value);
       if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
-    });
-  }
-
-  // Intercepte le chargement du fichier pour le stocker en mémoire locale pour le retour arrière
-  const selecteurFichier = document.querySelector("input[type='file']");
-  if (selecteurFichier) {
-    selecteurFichier.addEventListener("change", (evenement) => {
-      const fichier = evenement.target.files[0];
-      if (!fichier) return;
-      const lecteur = new FileReader();
-      lecteur.onload = function(e) {
-        try {
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
-          sessionStorage.setItem("store_fichier_excel_base64", base64);
-          localStorage.setItem("fichierOdsBase64", base64);
-        } catch (erreurEnregistrement) {
-          console.warn("Fichier trop lourd pour le stockage de secours :", erreurEnregistrement);
-        }
-      };
-      lecteur.readAsArrayBuffer(fichier);
     });
   }
 
@@ -1305,46 +1285,41 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-// 🌟 Chargement automatique du texte d'introduction depuis le fichier externe
+// ========================================================
+// 🟢 INITIALISATION UNIQUE AU CHARGEMENT DU DOM
+// ========================================================
 window.addEventListener("DOMContentLoaded", () => {
-  const zoneTexte = document.getElementById("texte-recommandations");
-  if (!zoneTexte) return;
+  // Chargement du texte d'introduction
+  const zoneTexteIntro = document.getElementById("texte-recommandations");
+  if (zoneTexteIntro) {
+    fetch("Textarea/texte-recommandations.txt")
+      .then(reponse => {
+        if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
+        return reponse.text();
+      })
+      .then(contenu => { zoneTexteIntro.value = contenu; })
+      .catch(erreur => {
+        console.error("Erreur d'affichage des recommandations :", erreur);
+        zoneTexteIntro.value = "Erreur de chargement des recommandations d'introduction.";
+      });
+  }
 
-  // Remplacez "recommandations.txt" par son chemin exact si vous l'avez mis dans un dossier (ex: "fichiers/recommandations.txt")
-  fetch("Textarea/texte-recommandations.txt")
-    .then(reponse => {
-      if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
-      return reponse.text();
-    })
-    .then(contenu => {
-      zoneTexte.value = contenu;
-    })
-    .catch(erreur => {
-      console.error("Erreur d'affichage des recommandations :", erreur);
-      zoneTexte.value = "Erreur de chargement des recommandations d'introduction.";
-    });
-});
+  // Chargement du mode opératoire
+  const zoneTexteMode = document.getElementById("userMessage");
+  if (zoneTexteMode) {
+    fetch("Textarea/Mode opératoire.txt")
+      .then(reponse => {
+        if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
+        return reponse.text();
+      })
+      .then(contenu => { zoneTexteMode.value = contenu; })
+      .catch(erreur => {
+        console.error("Erreur d'affichage du mode opératoire :", erreur);
+        zoneTexteMode.value = "Erreur de chargement des recommandations d'introduction.";
+      });
+  }
 
-window.addEventListener("DOMContentLoaded", () => {
-  const zoneTexte = document.getElementById("userMessage");
-  if (!zoneTexte) return;
-
-  // Remplacez "recommandations.txt" par son chemin exact si vous l'avez mis dans un dossier (ex: "fichiers/recommandations.txt")
-  fetch("Textarea/Mode opératoire.txt")
-    .then(reponse => {
-      if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
-      return reponse.text();
-    })
-    .then(contenu => {
-      zoneTexte.value = contenu;
-    })
-    .catch(erreur => {
-      console.error("Erreur d'affichage des recommandations :", erreur);
-      zoneTexte.value = "Erreur de chargement des recommandations d'introduction.";
-    });
-});
-
-window.addEventListener("DOMContentLoaded", () => {
+  // Masquage de l'écran de connexion si déjà authentifié
   const conteneurAuth = document.getElementById("bloc-authentification");
   if (sessionStorage.getItem("estConnecte") === "true") {
     if (conteneurAuth) conteneurAuth.style.display = "none";
