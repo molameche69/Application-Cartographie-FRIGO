@@ -9,14 +9,14 @@ window.sondeEnCoursDeToucher = null;
 let capteursExclusManuellement = [];
 
 // ========================================================
-// 💾 FONCTIONS DE SAUVEGARDE ET RESTAURATION ADAPTÉES
+// 💾 SAUVEGARDE ET RESTAURATION
 // ========================================================
 
 function sauvegarderEtatGlobalPage1() {
-  // 1. Sauvegarde des champs texte standards
+  // 1. Champs texte → sessionStorage
   const champs = [
-    "username", "userEntreprise", "userService", "userReference", 
-    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
+    "username", "userEntreprise", "userService", "userReference",
+    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne",
     "valeur", "heureDebut", "heureFin", "report-date-emission"
   ];
   champs.forEach(id => {
@@ -24,141 +24,276 @@ function sauvegarderEtatGlobalPage1() {
     if (el) sessionStorage.setItem("store_" + id, el.value);
   });
 
-  // 2. Sauvegarde des inputs de calculs de l'onglet 5
+  // 2. Consigne + EMT → localStorage (page 2 en a besoin)
+  const elConsigne = document.getElementById("tdeconsigne");
+  const elEMT = document.getElementById("valeur");
+  if (elConsigne && elConsigne.value !== "") localStorage.setItem("tdeconsigne", elConsigne.value);
+  if (elEMT && elEMT.value !== "") localStorage.setItem("valeur", elEMT.value);
+
+  // 3. Inputs onglet 5
   const inputsCalcul = document.querySelectorAll(".txt-formule");
   const listeValeursCalculs = [];
   inputsCalcul.forEach((tx, index) => {
-    listeValeursCalculs.push({
-      index: index,
-      valeur: tx.value || "—"
-    });
+    listeValeursCalculs.push({ index, valeur: tx.value || "—" });
   });
   sessionStorage.setItem("store_valeurs_calculs_norme", JSON.stringify(listeValeursCalculs));
 
-  // 🌟 AJOUT CRUCIAL : Sauvegarde des données synchronisées du graphique pour la page 2
-  if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire && donneesGraphesEnMemoire.datasets) {
+  // 4. Données graphique en mémoire
+  if (donneesGraphesEnMemoire && donneesGraphesEnMemoire.datasets) {
     sessionStorage.setItem("store_graphes_memoire", JSON.stringify(donneesGraphesEnMemoire));
   }
 
-  // 3. Sauvegarde de l'emplacement des sondes
+  // 5. Sondes (reserve + carte)
   const listeSondes = document.getElementById("liste-sondes-disponibles");
-  const carteCible = document.getElementById("carte-cible");
+  const carteCible  = document.getElementById("carte-cible");
   if (listeSondes) sessionStorage.setItem("store_html_reserve", listeSondes.innerHTML);
-  if (carteCible) sessionStorage.setItem("store_html_carte", carteCible.innerHTML);
+  if (carteCible)  sessionStorage.setItem("store_html_carte", carteCible.innerHTML);
+
+  // 6. ✅ NOUVEAU : état du graphique généré (affiché ou non)
+  const graphiqueEstAffiche = (monGraphiqueInstance !== null);
+  sessionStorage.setItem("store_graphique_genere", graphiqueEstAffiche ? "true" : "false");
+
+  // 7. ✅ NOUVEAU : nom du fichier chargé pour l'affichage
+  const nomFichier = localStorage.getItem("nomFichierCharge") || "";
+  sessionStorage.setItem("store_nom_fichier", nomFichier);
 }
 
 function restaurerEtatGlobalPage1() {
-  // 1. Restauration des inputs textuels
+  // 1. Champs texte
   const champs = [
-    "username", "userEntreprise", "userService", "userReference", 
-    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne", 
+    "username", "userEntreprise", "userService", "userReference",
+    "userCaracteristique", "userLoc", "userMessage", "tdeconsigne",
     "valeur", "heureDebut", "heureFin", "report-date-emission"
   ];
   champs.forEach(id => {
     const val = sessionStorage.getItem("store_" + id);
-    const el = document.getElementById(id);
+    const el  = document.getElementById(id);
     if (el && val !== null) el.value = val;
   });
 
-  // 2. Restauration visuelle des sondes uniquement
-  const listeSondes = document.getElementById("liste-sondes-disponibles");
-  const carteCible = document.getElementById("carte-cible");
-  const htmlReserve = sessionStorage.getItem("store_html_reserve");
-  const htmlCarte = sessionStorage.getItem("store_html_carte");
-  
-  if (listeSondes && htmlReserve) listeSondes.innerHTML = htmlReserve;
-  if (carteCible && htmlCarte) carteCible.innerHTML = htmlCarte;
+  // 2. Resync localStorage consigne/EMT
+  const elConsigne = document.getElementById("tdeconsigne");
+  const elEMT      = document.getElementById("valeur");
+  if (elConsigne && elConsigne.value !== "") localStorage.setItem("tdeconsigne", elConsigne.value);
+  if (elEMT && elEMT.value !== "")          localStorage.setItem("valeur", elEMT.value);
 
-  // 3. 🔄 RECONSTRUCTION DU TABLEAU DEPUIS LE FICHIER EN MÉMOIRE
-  const fichierSauvegarde = localStorage.getItem("fichierOdsBase64") || sessionStorage.getItem("store_fichier_excel_base64");
-  if (fichierSauvegarde && typeof XLSX !== "undefined") {
+  // 3. Inputs onglet 5
+  const stockCalculs = sessionStorage.getItem("store_valeurs_calculs_norme");
+  if (stockCalculs) {
     try {
-      const chaineBinaire = atob(fichierSauvegarde);
+      const liste = JSON.parse(stockCalculs);
+      const inputs = document.querySelectorAll(".txt-formule");
+      liste.forEach(item => {
+        if (inputs[item.index]) inputs[item.index].value = item.valeur === "—" ? "" : item.valeur;
+      });
+    } catch (e) { console.error("Erreur restauration calculs onglet 5 :", e); }
+  }
+
+  // 4. Sondes (visuels HTML)
+  const listeSondes = document.getElementById("liste-sondes-disponibles");
+  const carteCible  = document.getElementById("carte-cible");
+  const htmlReserve = sessionStorage.getItem("store_html_reserve");
+  const htmlCarte   = sessionStorage.getItem("store_html_carte");
+  if (listeSondes && htmlReserve) listeSondes.innerHTML = htmlReserve;
+  if (carteCible  && htmlCarte)   carteCible.innerHTML  = htmlCarte;
+
+  // 5. Réassociation événements sondes
+  if (typeof reassocierEvenementsSondesApresRestauration === "function") {
+    reassocierEvenementsSondesApresRestauration();
+  } else {
+    // Réassociation directe si la fonction n'existe pas ailleurs
+    document.querySelectorAll(".marqueur-draggable").forEach(m => configurerEvenementsMarqueur(m));
+  }
+
+  // 6. Nom du fichier chargé
+  const nomFichier = sessionStorage.getItem("store_nom_fichier") || localStorage.getItem("nomFichierCharge") || "";
+  const txtNomFichier = document.getElementById("nom-fichier-choisi");
+  if (txtNomFichier && nomFichier) txtNomFichier.textContent = `Fichier chargé : ${nomFichier}`;
+
+  // 7. ✅ RESTAURATION COMPLÈTE : tableau + graphique depuis les données en mémoire
+  const fichierBase64 = localStorage.getItem("fichierOdsBase64") || sessionStorage.getItem("store_fichier_excel_base64");
+  const graphiqueEtaitGenere = sessionStorage.getItem("store_graphique_genere") === "true";
+  const backupGraphes = sessionStorage.getItem("store_graphes_memoire");
+
+  if (backupGraphes) {
+    try {
+      const parsed = JSON.parse(backupGraphes);
+      if (parsed && parsed.datasets && parsed.datasets.length > 0) {
+        donneesGraphesEnMemoire = parsed;
+      }
+    } catch (e) { console.error("Erreur lecture store_graphes_memoire :", e); }
+  }
+
+  if (fichierBase64 && typeof XLSX !== "undefined") {
+    try {
+      const chaineBinaire = atob(fichierBase64);
       const longueur = chaineBinaire.length;
       const buffer = new Uint8Array(longueur);
-      for (let i = 0; i < longueur; i++) {
-        buffer[i] = chaineBinaire.charCodeAt(i);
-      }
-      
-      const workbook = XLSX.read(buffer, { type: "array" });
-      const nomOnglet = workbook.SheetNames[0];
-      const feuille = workbook.Sheets[nomOnglet];
-      const lignesBrutes = XLSX.utils.sheet_to_json(feuille, { header: 1 });
-      
-      // Appel de votre vraie fonction d'analyse de données
-      if (typeof analyserEtRemplirTableau === "function") {
-        analyserEtRemplirTableau(lignesBrutes);
+      for (let i = 0; i < longueur; i++) buffer[i] = chaineBinaire.charCodeAt(i);
+
+      const workbook  = XLSX.read(buffer, { type: "array", cellDates: true });
+      const feuille   = workbook.Sheets[workbook.SheetNames[0]];
+      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
+
+      // Reconstruit le tableau ODS avec les sélections sauvegardées
+      _reconstruireTableauDepuisJson(donneesJson);
+
+      // ✅ NOUVEAU : Si le graphique était affiché avant, on le réaffiche
+      if (graphiqueEtaitGenere && donneesGraphesEnMemoire.labelsX.length > 0) {
+        // Petit délai pour laisser le DOM se stabiliser
+        setTimeout(() => {
+          genererLeGraphique();
+          // Masquer le bouton générer puisque le graphique est déjà là
+          const btnGenerer = document.getElementById("btn-generer-graphique");
+          if (btnGenerer) btnGenerer.style.display = "none";
+        }, 100);
       }
     } catch (err) {
       console.error("Impossible de restaurer le tableau au retour arrière :", err);
     }
   }
 
-  // Réassociation des événements après ré-injection du HTML
-  if (typeof reassocierEvenementsSondesApresRestauration === "function") {
-    reassocierEvenementsSondesApresRestauration();
+  majEtatBoutonGenerer();
+}
+
+// ✅ NOUVEAU : reconstruit le HTML du tableau depuis le JSON brut du fichier
+function _reconstruireTableauDepuisJson(donneesJson) {
+  let filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
+  let filtreFin   = localStorage.getItem("filtreHeureFin")   || "";
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
+
+  const pointsSauvegardes = JSON.parse(localStorage.getItem("pointsSelectionnesTableau") || "[]");
+  let htmlLignes = "";
+
+  for (let i = 1; i < donneesJson.length; i++) {
+    const ligne = donneesJson[i];
+    if (!ligne || ligne[0] === undefined || ligne[1] === undefined || ligne[2] === undefined) continue;
+
+    const idCapteur = ligne[0].toString().trim();
+    let tempsAffiche = "";
+    let tempsBrutTexte = "";
+
+    if (ligne[1] instanceof Date) {
+      const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
+      const mm = String(ligne[1].getUTCMinutes()).padStart(2, '0');
+      const ss = String(ligne[1].getUTCSeconds()).padStart(2, '0');
+      tempsAffiche   = `${hh}:${mm}:${ss}`;
+      tempsBrutTexte = ligne[1].toISOString().replace("T", " ").replace("Z", "").substring(0, 19);
+    } else if (typeof ligne[1] === "number" || !isNaN(ligne[1])) {
+      const num    = parseFloat(ligne[1]);
+      const dateUt = new Date(Math.round((num - 25569) * 86400 * 1000));
+      const hh = String(dateUt.getUTCHours()).padStart(2, '0');
+      const mm = String(dateUt.getUTCMinutes()).padStart(2, '0');
+      const ss = String(dateUt.getUTCSeconds()).padStart(2, '0');
+      tempsAffiche   = `${hh}:${mm}:${ss}`;
+      const aaaa = dateUt.getUTCFullYear();
+      const mmois = String(dateUt.getUTCMonth() + 1).padStart(2, '0');
+      const jj   = String(dateUt.getUTCDate()).padStart(2, '0');
+      tempsBrutTexte = `${aaaa}-${mmois}-${jj} ${tempsAffiche}`;
+    } else {
+      let tempsBrut = ligne[1].toString().trim();
+      if (tempsBrut.includes("T")) {
+        tempsAffiche   = tempsBrut.split("T")[1].replace("Z", "").substring(0, 8);
+        tempsBrutTexte = tempsBrut.replace("T", " ").replace("Z", "");
+      } else if (tempsBrut.includes(" ") && tempsBrut.indexOf(":") > 0) {
+        tempsAffiche   = tempsBrut.split(" ")[1].substring(0, 8);
+        tempsBrutTexte = tempsBrut;
+      } else {
+        tempsAffiche   = tempsBrut.substring(0, 8);
+        tempsBrutTexte = tempsBrut;
+      }
+    }
+
+    if (filtreDebut && tempsAffiche < filtreDebut) continue;
+    if (filtreFin   && tempsAffiche > filtreFin)   continue;
+
+    const valeurTemp = parseFloat(ligne[2]);
+    const unite      = ligne[3] || "°C";
+    const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
+
+    // ✅ Restaure la surbrillance des lignes sélectionnées
+    const estSelectionne = pointsSauvegardes.includes(tempsAffiche);
+    const styleLigne = estSelectionne
+      ? 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;background-color:rgba(0,123,255,0.18);"'
+      : 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;"';
+
+    htmlLignes += `
+      <tr data-time="${tempsAffiche}" ${styleLigne}>
+        <td style="padding:8px;font-weight:bold;color:#333;">${idCapteur}</td>
+        <td style="padding:8px;">${tempsBrutTexte}</td>
+        <td style="padding:8px;font-weight:bold;color:${couleurTemp};">${valeurTemp.toFixed(2)}</td>
+        <td style="padding:8px;color:#888;">${unite}</td>
+      </tr>
+    `;
+  }
+
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  if (corpsTableau) {
+    corpsTableau.innerHTML = htmlLignes ||
+      '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée valide.</td></tr>';
+    activerSelectionSouris(corpsTableau);
   }
 }
 
-window.addEventListener("pageshow", (event) => {
+window.addEventListener("pageshow", () => {
   restaurerEtatGlobalPage1();
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  const carteCible = document.getElementById("carte-cible");
+  const carteCible  = document.getElementById("carte-cible");
   const reserveCible = document.getElementById("reserve-cible") || document.getElementById("liste-sondes-disponibles");
 
-  // Liaison propre et unique du bouton vert générer
+  // Bouton générer graphique
   const btnGenererGraphique = document.getElementById("btn-generer-graphique");
   if (btnGenererGraphique) {
-    btnGenererGraphique.addEventListener("click", () => {
-      genererLeGraphique(); // Uniquement sur clic manuel
-    });
+    btnGenererGraphique.addEventListener("click", () => genererLeGraphique());
   }
 
-  // Écouteur automatique via MutationObserver sur le tableau
+  // Observer les changements dans le tableau
   const corpsTableau = document.getElementById("corpsTableauODS");
   if (corpsTableau) {
-    const observateur = new MutationObserver(() => {
-      majEtatBoutonGenerer();
-    });
+    const observateur = new MutationObserver(() => majEtatBoutonGenerer());
     observateur.observe(corpsTableau, { childList: true });
   }
 
-  // On écoute les modifications sur les inputs pour sauvegarder les textes au fur et à mesure
+  // Sauvegarde à chaque saisie
   document.querySelectorAll("input, textarea").forEach(input => {
     input.addEventListener("input", sauvegarderEtatGlobalPage1);
   });
 
-  // Liaison spécifique pour les changements d'inputs qui nécessitent des actions
-  const inputPeriode = document.getElementById("periode");
+  // Consigne → double sauvegarde + mise à jour seuils graphique
   const inputConsigne = document.getElementById("tdeconsigne");
-  const inputEMT = document.getElementById("valeur");
-
-  if (inputPeriode) {
-    inputPeriode.addEventListener("input", () => {
-      localStorage.setItem("periode", inputPeriode.value);
-      if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire.labelsX.length > 0) {
-        genererLeGraphique(); 
-      }
-    });
-  }
   if (inputConsigne) {
     inputConsigne.addEventListener("input", () => {
+      sessionStorage.setItem("store_tdeconsigne", inputConsigne.value);
       localStorage.setItem("tdeconsigne", inputConsigne.value);
       if (typeof mettreAJourSeuilsAutomatiques === "function") mettreAJourSeuilsAutomatiques();
     });
   }
+
+  // EMT → double sauvegarde + mise à jour seuils graphique
+  const inputEMT = document.getElementById("valeur");
   if (inputEMT) {
     inputEMT.addEventListener("input", () => {
+      sessionStorage.setItem("store_valeur", inputEMT.value);
       localStorage.setItem("valeur", inputEMT.value);
       if (typeof mettreAJourSeuilsAutomatiques === "function") mettreAJourSeuilsAutomatiques();
     });
   }
 
+  const inputPeriode = document.getElementById("periode");
+  if (inputPeriode) {
+    inputPeriode.addEventListener("input", () => {
+      localStorage.setItem("periode", inputPeriode.value);
+      if (donneesGraphesEnMemoire.labelsX.length > 0) genererLeGraphique();
+    });
+  }
+
   const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin = document.getElementById("heureFin");
-  
+  const inputHeureFin   = document.getElementById("heureFin");
   if (inputHeureDebut) {
     inputHeureDebut.addEventListener("input", () => {
       localStorage.setItem("filtreHeureDebut", inputHeureDebut.value);
@@ -172,20 +307,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Drag & Drop des sondes
+  // Drag & Drop carte
   if (carteCible) {
     carteCible.addEventListener("dragover", (e) => e.preventDefault());
     carteCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.getData("text/plain");
+      const idElement   = e.dataTransfer.getData("text/plain");
       const elementGlisse = document.getElementById(idElement);
       if (elementGlisse) {
         const limitesCarte = carteCible.getBoundingClientRect();
-        const xPourcentage = ((e.clientX - limitesCarte.left) / limitesCarte.width) * 100;
-        const yPourcentage = ((e.clientY - limitesCarte.top) / limitesCarte.height) * 100;
+        const xPourcentage = ((e.clientX - limitesCarte.left) / limitesCarte.width)  * 100;
+        const yPourcentage = ((e.clientY - limitesCarte.top)  / limitesCarte.height) * 100;
         placerSonde(elementGlisse, carteCible, xPourcentage, yPourcentage);
         if (typeof sauvegarderEtatSondes === "function") sauvegarderEtatSondes();
-        sauvegarderEtatGlobalPage1(); 
+        sauvegarderEtatGlobalPage1();
       }
     });
   }
@@ -194,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reserveCible.addEventListener("dragover", (e) => e.preventDefault());
     reserveCible.addEventListener("drop", (e) => {
       e.preventDefault();
-      const idElement = e.dataTransfer.getData("text/plain");
+      const idElement   = e.dataTransfer.getData("text/plain");
       const elementGlisse = document.getElementById(idElement);
       if (elementGlisse) {
         remettreDansReserve(elementGlisse, reserveCible);
@@ -216,24 +351,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Bouton de remise à zéro de la plage horaire
+  // Bouton RAZ plage horaire
   const btnRazOnglet3 = document.getElementById("btn-raz-onglet3");
   if (btnRazOnglet3) {
     btnRazOnglet3.addEventListener("click", () => {
       const iDebut = document.getElementById("heureDebut");
-      const iFin = document.getElementById("heureFin");
+      const iFin   = document.getElementById("heureFin");
       if (iDebut) iDebut.value = "";
-      if (iFin) iFin.value = "";
+      if (iFin)   iFin.value   = "";
       localStorage.removeItem("filtreHeureDebut");
       localStorage.removeItem("filtreHeureFin");
-      if (typeof donneesGraphesEnMemoire !== "undefined" && donneesGraphesEnMemoire.labelsX.length > 0) {
-        genererLeGraphique();
-      }
+      if (donneesGraphesEnMemoire.labelsX.length > 0) genererLeGraphique();
     });
   }
 
-  // Bouton Réinitialiser les marqueurs
-  const btnReinitialiserMarqueurs = document.getElementById("btn-reinitialiser-marqueurs") || document.querySelector("button[onclick*='reinitialiserMarqueurs']");
+  // Bouton réinitialiser marqueurs
+  const btnReinitialiserMarqueurs = document.getElementById("btn-reinitialiser-marqueurs") ||
+    document.querySelector("button[onclick*='reinitialiserMarqueurs']");
   if (btnReinitialiserMarqueurs) {
     btnReinitialiserMarqueurs.removeAttribute("onclick");
     btnReinitialiserMarqueurs.addEventListener("click", () => {
@@ -241,36 +375,32 @@ document.addEventListener("DOMContentLoaded", () => {
       sauvegarderEtatGlobalPage1();
     });
   }
-  
-  // Sécurité au chargement
+
   majEtatBoutonGenerer();
 });
 
 // ========================================================
-// 🟢 FONCTION MAJETATBOUTONGENERER AVEC FILTRAGE DE SÉCURITÉ
+// 🟢 ÉTAT DU BOUTON GÉNÉRER
 // ========================================================
 function majEtatBoutonGenerer() {
   const btnGenererGraphique = document.getElementById("btn-generer-graphique");
   const corpsTableau = document.getElementById("corpsTableauODS");
   const lignesTableau = corpsTableau ? corpsTableau.querySelectorAll("tr") : [];
 
-  // On ignore le tableau s'il contient uniquement la ligne de texte d'attente brute
-  let tableauEstVraiementVide = false;
-  if (lignesTableau.length === 0 || (lignesTableau.length === 1 && corpsTableau.textContent.includes("Aucune donnée chargée"))) {
-    tableauEstVraiementVide = true;
-  }
+  let tableauEstVide = lignesTableau.length === 0 ||
+    (lignesTableau.length === 1 && corpsTableau.textContent.includes("Aucune donnée chargée"));
 
   if (btnGenererGraphique) {
-    if (!tableauEstVraiementVide) {
-      btnGenererGraphique.disabled = false;
+    if (!tableauEstVide) {
+      btnGenererGraphique.disabled      = false;
       btnGenererGraphique.style.opacity = "1";
-      btnGenererGraphique.style.cursor = "pointer";
-      btnGenererGraphique.style.pointerEvents = "auto"; 
+      btnGenererGraphique.style.cursor  = "pointer";
+      btnGenererGraphique.style.pointerEvents = "auto";
     } else {
-      btnGenererGraphique.disabled = true;
+      btnGenererGraphique.disabled      = true;
       btnGenererGraphique.style.opacity = "0.5";
-      btnGenererGraphique.style.cursor = "not-allowed";
-      btnGenererGraphique.style.pointerEvents = "none"; 
+      btnGenererGraphique.style.cursor  = "not-allowed";
+      btnGenererGraphique.style.pointerEvents = "none";
     }
   }
 }
@@ -280,10 +410,10 @@ function sauvegarderEtatSondes() {
   if (carteCible) {
     const donneesSondes = [];
     carteCible.querySelectorAll(".marqueur-draggable").forEach((sonde) => {
-      donneesSondes.push({ 
-        id: sonde.id, 
-        left: sonde.style.left, 
-        top: sonde.style.top,
+      donneesSondes.push({
+        id: sonde.id,
+        left: sonde.style.left,
+        top:  sonde.style.top,
         numero: sonde.textContent,
         couleurFond: window.getComputedStyle(sonde).backgroundColor || sonde.style.backgroundColor
       });
@@ -293,15 +423,13 @@ function sauvegarderEtatSondes() {
 }
 
 function recommencerTout() {
-  if (!confirm("⚠️ Êtes-vous sûr de vouloir tout réinitialiser ? Toutes vos modifications et le fichier chargé seront effacés.")) {
-    return;
-  }
+  if (!confirm("⚠️ Êtes-vous sûr de vouloir tout réinitialiser ?")) return;
 
   localStorage.clear();
   sessionStorage.clear();
 
   fichierActuelPourFiltrage = null;
-  donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
+  donneesGraphesEnMemoire   = { labelsX: [], datasets: [] };
   capteursExclusManuellement = [];
 
   const formulaire = document.getElementById("formulaire-carto");
@@ -317,7 +445,8 @@ function recommencerTout() {
   if (inputFichier) inputFichier.value = "";
 
   const corpsTableau = document.getElementById("corpsTableauODS");
-  if (corpsTableau) corpsTableau.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée chargée.</td></tr>';
+  if (corpsTableau) corpsTableau.innerHTML =
+    '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée chargée.</td></tr>';
 
   if (monGraphiqueInstance) {
     monGraphiqueInstance.destroy();
@@ -327,30 +456,21 @@ function recommencerTout() {
   if (zoneGeneration) zoneGeneration.innerHTML = "";
 
   reinitialiserMarqueurs();
-  
+
   const boutonOnglet1 = document.querySelector(".onglet-btn");
-  if (boutonOnglet1) {
-    changerOnglet({ currentTarget: boutonOnglet1 }, 'onglet1');
-  }
+  if (boutonOnglet1) changerOnglet({ currentTarget: boutonOnglet1 }, 'onglet1');
 }
 
 function configurerEvenementsMarqueur(marqueur) {
   if (!marqueur) return;
-
   marqueur.setAttribute("draggable", "true");
 
   marqueur.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("text/plain", e.target.id);
     e.target.style.opacity = "0.5";
   });
-
-  marqueur.addEventListener("dragend", (e) => {
-    e.target.style.opacity = "1";
-  });
-
-  marqueur.addEventListener("click", () => {
-    gererBasculeCapteur(marqueur.id);
-  });
+  marqueur.addEventListener("dragend", (e) => { e.target.style.opacity = "1"; });
+  marqueur.addEventListener("click",   () => { gererBasculeCapteur(marqueur.id); });
 
   marqueur.addEventListener("touchstart", (e) => {
     window.sondeEnCoursDeToucher = e.target;
@@ -361,40 +481,36 @@ function configurerEvenementsMarqueur(marqueur) {
     if (!window.sondeEnCoursDeToucher) return;
     const touch = e.touches[0];
     const sonde = window.sondeEnCoursDeToucher;
-    sonde.style.position = "fixed";
-    sonde.style.left = touch.clientX + "px";
-    sonde.style.top = touch.clientY + "px";
+    sonde.style.position  = "fixed";
+    sonde.style.left      = touch.clientX + "px";
+    sonde.style.top       = touch.clientY + "px";
     sonde.style.transform = "translate(-50%, -50%)";
-    sonde.style.zIndex = "1000";
+    sonde.style.zIndex    = "1000";
   }, { passive: true });
 
   marqueur.addEventListener("touchend", (e) => {
     const sonde = window.sondeEnCoursDeToucher;
     if (!sonde) return;
-
-    sonde.style.opacity = "1";
-    sonde.style.position = "";
-    sonde.style.left = "";
-    sonde.style.top = "";
+    sonde.style.opacity   = "1";
+    sonde.style.position  = "";
+    sonde.style.left      = "";
+    sonde.style.top       = "";
     sonde.style.transform = "";
-    sonde.style.zIndex = "";
+    sonde.style.zIndex    = "";
 
-    const touch = e.changedTouches[0];
-    const carteCible = document.getElementById("carte-cible");
+    const touch       = e.changedTouches[0];
+    const carteCible  = document.getElementById("carte-cible");
     const reserveCible = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
 
     if (carteCible && reserveCible) {
       const limitesCarte = carteCible.getBoundingClientRect();
-
       if (
-        touch.clientX >= limitesCarte.left &&
-        touch.clientX <= limitesCarte.right &&
-        touch.clientY >= limitesCarte.top &&
-        touch.clientY <= limitesCarte.bottom
+        touch.clientX >= limitesCarte.left && touch.clientX <= limitesCarte.right &&
+        touch.clientY >= limitesCarte.top  && touch.clientY <= limitesCarte.bottom
       ) {
-        const xPourcentage = ((touch.clientX - limitesCarte.left) / limitesCarte.width) * 100;
-        const yPourcentage = ((touch.clientY - limitesCarte.top) / limitesCarte.height) * 100;
-        placerSonde(sonde, carteCible, xPourcentage, yPourcentage);
+        const xP = ((touch.clientX - limitesCarte.left) / limitesCarte.width)  * 100;
+        const yP = ((touch.clientY - limitesCarte.top)  / limitesCarte.height) * 100;
+        placerSonde(sonde, carteCible, xP, yP);
       } else {
         remettreDansReserve(sonde, reserveCible);
       }
@@ -407,9 +523,9 @@ function configurerEvenementsMarqueur(marqueur) {
 function placerSonde(sonde, carte, x, y) {
   carte.appendChild(sonde);
   sonde.style.position = "absolute";
-  sonde.style.left = x + "%";
-  sonde.style.top = y + "%";
-  sonde.style.margin = "0px";
+  sonde.style.left     = x + "%";
+  sonde.style.top      = y + "%";
+  sonde.style.margin   = "0px";
 }
 
 function remettreDansReserve(sonde, reserve) {
@@ -418,9 +534,7 @@ function remettreDansReserve(sonde, reserve) {
 
   toutesLesLignes.forEach(ligne => {
     const nomSondeTexte = ligne.querySelector(".texte-nom-sonde")?.textContent.trim();
-    const idSondeNettoye = sonde.id.trim();
-
-    if (nomSondeTexte === idSondeNettoye) {
+    if (nomSondeTexte === sonde.id.trim()) {
       if (!ligne.querySelector(`#${CSS.escape(sonde.id)}`)) {
         ligne.insertBefore(sonde, ligne.firstChild);
       }
@@ -431,16 +545,12 @@ function remettreDansReserve(sonde, reserve) {
   if (!insere) {
     const nouvelleLigne = document.createElement("div");
     nouvelleLigne.className = "ligne-sonde-item";
-    nouvelleLigne.style.display = "flex";
-    nouvelleLigne.style.alignItems = "center";
-    nouvelleLigne.style.marginBottom = "10px";
-    nouvelleLigne.style.gap = "12px";
+    nouvelleLigne.style.cssText = "display:flex;align-items:center;margin-bottom:10px;gap:12px;";
 
     const textNom = document.createElement("span");
-    textNom.className = "texte-nom-sonde";
+    textNom.className   = "texte-nom-sonde";
     textNom.textContent = sonde.id;
-    textNom.style.fontWeight = "bold";
-    textNom.style.color = "#333";
+    textNom.style.cssText = "font-weight:bold;color:#333;";
 
     nouvelleLigne.appendChild(sonde);
     nouvelleLigne.appendChild(textNom);
@@ -448,123 +558,85 @@ function remettreDansReserve(sonde, reserve) {
   }
 
   sonde.style.position = "";
-  sonde.style.left = "";
-  sonde.style.top = "";
+  sonde.style.left     = "";
+  sonde.style.top      = "";
 }
 
 function synchroniserPlageHoraireSurGraphique() {
   if (!monGraphiqueInstance) return;
 
   let debut = document.getElementById("heureDebut")?.value.trim() || "";
-  let fin = document.getElementById("heureFin")?.value.trim() || "";
-
+  let fin   = document.getElementById("heureFin")?.value.trim()   || "";
   debut = debut.replace(/[Hh]/g, ":");
-  fin = fin.replace(/[Hh]/g, ":");
-
-  if (debut && debut.length === 2) debut += ":00:00";
-  if (debut && debut.length === 5) debut += ":00";
-  if (fin && fin.length === 2) fin += ":00:00";
-  if (fin && fin.length === 5) fin += ":00";
+  fin   = fin.replace(/[Hh]/g, ":");
+  if (debut.length === 2) debut += ":00:00";
+  if (debut.length === 5) debut += ":00";
+  if (fin.length   === 2) fin   += ":00:00";
+  if (fin.length   === 5) fin   += ":00";
 
   const labels = monGraphiqueInstance.data.labels;
   if (!labels || labels.length === 0) return;
 
   let indexMin = 0;
   let indexMax = labels.length - 1;
-
-  if (debut) {
-    const idx = labels.findIndex(l => l >= debut);
-    if (idx !== -1) indexMin = idx;
-  }
-
-  if (fin) {
-    const idx = labels.findLastIndex(l => l <= fin);
-    if (idx !== -1) indexMax = idx;
-  }
-
-  if (indexMin > indexMax) {
-    const temp = indexMin;
-    indexMin = indexMax;
-    indexMax = temp;
-  }
+  if (debut) { const idx = labels.findIndex(l => l >= debut);      if (idx !== -1) indexMin = idx; }
+  if (fin)   { const idx = labels.findLastIndex(l => l <= fin);    if (idx !== -1) indexMax = idx; }
+  if (indexMin > indexMax) { const t = indexMin; indexMin = indexMax; indexMax = t; }
 
   monGraphiqueInstance.zoomScale('x', { min: indexMin, max: indexMax }, 'default');
 }
 
 function gererBasculeCapteur(idCapteur) {
   const index = capteursExclusManuellement.indexOf(idCapteur);
-  if (index > -1) {
-    capteursExclusManuellement.splice(index, 1);
-  } else {
-    capteursExclusManuellement.push(idCapteur);
-  }
-  
+  if (index > -1) capteursExclusManuellement.splice(index, 1);
+  else            capteursExclusManuellement.push(idCapteur);
+
   localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursExclusManuellement));
 
   const marqueur = document.getElementById(idCapteur);
   if (marqueur) {
     if (capteursExclusManuellement.includes(idCapteur)) {
       marqueur.style.opacity = "0.3";
-      marqueur.style.filter = "grayscale(100%)";
+      marqueur.style.filter  = "grayscale(100%)";
     } else {
       marqueur.style.opacity = "1";
-      marqueur.style.filter = "none";
+      marqueur.style.filter  = "none";
     }
   }
 
-  if (donneesGraphesEnMemoire.labelsX.length > 0) {
-    genererLeGraphique();
-  }
+  if (donneesGraphesEnMemoire.labelsX.length > 0) genererLeGraphique();
 }
 
 function changerOnglet(evenement, idOnglet) {
   const contenuCible = document.getElementById(idOnglet);
   if (!contenuCible) {
-    console.warn(`changerOnglet : l'onglet "${idOnglet}" est introuvable dans le HTML.`);
+    console.warn(`changerOnglet : l'onglet "${idOnglet}" est introuvable.`);
     return;
   }
 
-  // 1. On masque TOUS les onglets de manière stricte
   const contenus = document.getElementsByClassName("contenu-onglet");
   for (let i = 0; i < contenus.length; i++) {
-    contenus[i].style.setProperty("display", "none", "important"); // Force la disparition en CSS
+    contenus[i].style.setProperty("display", "none", "important");
     contenus[i].classList.add("cache");
   }
 
-  // 2. On retire l'état actif sur tous les boutons d'onglets
   const boutons = document.getElementsByClassName("onglet-btn");
-  for (let i = 0; i < boutons.length; i++) {
-    boutons[i].classList.remove("actif");
-  }
+  for (let i = 0; i < boutons.length; i++) boutons[i].classList.remove("actif");
 
-  // 3. On affiche UNIQUEMENT l'onglet demandé
-  if (idOnglet === "onglet1") {
-    contenuCible.style.setProperty("display", "block", "important"); // L'introduction repasse en block
-  } else {
-    // Pour les onglets 2, 3, 4 qui contiennent des formulaires ou structures globales
-    contenuCible.style.setProperty("display", "block", "important"); 
-  }
+  contenuCible.style.setProperty("display", "block", "important");
   contenuCible.classList.remove("cache");
 
-  // 4. On ajoute la classe actif sur le bouton cliqué
-  if (evenement && evenement.currentTarget) {
-    evenement.currentTarget.classList.add("actif");
-  }
+  if (evenement && evenement.currentTarget) evenement.currentTarget.classList.add("actif");
 }
 
 function reinitialiserMarqueurs() {
   const carteCible = document.getElementById("carte-cible");
-  const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
-  
+  const reserve    = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (!reserve) return;
 
-  if (carteCible) {
-    const marqueursSurCarte = carteCible.querySelectorAll(".marqueur-draggable");
-    marqueursSurCarte.forEach(m => m.remove());
-  }
-
+  if (carteCible) carteCible.querySelectorAll(".marqueur-draggable").forEach(m => m.remove());
   reserve.innerHTML = "";
-  
+
   localStorage.removeItem("positionsSondes");
   capteursExclusManuellement = [];
   localStorage.setItem("capteursExclusManuellement", JSON.stringify([]));
@@ -580,66 +652,59 @@ function reconstruireReserveDepuisMemoire() {
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (!reserve) return;
 
-  const couleursPastilles = ["#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231", "#911EB4", "#42D4F4", "#F032E6", "#FABED4"];
+  const couleursPastilles = ["#E6194B","#3CB44B","#FFE119","#4363D8","#F58231","#911EB4","#42D4F4","#F032E6","#FABED4"];
 
   donneesGraphesEnMemoire.datasets.forEach((dataset, index) => {
-    const id = dataset.label.replace("Capteur ", "").trim();
+    const id          = dataset.label.replace("Capteur ", "").trim();
     const numeroSonde = index + 1;
+    if (numeroSonde > 9) return;
 
-    if (numeroSonde <= 9) {
-      const ligneSonde = document.createElement("div");
-      ligneSonde.className = "ligne-sonde-item";
-      ligneSonde.style.display = "flex";
-      ligneSonde.style.alignItems = "center";
-      ligneSonde.style.marginBottom = "10px";
-      ligneSonde.style.gap = "12px";
+    const ligneSonde = document.createElement("div");
+    ligneSonde.className = "ligne-sonde-item";
+    ligneSonde.style.cssText = "display:flex;align-items:center;margin-bottom:10px;gap:12px;";
 
-      const divSonde = document.createElement("div");
-      divSonde.className = "marqueur-draggable pastille-numero";
-      divSonde.id = id;
-      divSonde.textContent = numeroSonde;
-      divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
-      divSonde.style.width = "30px";
-      divSonde.style.height = "30px";
-      divSonde.style.flexShrink = "0";
-      divSonde.style.display = "flex";
-      divSonde.style.alignItems = "center";
-      divSonde.style.justifyContent = "center";
+    const divSonde = document.createElement("div");
+    divSonde.className       = "marqueur-draggable pastille-numero";
+    divSonde.id              = id;
+    divSonde.textContent     = numeroSonde;
+    divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
+    divSonde.style.cssText  += "width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;";
 
-      const textNom = document.createElement("span");
-      textNom.className = "texte-nom-sonde";
-      textNom.textContent = id;
-      textNom.style.fontWeight = "bold";
-      textNom.style.color = "#333";
+    const textNom = document.createElement("span");
+    textNom.className   = "texte-nom-sonde";
+    textNom.textContent = id;
+    textNom.style.cssText = "font-weight:bold;color:#333;";
 
-      ligneSonde.appendChild(divSonde);
-      ligneSonde.appendChild(textNom);
-      reserve.appendChild(ligneSonde);
-
-      configurerEvenementsMarqueur(divSonde);
-    }
+    ligneSonde.appendChild(divSonde);
+    ligneSonde.appendChild(textNom);
+    reserve.appendChild(ligneSonde);
+    configurerEvenementsMarqueur(divSonde);
   });
 }
 
 function importerNouveauFichier(evenement) {
-  const fichier = evenement.target.files[0];
+  const fichier       = evenement.target.files[0];
   const txtNomFichier = document.getElementById("nom-fichier-choisi");
-  const btnGenerer = document.getElementById("btn-generer-graphique");
+  const btnGenerer    = document.getElementById("btn-generer-graphique");
 
   if (!fichier) return;
   fichierActuelPourFiltrage = fichier;
   localStorage.setItem("nomFichierCharge", fichier.name);
+  sessionStorage.setItem("store_nom_fichier", fichier.name);
 
   if (txtNomFichier) txtNomFichier.textContent = `Fichier chargé : ${fichier.name}`;
-  if (btnGenerer) btnGenerer.disabled = false;
+  if (btnGenerer) {
+    btnGenerer.disabled      = false;
+    btnGenerer.style.display = "block";
+  }
 
   capteursExclusManuellement = [];
   localStorage.setItem("capteursExclusManuellement", JSON.stringify([]));
-  
+
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (reserve) reserve.innerHTML = "";
-  
-  // 💾 SAUVEGARDE DE SECOURS POUR LE TABLEAU (RETOUR ARRIÈRE)
+
+  // Sauvegarde fichier en base64
   const lecteur = new FileReader();
   lecteur.onload = function(e) {
     try {
@@ -647,7 +712,7 @@ function importerNouveauFichier(evenement) {
       sessionStorage.setItem("store_fichier_excel_base64", base64);
       localStorage.setItem("fichierOdsBase64", base64);
     } catch (err) {
-      console.warn("Fichier volumineux pour le stockage local de secours", err);
+      console.warn("Fichier volumineux :", err);
     }
   };
   lecteur.readAsArrayBuffer(fichier);
@@ -660,47 +725,39 @@ function genererLeGraphique() {
   if (!zoneGeneration) return;
 
   zoneGeneration.innerHTML = `
-    <div style="display: flex; flex-direction: column; width: 100%; align-items: center;">
-      <div class="conteneur-graphique-cadre" style="width: 100%; height: 450px; position: relative;">
+    <div style="display:flex;flex-direction:column;width:100%;align-items:center;">
+      <div class="conteneur-graphique-cadre" style="width:100%;height:450px;position:relative;">
         <canvas id="graphiqueTemperatures"></canvas>
       </div>
-      <div style="margin-top: 15px; width: 100%; text-align: center; display: flex; justify-content: center; gap: 15px;">
-        <button id="btn-reset-zoom" type="button" class="btn btn-danger" style="background-color: red; color: white; font-weight: bold; padding: 12px 24px; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
+      <div style="margin-top:15px;width:100%;text-align:center;display:flex;justify-content:center;gap:15px;">
+        <button id="btn-reset-zoom" type="button" class="btn btn-danger"
+          style="background-color:red;color:white;font-weight:bold;padding:12px 24px;font-size:16px;border:none;cursor:pointer;border-radius:4px;">
           Réinitialiser le Zoom
         </button>
-        <button id="btn-supprimer-donnees" type="button" class="btn" style="background-color: red; color: white; font-weight: bold; padding: 12px 24px; font-size: 16px; border: none; cursor: pointer; border-radius: 4px;">
+        <button id="btn-supprimer-donnees" type="button" class="btn"
+          style="background-color:red;color:white;font-weight:bold;padding:12px 24px;font-size:16px;border:none;cursor:pointer;border-radius:4px;">
           Supprimer et Charger un autre
         </button>
       </div>
     </div>
   `;
 
-  const btnResetZoom = document.getElementById("btn-reset-zoom");
-  if (btnResetZoom) {
-    btnResetZoom.addEventListener("click", () => {
-      if (monGraphiqueInstance) monGraphiqueInstance.resetZoom();
-    });
-  }
+  document.getElementById("btn-reset-zoom")?.addEventListener("click", () => {
+    if (monGraphiqueInstance) monGraphiqueInstance.resetZoom();
+  });
+  document.getElementById("btn-supprimer-donnees")?.addEventListener("click", supprimerGraphiqueEtTableau);
 
-  const btnSupprimer = document.getElementById("btn-supprimer-donnees");
-  if (btnSupprimer) {
-    btnSupprimer.addEventListener("click", supprimerGraphiqueEtTableau);
-  }
-
-  let labelsFiltres = donneesGraphesEnMemoire.labelsX;
-  let datasetsFiltres = donneesGraphesEnMemoire.datasets;
-
-  genererGraphiqueTriCapteurs(labelsFiltres, datasetsFiltres);
+  genererGraphiqueTriCapteurs(donneesGraphesEnMemoire.labelsX, donneesGraphesEnMemoire.datasets);
   synchroniserPlageHoraireSurGraphique();
 
-  const btnGenerer = document.getElementById('btn-generer-graphique');
-  if (btnGenerer) {
-    btnGenerer.style.display = 'none';
-  }
+  const btnGenerer = document.getElementById("btn-generer-graphique");
+  if (btnGenerer) btnGenerer.style.display = "none";
 
+  // ✅ Sauvegarde état "graphique affiché"
+  sessionStorage.setItem("store_graphique_genere", "true");
   sessionStorage.setItem("store_graphes_memoire", JSON.stringify(donneesGraphesEnMemoire));
+  sauvegarderEtatGlobalPage1();
 }
-
 
 function supprimerGraphiqueEtTableau() {
   if (monGraphiqueInstance) {
@@ -712,11 +769,15 @@ function supprimerGraphiqueEtTableau() {
   if (zoneGeneration) zoneGeneration.innerHTML = "";
 
   fichierActuelPourFiltrage = null;
-  donneesGraphesEnMemoire = { labelsX: [], datasets: [] };
-  
+  donneesGraphesEnMemoire   = { labelsX: [], datasets: [] };
+
   localStorage.removeItem("fichierOdsBase64");
   localStorage.removeItem("nomFichierCharge");
   localStorage.removeItem("pointsSelectionnesTableau");
+  sessionStorage.removeItem("store_graphique_genere");
+  sessionStorage.removeItem("store_graphes_memoire");
+  sessionStorage.removeItem("store_nom_fichier");
+  sessionStorage.removeItem("store_fichier_excel_base64");
 
   const inputFichier = document.getElementById("selecteur-fichier");
   if (inputFichier) inputFichier.value = "";
@@ -725,213 +786,202 @@ function supprimerGraphiqueEtTableau() {
   if (txtNomFichier) txtNomFichier.textContent = "Aucun fichier choisi";
 
   const corpsTableau = document.getElementById("corpsTableauODS");
-  if (corpsTableau) {
-    corpsTableau.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée chargée.</td></tr>';
-  }
+  if (corpsTableau) corpsTableau.innerHTML =
+    '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée chargée.</td></tr>';
 
   reinitialiserMarqueurs();
 
   const btnGenerer = document.getElementById("btn-generer-graphique");
   if (btnGenerer) {
-    btnGenerer.disabled = false;      
-    btnGenerer.style.display = 'block'; 
+    btnGenerer.disabled      = false;
+    btnGenerer.style.display = "block";
   }
 }
 
 function chargerDonneesODS(fichierDynamique = null) {
   let filtreDebut = localStorage.getItem("filtreHeureDebut") || document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin = localStorage.getItem("filtreHeureFin") || document.getElementById("heureFin")?.value.trim() || "";
+  let filtreFin   = localStorage.getItem("filtreHeureFin")   || document.getElementById("heureFin")?.value.trim()   || "";
 
   filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
-  filtreFin = filtreFin.replace(/[Hh]/g, ":");
-
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
   if (filtreDebut.length === 5) filtreDebut += ":00";
-  if (filtreFin.length === 5) filtreFin += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
 
   const fichierATraiter = fichierDynamique || fichierActuelPourFiltrage;
   if (!fichierATraiter) return;
 
   const promesseLecture = new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
+    reader.onload  = (e) => resolve(e.target.result);
     reader.onerror = (e) => reject(e);
     reader.readAsArrayBuffer(fichierATraiter);
   });
 
-  promesseLecture
-    .then((buffer) => {
-      const data = new Uint8Array(buffer);
-      const workbook = XLSX.read(data, { type: "array", cellDates: true });
-      const feuille = workbook.Sheets[workbook.SheetNames[0]];
-      const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
+  promesseLecture.then((buffer) => {
+    const data      = new Uint8Array(buffer);
+    const workbook  = XLSX.read(data, { type: "array", cellDates: true });
+    const feuille   = workbook.Sheets[workbook.SheetNames[0]];
+    const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
-      const donneesCapteurs = {};
-      const tousLesHorodatages = new Set();
-      let htmlLignes = "";
+    const donneesCapteurs   = {};
+    const tousLesHorodatages = new Set();
+    let htmlLignes = "";
 
-      const pointsSauvegardes = JSON.parse(localStorage.getItem("pointsSelectionnesTableau") || "[]");
+    const pointsSauvegardes = JSON.parse(localStorage.getItem("pointsSelectionnesTableau") || "[]");
 
-      for (let i = 1; i < donneesJson.length; i++) {
-        const ligne = donneesJson[i];
-        if (ligne && ligne[0] !== undefined && ligne[1] !== undefined && ligne[2] !== undefined) {
-          const idCapteur = ligne[0].toString().trim();
-          let tempsAffiche = "";
-          let tempsBrutTexte = "";
+    for (let i = 1; i < donneesJson.length; i++) {
+      const ligne = donneesJson[i];
+      if (!ligne || ligne[0] === undefined || ligne[1] === undefined || ligne[2] === undefined) continue;
 
-          if (ligne[1] instanceof Date) {
-            const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
-            const mm = String(ligne[1].getUTCMinutes()).padStart(2, '0');
-            const ss = String(ligne[1].getUTCSeconds()).padStart(2, '0');
-            tempsAffiche = `${hh}:${mm}:${ss}`;
-            tempsBrutTexte = ligne[1].toISOString().replace("T", " ").replace("Z", "").substring(0, 19);
-          } else if (typeof ligne[1] === "number" || !isNaN(ligne[1])) {
-            const num = parseFloat(ligne[1]);
-            const dateUt = new Date(Math.round((num - 25569) * 86400 * 1000));
-            const hh = String(dateUt.getUTCHours()).padStart(2, '0');
-            const mm = String(dateUt.getUTCMinutes()).padStart(2, '0');
-            const ss = String(dateUt.getUTCSeconds()).padStart(2, '0');
-            tempsAffiche = `${hh}:${mm}:${ss}`;
-            const aaaa = dateUt.getUTCFullYear();
-            const mmois = String(dateUt.getUTCMonth() + 1).padStart(2, '0');
-            const jj = String(dateUt.getUTCDate()).padStart(2, '0');
-            tempsBrutTexte = `${aaaa}-${mmois}-${jj} ${tempsAffiche}`;
-          } else {
-            let tempsBrut = ligne[1].toString().trim();
-            if (tempsBrut.includes("T")) {
-              tempsAffiche = tempsBrut.split("T")[1].replace("Z", "").substring(0, 8);
-              tempsBrutTexte = tempsBrut.replace("T", " ").replace("Z", "");
-            } else if (tempsBrut.includes(" ") && tempsBrut.indexOf(":") > 0) {
-              tempsAffiche = tempsBrut.split(" ")[1].substring(0, 8);
-              tempsBrutTexte = tempsBrut;
-            } else {
-              tempsAffiche = tempsBrut.substring(0, 8);
-              tempsBrutTexte = tempsBrut;
-            }
-          }
+      const idCapteur = ligne[0].toString().trim();
+      let tempsAffiche   = "";
+      let tempsBrutTexte = "";
 
-          if (filtreDebut && tempsAffiche < filtreDebut) continue;
-          if (filtreFin && tempsAffiche > filtreFin) continue;
-
-          const valeurTemp = parseFloat(ligne[2]);
-          const unite = ligne[3] || "°C";
-
-          if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
-          donneesCapteurs[idCapteur][tempsAffiche] = valeurTemp;
-          tousLesHorodatages.add(tempsAffiche);
-
-          const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
-          
-          const styleSelection = pointsSauvegardes.includes(tempsAffiche) ? 'style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer; background-color: rgba(0, 123, 255, 0.18);"' : 'style="border-bottom: 1px solid #eee; user-select: none; cursor: pointer;"';
-
-          htmlLignes += `
-            <tr data-time="${tempsAffiche}" ${styleSelection}>
-              <td style="padding: 8px; font-weight: bold; color: #333;">${idCapteur}</td>
-              <td style="padding: 8px;">${tempsBrutTexte}</td>
-              <td style="padding: 8px; font-weight: bold; color: ${couleurTemp};">${valeurTemp.toFixed(2)}</td>
-              <td style="padding: 8px; color: #888;">${unite}</td>
-            </tr>
-          `;
+      if (ligne[1] instanceof Date) {
+        const hh = String(ligne[1].getUTCHours()).padStart(2, '0');
+        const mm = String(ligne[1].getUTCMinutes()).padStart(2, '0');
+        const ss = String(ligne[1].getUTCSeconds()).padStart(2, '0');
+        tempsAffiche   = `${hh}:${mm}:${ss}`;
+        tempsBrutTexte = ligne[1].toISOString().replace("T", " ").replace("Z", "").substring(0, 19);
+      } else if (typeof ligne[1] === "number" || !isNaN(ligne[1])) {
+        const num    = parseFloat(ligne[1]);
+        const dateUt = new Date(Math.round((num - 25569) * 86400 * 1000));
+        const hh = String(dateUt.getUTCHours()).padStart(2, '0');
+        const mm = String(dateUt.getUTCMinutes()).padStart(2, '0');
+        const ss = String(dateUt.getUTCSeconds()).padStart(2, '0');
+        tempsAffiche   = `${hh}:${mm}:${ss}`;
+        const aaaa  = dateUt.getUTCFullYear();
+        const mmois = String(dateUt.getUTCMonth() + 1).padStart(2, '0');
+        const jj    = String(dateUt.getUTCDate()).padStart(2, '0');
+        tempsBrutTexte = `${aaaa}-${mmois}-${jj} ${tempsAffiche}`;
+      } else {
+        let tempsBrut = ligne[1].toString().trim();
+        if (tempsBrut.includes("T")) {
+          tempsAffiche   = tempsBrut.split("T")[1].replace("Z", "").substring(0, 8);
+          tempsBrutTexte = tempsBrut.replace("T", " ").replace("Z", "");
+        } else if (tempsBrut.includes(" ") && tempsBrut.indexOf(":") > 0) {
+          tempsAffiche   = tempsBrut.split(" ")[1].substring(0, 8);
+          tempsBrutTexte = tempsBrut;
+        } else {
+          tempsAffiche   = tempsBrut.substring(0, 8);
+          tempsBrutTexte = tempsBrut;
         }
       }
 
-      const corpsTableau = document.getElementById("corpsTableauODS");
-      if (corpsTableau) {
-        corpsTableau.innerHTML = htmlLignes || '<tr><td colspan="4" style="text-align: center; padding: 20px;">Aucune donnée valide.</td></tr>';
-        activerSelectionSouris(corpsTableau);
-      }
+      if (filtreDebut && tempsAffiche < filtreDebut) continue;
+      if (filtreFin   && tempsAffiche > filtreFin)   continue;
 
-      const listelabelsX = Array.from(tousLesHorodatages).sort();
-      const listeIdsCapteurs = Object.keys(donneesCapteurs);
+      const valeurTemp = parseFloat(ligne[2]);
+      const unite      = ligne[3] || "°C";
 
-      const couleursCourbes = [
-        { border: "#007BFF", bg: "rgba(0, 123, 255, 0.02)" },
-        { border: "#28a745", bg: "rgba(40, 167, 69, 0.02)" },
-        { border: "#dc3545", bg: "rgba(220, 53, 69, 0.02)" },
-      ];
+      if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
+      donneesCapteurs[idCapteur][tempsAffiche] = valeurTemp;
+      tousLesHorodatages.add(tempsAffiche);
 
-      const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
-        const dataPoints = listelabelsX.map((temps) => donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null);
-        const couleur = couleursCourbes[index % couleursCourbes.length];
+      const couleurTemp    = valeurTemp > 24 ? "#dc3545" : "#007BFF";
+      const estSelectionne = pointsSauvegardes.includes(tempsAffiche);
+      const styleLigne     = estSelectionne
+        ? 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;background-color:rgba(0,123,255,0.18);"'
+        : 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;"';
 
-        return {
-          label: `Capteur ${id}`,
-          data: dataPoints,
-          borderColor: couleur.border,
-          backgroundColor: couleur.bg,
-          borderWidth: 2,
-          fill: false,
-          tension: 0.25,
-          pointRadius: 0,
-          spanGaps: true,
-        };
+      htmlLignes += `
+        <tr data-time="${tempsAffiche}" ${styleLigne}>
+          <td style="padding:8px;font-weight:bold;color:#333;">${idCapteur}</td>
+          <td style="padding:8px;">${tempsBrutTexte}</td>
+          <td style="padding:8px;font-weight:bold;color:${couleurTemp};">${valeurTemp.toFixed(2)}</td>
+          <td style="padding:8px;color:#888;">${unite}</td>
+        </tr>
+      `;
+    }
+
+    const corpsTableau = document.getElementById("corpsTableauODS");
+    if (corpsTableau) {
+      corpsTableau.innerHTML = htmlLignes ||
+        '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée valide.</td></tr>';
+      activerSelectionSouris(corpsTableau);
+    }
+
+    const listelabelsX      = Array.from(tousLesHorodatages).sort();
+    const listeIdsCapteurs  = Object.keys(donneesCapteurs);
+    const couleursCourbes   = [
+      { border: "#007BFF", bg: "rgba(0,123,255,0.02)"  },
+      { border: "#28a745", bg: "rgba(40,167,69,0.02)"  },
+      { border: "#dc3545", bg: "rgba(220,53,69,0.02)"  },
+    ];
+
+    const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
+      const dataPoints = listelabelsX.map((temps) =>
+        donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null
+      );
+      const couleur = couleursCourbes[index % couleursCourbes.length];
+      return {
+        label: `Capteur ${id}`,
+        data:  dataPoints,
+        borderColor:     couleur.border,
+        backgroundColor: couleur.bg,
+        borderWidth: 2,
+        fill:    false,
+        tension: 0.25,
+        pointRadius: 0,
+        spanGaps: true,
+      };
+    });
+
+    donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
+
+    // Placement des sondes
+    const reserve    = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
+    const carteCible = document.getElementById("carte-cible");
+
+    if (reserve && reserve.children.length === 0) {
+      const positionsSauvegardees = JSON.parse(localStorage.getItem("positionsSondes") || "[]");
+      const couleursPastilles = ["#E6194B","#3CB44B","#FFE119","#4363D8","#F58231","#911EB4","#42D4F4","#F032E6","#FABED4"];
+
+      listeIdsCapteurs.forEach((id, index) => {
+        const numeroSonde = index + 1;
+        if (numeroSonde > 9) return;
+
+        const ligneSonde = document.createElement("div");
+        ligneSonde.className = "ligne-sonde-item";
+        ligneSonde.style.cssText = "display:flex;align-items:center;margin-bottom:10px;gap:12px;";
+
+        const divSonde = document.createElement("div");
+        divSonde.className       = "marqueur-draggable pastille-numero";
+        divSonde.id              = id;
+        divSonde.textContent     = numeroSonde;
+        divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
+        divSonde.style.cssText  += "width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;";
+
+        const textNom = document.createElement("span");
+        textNom.className   = "texte-nom-sonde";
+        textNom.textContent = id;
+        textNom.style.cssText = "font-weight:bold;color:#333;";
+
+        ligneSonde.appendChild(divSonde);
+        ligneSonde.appendChild(textNom);
+
+        const posSauvegardee = positionsSauvegardees.find(p => p.id === id);
+        if (posSauvegardee && carteCible) {
+          carteCible.appendChild(divSonde);
+          divSonde.style.position = "absolute";
+          divSonde.style.left     = posSauvegardee.left;
+          divSonde.style.top      = posSauvegardee.top;
+          divSonde.style.margin   = "0px";
+        } else {
+          reserve.appendChild(ligneSonde);
+        }
+
+        if (capteursExclusManuellement.includes(id)) {
+          divSonde.style.opacity = "0.3";
+          divSonde.style.filter  = "grayscale(100%)";
+        }
+        configurerEvenementsMarqueur(divSonde);
       });
+    }
 
-      donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
+    if (localStorage.getItem("fichierOdsBase64")) genererLeGraphique();
 
-      const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
-      const carteCible = document.getElementById("carte-cible");
-      
-      if (reserve && reserve.children.length === 0) {
-        const positionsSauvegardees = JSON.parse(localStorage.getItem("positionsSondes") || "[]");
-        const couleursPastilles = ["#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231", "#911EB4", "#42D4F4", "#F032E6", "#FABED4"];
-
-        listeIdsCapteurs.forEach((id, index) => {
-          const numeroSonde = index + 1;
-          if (numeroSonde <= 9) {
-            const ligneSonde = document.createElement("div");
-            ligneSonde.className = "ligne-sonde-item";
-            ligneSonde.style.display = "flex";
-            ligneSonde.style.alignItems = "center";
-            ligneSonde.style.marginBottom = "10px";
-            ligneSonde.style.gap = "12px";
-
-            const divSonde = document.createElement("div");
-            divSonde.className = "marqueur-draggable pastille-numero";
-            divSonde.id = id;
-            divSonde.textContent = numeroSonde;
-            divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
-            divSonde.style.width = "30px";
-            divSonde.style.height = "30px";
-            divSonde.style.flexShrink = "0";
-            divSonde.style.display = "flex";
-            divSonde.style.alignItems = "center";
-            divSonde.style.justifyContent = "center";
-
-            const textNom = document.createElement("span");
-            textNom.className = "texte-nom-sonde";
-            textNom.textContent = id;
-            textNom.style.fontWeight = "bold";
-            textNom.style.color = "#333";
-
-            ligneSonde.appendChild(divSonde);
-            ligneSonde.appendChild(textNom);
-
-            const posSauvegardee = positionsSauvegardees.find(p => p.id === id);
-            if (posSauvegardee && carteCible) {
-              carteCible.appendChild(divSonde);
-              divSonde.style.position = "absolute";
-              divSonde.style.left = posSauvegardee.left;
-              divSonde.style.top = posSauvegardee.top;
-              divSonde.style.margin = "0px";
-            } else {
-              reserve.appendChild(ligneSonde);
-            }
-
-            if (capteursExclusManuellement.includes(id)) {
-              divSonde.style.opacity = "0.3";
-              divSonde.style.filter = "grayscale(100%)";
-            }
-
-            configurerEvenementsMarqueur(divSonde);
-          }
-        });
-      }
-      
-      if (localStorage.getItem("fichierOdsBase64")) {
-        genererLeGraphique();
-      }
-    })
-    .catch((error) => console.error("Erreur critique d'analyse :", error));
+  }).catch((error) => console.error("Erreur critique d'analyse :", error));
 }
 
 function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
@@ -940,16 +990,19 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 
   if (monGraphiqueInstance) monGraphiqueInstance.destroy();
 
-  const consigne = parseFloat(document.getElementById("tdeconsigne")?.value);
-  const emt = parseFloat(document.getElementById("valeur")?.value);
+  const consigne = parseFloat(
+    document.getElementById("tdeconsigne")?.value ||
+    localStorage.getItem("tdeconsigne") ||
+    sessionStorage.getItem("store_tdeconsigne")
+  );
+  const emt = parseFloat(
+    document.getElementById("valeur")?.value ||
+    localStorage.getItem("valeur") ||
+    sessionStorage.getItem("store_valeur")
+  );
 
-  let valeurMinInitiale = 5.0;
-  let valeurMaxInitiale = 8.0;
-
-  if (!isNaN(consigne) && !isNaN(emt)) {
-    valeurMinInitiale = consigne - emt;
-    valeurMaxInitiale = consigne + emt;
-  }
+  let valeurMinInitiale = !isNaN(consigne) && !isNaN(emt) ? consigne - emt : 5.0;
+  let valeurMaxInitiale = !isNaN(consigne) && !isNaN(emt) ? consigne + emt : 8.0;
 
   const ctx = canvas.getContext("2d");
   monGraphiqueInstance = new Chart(ctx, {
@@ -964,63 +1017,63 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
         x: { title: { display: true, text: "Horodatage (UTC)" }, ticks: { maxTicksLimit: 12 } },
       },
       plugins: {
-        legend: { 
+        legend: {
           position: "top",
           onClick: function(e, legendItem, legend) {
-            const index = legendItem.datasetIndex;
-            const ci = legend.chart;
+            const index    = legendItem.datasetIndex;
+            const ci       = legend.chart;
             const fullLabel = ci.data.datasets[index].label;
             const idCapteur = fullLabel.replace("Capteur ", "").trim();
 
             if (ci.isDatasetVisible(index)) {
               ci.hide(index);
               legendItem.hidden = true;
-              if (!capteursExclusManuellement.includes(idCapteur)) {
-                capteursExclusManuellement.push(idCapteur);
-              }
+              if (!capteursExclusManuellement.includes(idCapteur)) capteursExclusManuellement.push(idCapteur);
             } else {
               ci.show(index);
               legendItem.hidden = false;
               capteursExclusManuellement = capteursExclusManuellement.filter(id => id !== idCapteur);
             }
             localStorage.setItem("capteursExclusManuellement", JSON.stringify(capteursExclusManuellement));
-            
+
             const marqueur = document.getElementById(idCapteur);
             if (marqueur) {
-              if (capteursExclusManuellement.includes(idCapteur)) {
-                marqueur.style.opacity = "0.3";
-                marqueur.style.filter = "grayscale(100%)";
-              } else {
-                marqueur.style.opacity = "1";
-                marqueur.style.filter = "none";
-              }
+              marqueur.style.opacity = capteursExclusManuellement.includes(idCapteur) ? "0.3" : "1";
+              marqueur.style.filter  = capteursExclusManuellement.includes(idCapteur) ? "grayscale(100%)" : "none";
             }
           }
         },
         annotation: {
           annotations: {
             ligneMin: {
-              type: "line", yMin: valeurMinInitiale, yMax: valeurMinInitiale, borderColor: "rgb(220, 53, 69)", borderWidth: 2.5, borderDash: [5, 5],
-              label: { display: true, content: `Seuil Min (${valeurMinInitiale.toFixed(1)}°C)`, position: "start", backgroundColor: "rgba(220, 53, 69, 0.85)", color: "white", font: { size: 11, weight: "bold" } }
+              type: "line", yMin: valeurMinInitiale, yMax: valeurMinInitiale,
+              borderColor: "rgb(220,53,69)", borderWidth: 2.5, borderDash: [5, 5],
+              label: {
+                display: true, content: `Seuil Min (${valeurMinInitiale.toFixed(1)}°C)`,
+                position: "start", backgroundColor: "rgba(220,53,69,0.85)", color: "white",
+                font: { size: 11, weight: "bold" }
+              }
             },
             ligneMax: {
-              type: "line", yMin: valeurMaxInitiale, yMax: valeurMaxInitiale, borderColor: "rgb(40, 167, 69)", borderWidth: 2.5, borderDash: [5, 5],
-              label: { display: true, content: `Seuil Max (${valeurMaxInitiale.toFixed(1)}°C)`, position: "start", backgroundColor: "rgba(40, 167, 69, 0.85)", color: "white", font: { size: 11, weight: "bold" } }
+              type: "line", yMin: valeurMaxInitiale, yMax: valeurMaxInitiale,
+              borderColor: "rgb(40,167,69)", borderWidth: 2.5, borderDash: [5, 5],
+              label: {
+                display: true, content: `Seuil Max (${valeurMaxInitiale.toFixed(1)}°C)`,
+                position: "start", backgroundColor: "rgba(40,167,69,0.85)", color: "white",
+                font: { size: 11, weight: "bold" }
+              }
             },
           }
         },
         zoom: {
           zoom: {
-            drag: { enabled: true, backgroundColor: "rgba(0, 123, 255, 0.2)", borderColor: "#007BFF", borderWidth: 1 },
+            drag: { enabled: true, backgroundColor: "rgba(0,123,255,0.2)", borderColor: "#007BFF", borderWidth: 1 },
             pinch: { enabled: true },
             mode: "xy",
             onZoom: function({ chart }) {
-              const minIndex = chart.scales.x.min;
-              const maxIndex = chart.scales.x.max;
-              const pointsVisibles = Math.round(maxIndex - minIndex + 1);
-              
+              const pointsVisibles = Math.round(chart.scales.x.max - chart.scales.x.min + 1);
               if (pointsVisibles < 31) {
-                alert(`⚠️ Attention : La zone sélectionnée sur le graphique contient moins de 31 points (${pointsVisibles} points actuellement).`);
+                alert(`⚠️ La zone sélectionnée contient moins de 31 points (${pointsVisibles} actuellement).`);
               }
             }
           },
@@ -1032,10 +1085,9 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 
   capteursExclusManuellement.forEach(idExclu => {
     datasetsFournis.forEach((dataset, idx) => {
-      const idNettoyed = dataset.label.replace("Capteur ", "").trim();
-      if (idNettoyed === idExclu) {
+      if (dataset.label.replace("Capteur ", "").trim() === idExclu) {
         monGraphiqueInstance.hide(idx);
-        if(monGraphiqueInstance.legend.legendItems[idx]) {
+        if (monGraphiqueInstance.legend.legendItems[idx]) {
           monGraphiqueInstance.legend.legendItems[idx].hidden = true;
         }
       }
@@ -1046,9 +1098,12 @@ function genererGraphiqueTriCapteurs(labelsX, datasetsFournis) {
 function mettreAJourSeuilsAutomatiques() {
   if (!monGraphiqueInstance) return;
 
-  const consigne = parseFloat(document.getElementById("tdeconsigne")?.value);
-  const emt = parseFloat(document.getElementById("valeur")?.value);
-
+  const consigne = parseFloat(
+    document.getElementById("tdeconsigne")?.value || localStorage.getItem("tdeconsigne")
+  );
+  const emt = parseFloat(
+    document.getElementById("valeur")?.value || localStorage.getItem("valeur")
+  );
   if (isNaN(consigne) || isNaN(emt)) return;
 
   const calculMin = consigne - emt;
@@ -1060,13 +1115,11 @@ function mettreAJourSeuilsAutomatiques() {
     annotations.ligneMin.yMax = calculMin;
     annotations.ligneMin.label.content = `Seuil Min (${calculMin.toFixed(1)}°C)`;
   }
-
   if (annotations.ligneMax) {
     annotations.ligneMax.yMin = calculMax;
     annotations.ligneMax.yMax = calculMax;
     annotations.ligneMax.label.content = `Seuil Max (${calculMax.toFixed(1)}°C)`;
   }
-
   monGraphiqueInstance.update();
 }
 
@@ -1075,36 +1128,32 @@ function activerSelectionSouris(conteneurTableau) {
 
   const terminerSelectionEtSauvegarder = () => {
     estEnTrainDeGlisser = false;
-    let pointsSelectionnes = [];
-    const lignes = conteneurTableau.querySelectorAll("tr");
-    lignes.forEach((ligne) => {
+    const pointsSelectionnes = [];
+    conteneurTableau.querySelectorAll("tr").forEach((ligne) => {
       if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
         const t = ligne.getAttribute("data-time");
         if (t) pointsSelectionnes.push(t);
       }
     });
     localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
+    // ✅ Sauvegarde globale après chaque sélection
+    sauvegarderEtatGlobalPage1();
   };
 
   conteneurTableau.addEventListener("mousedown", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
-
     estEnTrainDeGlisser = true;
     ligneDebutSelection = ligneCible;
-
-    const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
-    lignes.forEach((l) => (l.style.backgroundColor = ""));
-    ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
+    Array.from(conteneurTableau.querySelectorAll("tr")).forEach(l => l.style.backgroundColor = "");
+    ligneCible.style.backgroundColor = "rgba(0,123,255,0.18)";
     e.preventDefault();
   });
 
   conteneurTableau.addEventListener("mouseover", (e) => {
     if (!estEnTrainDeGlisser || !ligneDebutSelection) return;
     const ligneActuelle = e.target.closest("tr");
-    if (!ligneActuelle) return;
-
-    appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
+    if (ligneActuelle) appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
   });
 
   window.addEventListener("mouseup", () => {
@@ -1114,26 +1163,19 @@ function activerSelectionSouris(conteneurTableau) {
   conteneurTableau.addEventListener("touchstart", (e) => {
     const ligneCible = e.target.closest("tr");
     if (!ligneCible) return;
-
     estEnTrainDeGlisser = true;
     ligneDebutSelection = ligneCible;
-
-    const lignes = Array.from(conteneurTableau.querySelectorAll("tr"));
-    lignes.forEach((l) => (l.style.backgroundColor = ""));
-    ligneCible.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
+    Array.from(conteneurTableau.querySelectorAll("tr")).forEach(l => l.style.backgroundColor = "");
+    ligneCible.style.backgroundColor = "rgba(0,123,255,0.18)";
   }, { passive: true });
 
   conteneurTableau.addEventListener("touchmove", (e) => {
     if (!estEnTrainDeGlisser || !ligneDebutSelection) return;
-
     const touch = e.touches[0];
-    const elementSousLeDoigt = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!elementSousLeDoigt) return;
-
-    const ligneActuelle = elementSousLeDoigt.closest("tr");
-    if (ligneActuelle) {
-      appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
-    }
+    const el    = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    const ligneActuelle = el.closest("tr");
+    if (ligneActuelle) appliquerSelectionVisuelle(conteneurTableau, ligneDebutSelection, ligneActuelle);
   }, { passive: true });
 
   conteneurTableau.addEventListener("touchend", () => {
@@ -1142,80 +1184,67 @@ function activerSelectionSouris(conteneurTableau) {
 }
 
 function appliquerSelectionVisuelle(conteneur, debut, fin) {
-  const lignes = Array.from(conteneur.querySelectorAll("tr"));
+  const lignes   = Array.from(conteneur.querySelectorAll("tr"));
   const idxDebut = lignes.indexOf(debut);
-  const idxFin = lignes.indexOf(fin);
-
+  const idxFin   = lignes.indexOf(fin);
   const min = Math.min(idxDebut, idxFin);
   const max = Math.max(idxDebut, idxFin);
-
   lignes.forEach((l, i) => {
-    if (i >= min && i <= max) {
-      l.style.backgroundColor = "rgba(0, 123, 255, 0.18)";
-    } else {
-      l.style.backgroundColor = "";
-    }
+    l.style.backgroundColor = (i >= min && i <= max) ? "rgba(0,123,255,0.18)" : "";
   });
 }
 
 function sauvegarderToutEtDiriger() {
-  const formulaire = document.getElementById("formulaire-carto");
+  const formulaire    = document.getElementById("formulaire-carto");
   const boutonsOnglets = document.querySelectorAll(".onglet-btn");
 
-  // 1. VÉRIFICATION DE LA FICHE TECHNIQUE (ONGLET 2)
+  // 1. Vérification formulaire
   if (formulaire && !formulaire.checkValidity()) {
-    alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique' avant de valider le rapport.");
-    
-    // Redirection stricte vers l'onglet 2 (Fiche technique)
-    const boutonFicheTech = boutonsOnglets[1]; // Index 1 = 2ème bouton
-    if (boutonFicheTech) {
-      changerOnglet({ currentTarget: boutonFicheTech }, 'onglet2');
-    } else {
-      changerOnglet(null, 'onglet2');
-    }
-    
+    alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique'.");
+    const boutonFicheTech = boutonsOnglets[1];
+    if (boutonFicheTech) changerOnglet({ currentTarget: boutonFicheTech }, 'onglet2');
+    else                 changerOnglet(null, 'onglet2');
     formulaire.reportValidity();
     return;
   }
 
-  // 2. VÉRIFICATION DES SONDES PLACÉES (ONGLET 4)
-  const carteCible = document.getElementById("carte-cible");
+  // 2. Vérification sondes
+  const carteCible       = document.getElementById("carte-cible");
   const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
-  
   if (sondesSurLaCarte.length === 0) {
-    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 4 - Cartographie) avant de valider le rapport.");
-    
-    // Redirection stricte vers l'onglet 4 (Cartographie)
-    const boutonCarto = boutonsOnglets[3]; // Index 3 = 4ème bouton
-    if (boutonCarto) {
-      changerOnglet({ currentTarget: boutonCarto }, 'onglet4');
-    } else {
-      changerOnglet(null, 'onglet4');
-    }
+    alert("⚠️ Cartographie incomplète : Veuillez placer au moins une sonde sur la carte (Onglet 4).");
+    const boutonCarto = boutonsOnglets[3];
+    if (boutonCarto) changerOnglet({ currentTarget: boutonCarto }, 'onglet4');
+    else             changerOnglet(null, 'onglet4');
     return;
   }
 
-  // 3. VÉRIFICATION DU GRAPHIQUE (ONGLET 3)
+  // 3. Vérification graphique
   if (!monGraphiqueInstance) {
-    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3 - Tableau température) avant de valider le rapport.");
-    
-    // Redirection stricte vers l'onglet 3 (Tableau température)
-    const boutonGraphique = boutonsOnglets[2]; // Index 2 = 3ème bouton
-    if (boutonGraphique) {
-      changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
-    } else {
-      changerOnglet(null, 'onglet3');
-    }
+    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3).");
+    const boutonGraphique = boutonsOnglets[2];
+    if (boutonGraphique) changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
+    else                 changerOnglet(null, 'onglet3');
     return;
   }
 
-  // Analyse et extraction des points du tableau sélectionnés
-  const corpsTableau = document.getElementById("corpsTableauODS");
-  let pointsSelectionnes = [];
+  // ✅ Sauvegarde forcée consigne + EMT avant redirection
+  const elConsigne = document.getElementById("tdeconsigne");
+  const elEMT      = document.getElementById("valeur");
+  if (elConsigne && elConsigne.value !== "") {
+    localStorage.setItem("tdeconsigne", elConsigne.value);
+    sessionStorage.setItem("store_tdeconsigne", elConsigne.value);
+  }
+  if (elEMT && elEMT.value !== "") {
+    localStorage.setItem("valeur", elEMT.value);
+    sessionStorage.setItem("store_valeur", elEMT.value);
+  }
 
+  // Points sélectionnés dans le tableau
+  const corpsTableau       = document.getElementById("corpsTableauODS");
+  let   pointsSelectionnes = [];
   if (corpsTableau) {
-    const lignes = corpsTableau.querySelectorAll("tr");
-    lignes.forEach((ligne) => {
+    corpsTableau.querySelectorAll("tr").forEach((ligne) => {
       if (ligne.style.backgroundColor && ligne.style.backgroundColor !== "") {
         const t = ligne.getAttribute("data-time");
         if (t) pointsSelectionnes.push(t);
@@ -1226,39 +1255,35 @@ function sauvegarderToutEtDiriger() {
   localStorage.removeItem("imageGraphiqueZoome");
 
   let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin = document.getElementById("heureFin")?.value.trim() || "";
-  
+  let filtreFin   = document.getElementById("heureFin")?.value.trim()   || "";
   filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
-  filtreFin = filtreFin.replace(/[Hh]/g, ":");
-
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
   if (filtreDebut.length === 5) filtreDebut += ":00";
-  if (filtreFin.length === 5) filtreFin += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
 
   if (pointsSelectionnes.length >= 31) {
     pointsSelectionnes.sort();
     filtreDebut = pointsSelectionnes[0];
-    filtreFin = pointsSelectionnes[pointsSelectionnes.length - 1];
-  } 
+    filtreFin   = pointsSelectionnes[pointsSelectionnes.length - 1];
+  }
 
   const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin = document.getElementById("heureFin");
+  const inputHeureFin   = document.getElementById("heureFin");
   if (inputHeureDebut) inputHeureDebut.value = filtreDebut;
-  if (inputHeureFin) inputHeureFin.value = filtreFin;
+  if (inputHeureFin)   inputHeureFin.value   = filtreFin;
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
-  localStorage.setItem("filtreHeureFin", filtreFin);
+  localStorage.setItem("filtreHeureFin",   filtreFin);
   localStorage.setItem("pointsSelectionnesTableau", JSON.stringify(pointsSelectionnes));
 
+  // Capture du graphique
   const canvasOrigine = document.getElementById("graphiqueTemperatures");
   if (canvasOrigine) {
     try {
-      const imageBase64 = canvasOrigine.toDataURL("image/png", 1.0);
-      localStorage.setItem("imageGraphiqueZoome", imageBase64);
+      localStorage.setItem("imageGraphiqueZoome", canvasOrigine.toDataURL("image/png", 1.0));
     } catch (e) {
-      console.error("Échec de conversion directe du canvas :", e);
-      if (monGraphiqueInstance) {
-        localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
-      }
+      console.error("Échec de conversion du canvas :", e);
+      if (monGraphiqueInstance) localStorage.setItem("imageGraphiqueZoome", monGraphiqueInstance.toBase64Image());
     }
   }
 
@@ -1286,40 +1311,25 @@ function reinitialiserZoomGraphique() {
 }
 
 // ========================================================
-// 🟢 INITIALISATION UNIQUE AU CHARGEMENT DU DOM
+// 🟢 INITIALISATION AU CHARGEMENT DU DOM
 // ========================================================
 window.addEventListener("DOMContentLoaded", () => {
-  // Chargement du texte d'introduction
   const zoneTexteIntro = document.getElementById("texte-recommandations");
   if (zoneTexteIntro) {
     fetch("Textarea/texte-recommandations.txt")
-      .then(reponse => {
-        if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
-        return reponse.text();
-      })
-      .then(contenu => { zoneTexteIntro.value = contenu; })
-      .catch(erreur => {
-        console.error("Erreur d'affichage des recommandations :", erreur);
-        zoneTexteIntro.value = "Erreur de chargement des recommandations d'introduction.";
-      });
+      .then(r => { if (!r.ok) throw new Error("Erreur chargement fichier texte"); return r.text(); })
+      .then(c  => { zoneTexteIntro.value = c; })
+      .catch(err => { console.error(err); zoneTexteIntro.value = "Erreur de chargement."; });
   }
 
-  // Chargement du mode opératoire
   const zoneTexteMode = document.getElementById("userMessage");
   if (zoneTexteMode) {
     fetch("Textarea/Mode opératoire.txt")
-      .then(reponse => {
-        if (!reponse.ok) throw new Error("Impossible de charger le fichier texte.");
-        return reponse.text();
-      })
-      .then(contenu => { zoneTexteMode.value = contenu; })
-      .catch(erreur => {
-        console.error("Erreur d'affichage du mode opératoire :", erreur);
-        zoneTexteMode.value = "Erreur de chargement des recommandations d'introduction.";
-      });
+      .then(r => { if (!r.ok) throw new Error("Erreur chargement fichier texte"); return r.text(); })
+      .then(c  => { zoneTexteMode.value = c; })
+      .catch(err => { console.error(err); zoneTexteMode.value = "Erreur de chargement."; });
   }
 
-  // Masquage de l'écran de connexion si déjà authentifié
   const conteneurAuth = document.getElementById("bloc-authentification");
   if (sessionStorage.getItem("estConnecte") === "true") {
     if (conteneurAuth) conteneurAuth.style.display = "none";
@@ -1330,32 +1340,25 @@ const USER_CORRECT = "Auralyon";
 const CODE_CORRECT = "Auralyon";
 
 function validerCode() {
-  const inputUser = document.getElementById("identifiantAcces");
-  const inputCode = document.getElementById("codeAcces");
+  const inputUser    = document.getElementById("identifiantAcces");
+  const inputCode    = document.getElementById("codeAcces");
   const conteneurAuth = document.getElementById("bloc-authentification");
-  const erreur = document.getElementById("erreur-code");
+  const erreur       = document.getElementById("erreur-code");
 
   if (!inputUser || !inputCode) {
-    console.error("Les champs de connexion sont introuvables dans le HTML.");
+    console.error("Champs de connexion introuvables.");
     return;
   }
 
-  const userSaisi = inputUser.value.trim();
-  const codeSaisi = inputCode.value;
-
-  if (userSaisi === USER_CORRECT && codeSaisi === CODE_CORRECT) {
+  if (inputUser.value.trim() === USER_CORRECT && inputCode.value === CODE_CORRECT) {
     sessionStorage.setItem("estConnecte", "true");
-    if (erreur) erreur.style.display = "none";
+    if (erreur)       erreur.style.display       = "none";
     if (conteneurAuth) conteneurAuth.style.display = "none";
   } else {
     if (erreur) erreur.style.display = "block";
   }
 }
 
-// AJOUT DE LA FONCTION MANQUANTE POUR ÉVITER LES CRASHS QUAND ON ÉCRIT
 function verifierTouche(event) {
-  // Si l'utilisateur appuie sur "Entrée", on valide le code automatiquement
-  if (event.key === "Enter") {
-    validerCode();
-  }
+  if (event.key === "Enter") validerCode();
 }
