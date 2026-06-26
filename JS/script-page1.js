@@ -1310,29 +1310,20 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-// ========================================================
-// 🟢 INITIALISATION AU CHARGEMENT DU DOM
-// ========================================================
 window.addEventListener("DOMContentLoaded", () => {
-  const zoneTexteIntro = document.getElementById("texte-recommandations");
-  if (zoneTexteIntro) {
-    fetch("Textarea/texte-recommandations.txt")
-      .then(r => { if (!r.ok) throw new Error("Erreur chargement fichier texte"); return r.text(); })
-      .then(c  => { zoneTexteIntro.value = c; })
-      .catch(err => { console.error(err); zoneTexteIntro.value = "Erreur de chargement."; });
-  }
+  // Chargement automatique et propre via le serveur
+  fetch("Textarea/texte-recommandations.txt")
+    .then(r => r.text())
+    .then(t => {
+      const zone = document.getElementById("texte-recommandations");
+      if (zone) zone.value = t;
+    });
 
-  const zoneTexteMode = document.getElementById("userMessage");
-  if (zoneTexteMode) {
-    fetch("Textarea/Mode opératoire.txt")
-      .then(r => { if (!r.ok) throw new Error("Erreur chargement fichier texte"); return r.text(); })
-      .then(c  => { zoneTexteMode.value = c; })
-      .catch(err => { console.error(err); zoneTexteMode.value = "Erreur de chargement."; });
-  }
-
-  const conteneurAuth = document.getElementById("bloc-authentification");
-  if (sessionStorage.getItem("estConnecte") === "true") {
-    if (conteneurAuth) conteneurAuth.style.display = "none";
-  }
+  fetch("Textarea/Mode op\u00e9ratoire.txt")
+    .then(r => r.text())
+    .then(t => {
+      const zone = document.getElementById("userMessage");
+      if (zone) zone.value = t;
+    });
 });
 
