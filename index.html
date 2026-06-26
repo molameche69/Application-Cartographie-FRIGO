@@ -43,12 +43,8 @@
         <div class="zone-carte" id="carte-cible-intro" style="width: 35%; display: flex; justify-content: center; background-color: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <img src="images/MAP frigo.png" class="image-fond" alt="Carte" style="max-width: 100%; height: auto; object-fit: contain;" />
         </div>
-
-        
       </div>
     </div>
-
-    
 
     <form id="formulaire-carto" onsubmit="return false;">
       
@@ -73,8 +69,7 @@
           <input type="number" step="any" id="valeur" name="valeur" placeholder="Écart Maximum Toléré / EMT (°C) * :" required />
 
           <h2>4. Mode Opératoire</h2>
-
-           <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire..."></textarea>
+          <textarea id="userMessage" name="userMessage" rows="4" placeholder="Saisissez votre mode opératoire..."></textarea>
 
           <button type="button" id="btn-recommencer-tout" style="display:flex; margin: auto; background-color: #dc3545; color: white; margin-top: 10px; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px;">
             Tout recommencer
@@ -99,8 +94,11 @@
             <p>Filtres Temporels de l'Essai</p>
             <div class="conteneur-filtres-layout">
               <div class="champs-horaires">
-                <input type="text" id="heureDebut" name="filtreHeureDebut" placeholder="Heure de début (Ex: 14:40:00) :" />
-                <input type="text" id="heureFin" name="filtreHeureFin" placeholder="Heure de fin (Ex: 15:30:00) :" />
+                <label for="heureDebut" style="color:white; font-size: 11px;">Début * :</label>
+                <input type="time" id="heureDebut" name="filtreHeureDebut" step="1" required />
+                
+                <label for="heureFin" style="color:white; font-size: 11px; margin-left: 10px;">Fin * :</label>
+                <input type="time" id="heureFin" name="filtreHeureFin" step="1" required />
               </div>
               <div class="actions-horaires">
                 <button id="btn-raz-onglet3" type="button" class="btn">
@@ -162,31 +160,33 @@
             <div class="zone-carte" id="carte-cible" style="position: relative; display: flex; justify-content: center; align-items: center; width: 600px; height: 450px; min-width: 600px; min-height: 450px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #ccc;">
               <img src="images/MAP frigo.png" id="image-fond-carto" class="image-fond" alt="Carte" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;" />
             </div>
-         </div>
+          </div>
         </div>
       </div>
 
-          <div id="onglet5" class="contenu-onglet cache">
+      <div id="onglet5" class="contenu-onglet cache">
         <div class="tech">
           <i>Paramètre supplémentaire</i>
         </div>
 
-      <div class="conteneur-calculs">
-      <div class="bloc-calcul">
-      <img src="images/Norme Calcul.png" alt="Formules Groupe 2">
-      <textarea class="txt-formule" style="top: 28%; left: 32%;">0.031</textarea>
-      <textarea class="txt-formule" style="top: 33%; left: 85%;">N.A</textarea>
-      <textarea class="txt-formule" style="top: 62%; left: 85%;">2.16</textarea>
-      <textarea class="txt-formule" style="top: 71%; left: 85%;">5.52</textarea>
-      <textarea class="txt-formule" style="top: 80%; left: 85%;">1.06</textarea>
-      <textarea class="txt-formule" style="top: 93%; left: 85%;">1.08</textarea>
-      </div>
-    </div>
-          <div style="width: 100%; text-align: center; margin-top: 20px; display: flex; justify-content: center;">
-            <button type="button" class="btn-validation-rapport" onclick="sauvegarderToutEtDiriger()" style="padding: 12px 30px; font-weight: bold; cursor: pointer;">
-              Envoyer et Voir le Rapport
-            </button>
+        <div class="conteneur-calculs">
+          <div class="bloc-calcul">
+            <img src="images/Norme Calcul.png" alt="Formules Groupe 2">
+            <textarea class="txt-formule" style="top: 28%; left: 32%;">0.031</textarea>
+            <textarea class="txt-formule" style="top: 33%; left: 85%;">N.A</textarea>
+            <textarea class="txt-formule" style="top: 62%; left: 85%;">2.16</textarea>
+            <textarea class="txt-formule" style="top: 71%; left: 85%;">5.52</textarea>
+            <textarea class="txt-formule" style="top: 80%; left: 85%;">1.06</textarea>
+            <textarea class="txt-formule" style="top: 93%; left: 85%;">1.08</textarea>
           </div>
+        </div>
+        
+        <div style="width: 100%; text-align: center; margin-top: 20px; display: flex; justify-content: center;">
+          <button type="button" class="btn-validation-rapport" onclick="sauvegarderToutEtDiriger()" style="padding: 12px 30px; font-weight: bold; cursor: pointer;">
+            Envoyer et Voir le Rapport
+          </button>
+        </div>
+      </div>
     </form>
   </div>
 

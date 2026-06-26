@@ -1198,17 +1198,63 @@ function sauvegarderToutEtDiriger() {
   const formulaire    = document.getElementById("formulaire-carto");
   const boutonsOnglets = document.querySelectorAll(".onglet-btn");
 
-  // 1. Vérification formulaire
-  if (formulaire && !formulaire.checkValidity()) {
+  // 1. Vérification CIBLÉE de l'onglet 2 (Fiche technique) uniquement
+  const champsFicheTech = document.querySelectorAll("#onglet2 input[required], #onglet2 textarea[required]");
+  let ficheTechIncomplete = false;
+
+  champsFicheTech.forEach(champ => {
+    if (!champ.checkValidity()) {
+      ficheTechIncomplete = true;
+    }
+  });
+
+  if (ficheTechIncomplete) {
     alert("⚠️ Formulaire incomplet : Veuillez remplir toutes les cases obligatoires (*) dans l'onglet 'Fiche technique'.");
     const boutonFicheTech = boutonsOnglets[1];
     if (boutonFicheTech) changerOnglet({ currentTarget: boutonFicheTech }, 'onglet2');
     else                 changerOnglet(null, 'onglet2');
-    formulaire.reportValidity();
+    
+    // Affiche les bulles d'erreur natives sur les champs concernés de l'onglet 2
+    if (formulaire) formulaire.reportValidity();
     return;
   }
 
-  // 2. Vérification sondes
+  // 2. Vérification du graphique d'abord
+  if (!monGraphiqueInstance) {
+    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3).");
+    const boutonGraphique = boutonsOnglets[2];
+    if (boutonGraphique) changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
+    else                 changerOnglet(null, 'onglet3');
+    return;
+  }
+
+  // 3. VÉRIFICATION ULTRA-STRICTE DES HORAIRES (Onglet 3)
+  const inputHeureDebutElement = document.getElementById("heureDebut");
+  const inputHeureFinElement   = document.getElementById("heureFin");
+  
+  const hDebut = inputHeureDebutElement ? inputHeureDebutElement.value.trim() : "";
+  const hFin   = inputHeureFinElement ? inputHeureFinElement.value.trim() : "";
+
+  const debutInvalide = !inputHeureDebutElement || !hDebut || hDebut.includes("-") || !inputHeureDebutElement.checkValidity();
+  const finInvalide   = !inputHeureFinElement || !hFin || hFin.includes("-") || !inputHeureFinElement.checkValidity();
+
+  if (debutInvalide || finInvalide) {
+    alert("⚠️ Erreur : Veuillez sélectionner une heure de début et une heure de fin dans l'onglet 'Tableau température' avant de générer le rapport.");
+    
+    const boutonGraphique = boutonsOnglets[2];
+    if (boutonGraphique) changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
+    else                 changerOnglet(null, 'onglet3');
+    
+    if (debutInvalide && inputHeureDebutElement) {
+      inputHeureDebutElement.focus();
+    } else if (finInvalide && inputHeureFinElement) {
+      inputHeureFinElement.focus();
+    }
+    
+    return;
+  }
+
+  // 4. Vérification des sondes (Onglet 4)
   const carteCible       = document.getElementById("carte-cible");
   const sondesSurLaCarte = carteCible ? carteCible.querySelectorAll(".marqueur-draggable") : [];
   if (sondesSurLaCarte.length === 0) {
@@ -1216,15 +1262,6 @@ function sauvegarderToutEtDiriger() {
     const boutonCarto = boutonsOnglets[3];
     if (boutonCarto) changerOnglet({ currentTarget: boutonCarto }, 'onglet4');
     else             changerOnglet(null, 'onglet4');
-    return;
-  }
-
-  // 3. Vérification graphique
-  if (!monGraphiqueInstance) {
-    alert("⚠️ Graphique manquant : Veuillez charger un fichier et générer le graphique (Onglet 3).");
-    const boutonGraphique = boutonsOnglets[2];
-    if (boutonGraphique) changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
-    else                 changerOnglet(null, 'onglet3');
     return;
   }
 
@@ -1254,8 +1291,8 @@ function sauvegarderToutEtDiriger() {
 
   localStorage.removeItem("imageGraphiqueZoome");
 
-  let filtreDebut = document.getElementById("heureDebut")?.value.trim() || "";
-  let filtreFin   = document.getElementById("heureFin")?.value.trim()   || "";
+  let filtreDebut = hDebut;
+  let filtreFin   = hFin;
   filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
   filtreFin   = filtreFin.replace(/[Hh]/g, ":");
   if (filtreDebut.length === 5) filtreDebut += ":00";
@@ -1267,10 +1304,8 @@ function sauvegarderToutEtDiriger() {
     filtreFin   = pointsSelectionnes[pointsSelectionnes.length - 1];
   }
 
-  const inputHeureDebut = document.getElementById("heureDebut");
-  const inputHeureFin   = document.getElementById("heureFin");
-  if (inputHeureDebut) inputHeureDebut.value = filtreDebut;
-  if (inputHeureFin)   inputHeureFin.value   = filtreFin;
+  if (inputHeureDebutElement) inputHeureDebutElement.value = filtreDebut;
+  if (inputHeureFinElement)   inputHeureFinElement.value   = filtreFin;
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin",   filtreFin);
@@ -1288,7 +1323,7 @@ function sauvegarderToutEtDiriger() {
   }
 
   const procederRedirection = () => {
-    if (fichierActuelPourFiltrage) {
+    if (typeof fichierActuelPourFiltrage !== 'undefined' && fichierActuelPourFiltrage) {
       const lecteurEnBase64 = new FileReader();
       lecteurEnBase64.onload = function(e) {
         const base64String = e.target.result.split(',')[1] || e.target.result;
@@ -1335,4 +1370,3 @@ window.addEventListener("DOMContentLoaded", () => {
     if (conteneurAuth) conteneurAuth.style.display = "none";
   }
 });
-
