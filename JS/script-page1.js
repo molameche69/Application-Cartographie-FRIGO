@@ -1310,7 +1310,9 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-
+// ========================================================
+// 🟢 INITIALISATION AU CHARGEMENT DU DOM
+// ========================================================
 window.addEventListener("DOMContentLoaded", () => {
   const zoneTexteIntro = document.getElementById("texte-recommandations");
   if (zoneTexteIntro) {
