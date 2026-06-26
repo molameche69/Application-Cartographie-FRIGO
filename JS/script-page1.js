@@ -124,26 +124,38 @@ function restaurerEtatGlobalPage1() {
     } catch (e) { console.error("Erreur lecture store_graphes_memoire :", e); }
   }
 
-  if (fichierBase64 && typeof XLSX !== "undefined") {
+  // ✅ Restauration TXT en priorité si c'était un fichier texte
+  const contenuTxtSauvegarde = sessionStorage.getItem("store_fichier_txt_contenu") || localStorage.getItem("fichierTxtContenu");
+
+  if (contenuTxtSauvegarde) {
+    try {
+      chargerDonneesTXT(contenuTxtSauvegarde);
+      if (graphiqueEtaitGenere && donneesGraphesEnMemoire.labelsX.length > 0) {
+        setTimeout(() => {
+          genererLeGraphique();
+          const btnGenerer = document.getElementById("btn-generer-graphique");
+          if (btnGenerer) btnGenerer.style.display = "none";
+        }, 100);
+      }
+    } catch (err) {
+      console.error("Impossible de restaurer le fichier TXT :", err);
+    }
+  } else if (fichierBase64 && typeof XLSX !== "undefined") {
     try {
       const chaineBinaire = atob(fichierBase64);
       const longueur = chaineBinaire.length;
       const buffer = new Uint8Array(longueur);
       for (let i = 0; i < longueur; i++) buffer[i] = chaineBinaire.charCodeAt(i);
 
-      const workbook  = XLSX.read(buffer, { type: "array", cellDates: true });
-      const feuille   = workbook.Sheets[workbook.SheetNames[0]];
+      const workbook    = XLSX.read(buffer, { type: "array", cellDates: true });
+      const feuille     = workbook.Sheets[workbook.SheetNames[0]];
       const donneesJson = XLSX.utils.sheet_to_json(feuille, { header: 1 });
 
-      // Reconstruit le tableau ODS avec les sélections sauvegardées
       _reconstruireTableauDepuisJson(donneesJson);
 
-      // ✅ NOUVEAU : Si le graphique était affiché avant, on le réaffiche
       if (graphiqueEtaitGenere && donneesGraphesEnMemoire.labelsX.length > 0) {
-        // Petit délai pour laisser le DOM se stabiliser
         setTimeout(() => {
           genererLeGraphique();
-          // Masquer le bouton générer puisque le graphique est déjà là
           const btnGenerer = document.getElementById("btn-generer-graphique");
           if (btnGenerer) btnGenerer.style.display = "none";
         }, 100);
@@ -704,20 +716,242 @@ function importerNouveauFichier(evenement) {
   const reserve = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
   if (reserve) reserve.innerHTML = "";
 
-  // Sauvegarde fichier en base64
-  const lecteur = new FileReader();
-  lecteur.onload = function(e) {
-    try {
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
-      sessionStorage.setItem("store_fichier_excel_base64", base64);
-      localStorage.setItem("fichierOdsBase64", base64);
-    } catch (err) {
-      console.warn("Fichier volumineux :", err);
-    }
-  };
-  lecteur.readAsArrayBuffer(fichier);
+  const estTXT = fichier.name.toLowerCase().endsWith(".txt");
 
-  chargerDonneesODS(fichier);
+  if (estTXT) {
+    // ── Fichier TXT : lecture texte, pas besoin de base64 XLSX ──
+    const lecteurTexte = new FileReader();
+    lecteurTexte.onload = function(e) {
+      const contenuTexte = e.target.result;
+      // Sauvegarde du texte brut pour la restauration au retour arrière
+      sessionStorage.setItem("store_fichier_txt_contenu", contenuTexte);
+      localStorage.setItem("fichierTxtContenu", contenuTexte);
+      // On vide la clé ODS pour éviter les conflits
+      localStorage.removeItem("fichierOdsBase64");
+      sessionStorage.removeItem("store_fichier_excel_base64");
+      chargerDonneesTXT(contenuTexte);
+    };
+    lecteurTexte.readAsText(fichier, "UTF-8");
+  } else {
+    // ── Fichier ODS / XLSX / XLS : lecture binaire base64 ──
+    localStorage.removeItem("fichierTxtContenu");
+    sessionStorage.removeItem("store_fichier_txt_contenu");
+    const lecteur = new FileReader();
+    lecteur.onload = function(e) {
+      try {
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+        sessionStorage.setItem("store_fichier_excel_base64", base64);
+        localStorage.setItem("fichierOdsBase64", base64);
+      } catch (err) {
+        console.warn("Fichier volumineux :", err);
+      }
+    };
+    lecteur.readAsArrayBuffer(fichier);
+    chargerDonneesODS(fichier);
+  }
+}
+
+// ========================================================
+// 📄 CHARGEMENT FICHIER TXT
+// Format attendu : colonnes séparées par tabulation ou point-virgule ou virgule
+// Ligne d'en-tête ignorée si la 1ère colonne n'est pas un identifiant numérique/texte valide
+// Structure : IDCapteur | Horodatage | Valeur | Unité(optionnel)
+// ========================================================
+function chargerDonneesTXT(contenuTexte) {
+  let filtreDebut = localStorage.getItem("filtreHeureDebut") || document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin   = localStorage.getItem("filtreHeureFin")   || document.getElementById("heureFin")?.value.trim()   || "";
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
+
+  const lignesBrutes = contenuTexte.split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lignesBrutes.length === 0) {
+    alert("❌ Le fichier TXT est vide ou illisible.");
+    return;
+  }
+
+  // Détection automatique du séparateur : tabulation, point-virgule, virgule
+  const premiereLigne = lignesBrutes[0];
+  let separateur = "\t";
+  if ((premiereLigne.match(/;/g) || []).length >= 2)      separateur = ";";
+  else if ((premiereLigne.match(/,/g) || []).length >= 2) separateur = ",";
+
+  // Détection de l'en-tête : si la 3ème colonne ne contient pas un nombre → c'est un header
+  const premiereCellules = premiereLigne.split(separateur).map(c => c.trim().replace(/"/g, ""));
+  const debutIndex = isNaN(parseFloat(premiereCellules[2])) ? 1 : 0;
+
+  const pointsSauvegardes  = JSON.parse(localStorage.getItem("pointsSelectionnesTableau") || "[]");
+  const donneesCapteurs    = {};
+  const tousLesHorodatages = new Set();
+  let htmlLignes = "";
+
+  for (let i = debutIndex; i < lignesBrutes.length; i++) {
+    const cellules = lignesBrutes[i].split(separateur).map(c => c.trim().replace(/"/g, ""));
+    if (cellules.length < 3) continue;
+
+    const idCapteur = cellules[0];
+    if (!idCapteur) continue;
+
+    // ── Parsing de l'horodatage ──────────────────────────────────────────
+    const horodatageRaw = cellules[1] || "";
+    let tempsAffiche    = "";
+    let tempsBrutTexte  = horodatageRaw;
+
+    // Format ISO : 2024-01-15T14:30:00 ou 2024-01-15 14:30:00
+    const matchISO = horodatageRaw.match(/(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)/);
+    if (matchISO) {
+      tempsAffiche   = matchISO[2].length === 5 ? matchISO[2] + ":00" : matchISO[2];
+      tempsBrutTexte = matchISO[1] + " " + tempsAffiche;
+    } else {
+      // Format heure seule : HH:MM:SS ou HH:MM ou HH.MM.SS
+      const matchHeure = horodatageRaw.match(/(\d{1,2})[:\.](\d{2})(?:[:\.](\d{2}))?/);
+      if (matchHeure) {
+        const hh = matchHeure[1].padStart(2, "0");
+        const mm = matchHeure[2].padStart(2, "0");
+        const ss = matchHeure[3] ? matchHeure[3].padStart(2, "0") : "00";
+        tempsAffiche   = `${hh}:${mm}:${ss}`;
+        tempsBrutTexte = tempsAffiche;
+      } else {
+        // Valeur numérique Excel (fraction de jour)
+        const numVal = parseFloat(horodatageRaw.replace(",", "."));
+        if (!isNaN(numVal)) {
+          const dateUt = new Date(Math.round((numVal - 25569) * 86400 * 1000));
+          const hh = String(dateUt.getUTCHours()).padStart(2, "0");
+          const mm = String(dateUt.getUTCMinutes()).padStart(2, "0");
+          const ss = String(dateUt.getUTCSeconds()).padStart(2, "0");
+          tempsAffiche   = `${hh}:${mm}:${ss}`;
+          tempsBrutTexte = `${dateUt.getUTCFullYear()}-${String(dateUt.getUTCMonth()+1).padStart(2,"0")}-${String(dateUt.getUTCDate()).padStart(2,"0")} ${tempsAffiche}`;
+        } else {
+          tempsAffiche   = horodatageRaw.substring(0, 8);
+          tempsBrutTexte = horodatageRaw;
+        }
+      }
+    }
+
+    if (!tempsAffiche) continue;
+    if (filtreDebut && tempsAffiche < filtreDebut) continue;
+    if (filtreFin   && tempsAffiche > filtreFin)   continue;
+
+    // ── Valeur de température ────────────────────────────────────────────
+    const valeurTemp = parseFloat(cellules[2].replace(",", "."));
+    if (isNaN(valeurTemp)) continue;
+
+    const unite = cellules[3] || "°C";
+
+    if (!donneesCapteurs[idCapteur]) donneesCapteurs[idCapteur] = {};
+    donneesCapteurs[idCapteur][tempsAffiche] = valeurTemp;
+    tousLesHorodatages.add(tempsAffiche);
+
+    const couleurTemp    = valeurTemp > 24 ? "#dc3545" : "#007BFF";
+    const estSelectionne = pointsSauvegardes.includes(tempsAffiche);
+    const styleLigne     = estSelectionne
+      ? 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;background-color:rgba(0,123,255,0.18);"'
+      : 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;"';
+
+    htmlLignes += `
+      <tr data-time="${tempsAffiche}" ${styleLigne}>
+        <td style="padding:8px;font-weight:bold;color:#333;">${idCapteur}</td>
+        <td style="padding:8px;">${tempsBrutTexte}</td>
+        <td style="padding:8px;font-weight:bold;color:${couleurTemp};">${valeurTemp.toFixed(2)}</td>
+        <td style="padding:8px;color:#888;">${unite}</td>
+      </tr>
+    `;
+  }
+
+  // ── Remplissage du tableau HTML ──────────────────────────────────────
+  const corpsTableau = document.getElementById("corpsTableauODS");
+  if (corpsTableau) {
+    corpsTableau.innerHTML = htmlLignes ||
+      '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée valide trouvée dans le fichier TXT.</td></tr>';
+    activerSelectionSouris(corpsTableau);
+  }
+
+  if (Object.keys(donneesCapteurs).length === 0) return;
+
+  // ── Construction des datasets graphique (identique ODS) ─────────────
+  const listelabelsX     = Array.from(tousLesHorodatages).sort();
+  const listeIdsCapteurs = Object.keys(donneesCapteurs);
+  const couleursCourbes  = [
+    { border: "#007BFF", bg: "rgba(0,123,255,0.02)"  },
+    { border: "#28a745", bg: "rgba(40,167,69,0.02)"  },
+    { border: "#dc3545", bg: "rgba(220,53,69,0.02)"  },
+    { border: "#FF8C00", bg: "rgba(255,140,0,0.02)"  },
+    { border: "#6A0DAD", bg: "rgba(106,13,173,0.02)" },
+  ];
+
+  const datasetsGraphique = listeIdsCapteurs.map((id, index) => {
+    const dataPoints = listelabelsX.map(temps =>
+      donneesCapteurs[id][temps] !== undefined ? donneesCapteurs[id][temps] : null
+    );
+    const couleur = couleursCourbes[index % couleursCourbes.length];
+    return {
+      label:           `Capteur ${id}`,
+      data:            dataPoints,
+      borderColor:     couleur.border,
+      backgroundColor: couleur.bg,
+      borderWidth:     2,
+      fill:            false,
+      tension:         0.25,
+      pointRadius:     0,
+      spanGaps:        true,
+    };
+  });
+
+  donneesGraphesEnMemoire = { labelsX: listelabelsX, datasets: datasetsGraphique };
+
+  // ── Placement des pastilles de sondes (identique ODS) ───────────────
+  const reserve    = document.getElementById("liste-sondes-disponibles") || document.getElementById("reserve-cible");
+  const carteCible = document.getElementById("carte-cible");
+
+  if (reserve && reserve.children.length === 0) {
+    const positionsSauvegardees = JSON.parse(localStorage.getItem("positionsSondes") || "[]");
+    const couleursPastilles = ["#E6194B","#3CB44B","#FFE119","#4363D8","#F58231","#911EB4","#42D4F4","#F032E6","#FABED4"];
+
+    listeIdsCapteurs.forEach((id, index) => {
+      const numeroSonde = index + 1;
+      if (numeroSonde > 9) return;
+
+      const ligneSonde = document.createElement("div");
+      ligneSonde.className = "ligne-sonde-item";
+      ligneSonde.style.cssText = "display:flex;align-items:center;margin-bottom:10px;gap:12px;";
+
+      const divSonde = document.createElement("div");
+      divSonde.className       = "marqueur-draggable pastille-numero";
+      divSonde.id              = id;
+      divSonde.textContent     = numeroSonde;
+      divSonde.style.backgroundColor = couleursPastilles[index % couleursPastilles.length];
+      divSonde.style.cssText  += "width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;";
+
+      const textNom = document.createElement("span");
+      textNom.className     = "texte-nom-sonde";
+      textNom.textContent   = id;
+      textNom.style.cssText = "font-weight:bold;color:#333;";
+
+      ligneSonde.appendChild(divSonde);
+      ligneSonde.appendChild(textNom);
+
+      const posSauvegardee = positionsSauvegardees.find(p => p.id === id);
+      if (posSauvegardee && carteCible) {
+        carteCible.appendChild(divSonde);
+        divSonde.style.position = "absolute";
+        divSonde.style.left     = posSauvegardee.left;
+        divSonde.style.top      = posSauvegardee.top;
+        divSonde.style.margin   = "0px";
+      } else {
+        reserve.appendChild(ligneSonde);
+      }
+
+      if (capteursExclusManuellement.includes(id)) {
+        divSonde.style.opacity = "0.3";
+        divSonde.style.filter  = "grayscale(100%)";
+      }
+      configurerEvenementsMarqueur(divSonde);
+    });
+  }
+
+  // Déclenche le graphique
+  genererLeGraphique();
 }
 
 function genererLeGraphique() {
@@ -774,10 +1008,12 @@ function supprimerGraphiqueEtTableau() {
   localStorage.removeItem("fichierOdsBase64");
   localStorage.removeItem("nomFichierCharge");
   localStorage.removeItem("pointsSelectionnesTableau");
+  localStorage.removeItem("fichierTxtContenu");
   sessionStorage.removeItem("store_graphique_genere");
   sessionStorage.removeItem("store_graphes_memoire");
   sessionStorage.removeItem("store_nom_fichier");
   sessionStorage.removeItem("store_fichier_excel_base64");
+  sessionStorage.removeItem("store_fichier_txt_contenu");
 
   const inputFichier = document.getElementById("selecteur-fichier");
   if (inputFichier) inputFichier.value = "";
@@ -1310,9 +1546,7 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-// ========================================================
-// 🟢 INITIALISATION AU CHARGEMENT DU DOM
-// ========================================================
+
 window.addEventListener("DOMContentLoaded", () => {
   const zoneTexteIntro = document.getElementById("texte-recommandations");
   if (zoneTexteIntro) {
@@ -1335,30 +1569,3 @@ window.addEventListener("DOMContentLoaded", () => {
     if (conteneurAuth) conteneurAuth.style.display = "none";
   }
 });
-
-const USER_CORRECT = "Auralyon";
-const CODE_CORRECT = "Auralyon";
-
-function validerCode() {
-  const inputUser    = document.getElementById("identifiantAcces");
-  const inputCode    = document.getElementById("codeAcces");
-  const conteneurAuth = document.getElementById("bloc-authentification");
-  const erreur       = document.getElementById("erreur-code");
-
-  if (!inputUser || !inputCode) {
-    console.error("Champs de connexion introuvables.");
-    return;
-  }
-
-  if (inputUser.value.trim() === USER_CORRECT && inputCode.value === CODE_CORRECT) {
-    sessionStorage.setItem("estConnecte", "true");
-    if (erreur)       erreur.style.display       = "none";
-    if (conteneurAuth) conteneurAuth.style.display = "none";
-  } else {
-    if (erreur) erreur.style.display = "block";
-  }
-}
-
-function verifierTouche(event) {
-  if (event.key === "Enter") validerCode();
-}

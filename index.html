@@ -17,29 +17,6 @@
 
   <canvas id="fond-etoile"></canvas>
 
-  <div class="Identifiant" id="bloc-authentification">
-    <div id="ecran-verrouillage">
-      <div class="boite-connexion">
-        <div class="entete-bleue">
-          <p>Cartographie 9 points</p>
-        </div>
-
-        <div class="groupe-champ">
-          <label for="identifiantAcces">Nom d'utilisateur <span class="requis">*</span></label>
-          <input type="text" id="identifiantAcces" onkeydown="verifierTouche(event)" />
-        </div>
-
-        <div class="groupe-champ">
-          <label for="codeAcces">Mot de passe <span class="requis">*</span></label>
-          <input type="password" id="codeAcces" onkeydown="verifierTouche(event)" />
-        </div>
-
-        <button type="button" class="btn-connexion" onclick="validerCode()">Se connecter</button>
-        <div id="erreur-code" class="message-erreur">Identifiant ou mot de passe incorrect. Veuillez réessayer.</div>
-      </div>
-    </div>
-  </div>
-
   <div class="Titre">
     <img src="images/logo.png" class="logo2" alt="Logo gauche" />
     <i>:Cartographie en 9 points:</i>
@@ -112,9 +89,9 @@
 
           <div class="zone-import-file">
             <label for="selecteur-fichier" class="btn-import">
-              📁 Choisir un fichier ODS/Excel
+              📁 Choisir un fichier ODS/Excel/txt
             </label>
-            <input type="file" id="selecteur-fichier" accept=".ods, .xlsx, .xls" onchange="importerNouveauFichier(event)" />
+            <input type="file" id="selecteur-fichier" accept=".ods, .xlsx, .xls, .txt" onchange="importerNouveauFichier(event)" />
             <span id="nom-fichier-choisi">Aucun fichier sélectionné</span>
           </div>
 
