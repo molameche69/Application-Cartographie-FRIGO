@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rapport de Caractérisation Métrologique</title>
     <link rel="stylesheet" href="css/style-page2-Rapport.css" />
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
@@ -15,82 +17,89 @@
   <body>
     <canvas id="fond-etoile"></canvas>
 
- <div class="Titre">
-    <img src="images/logo.png" class="logo2" alt="Logo gauche" />
-    <i>:Rapport:</i>
-    <img src="images/logo.png" class="logo1" alt="Logo droite" />
-  </div>
+    <div class="Titre">
+      <img src="images/logo.png" class="logo2" alt="Logo gauche" />
+      <i>:Rapport:</i>
+      <img src="images/logo.png" class="logo1" alt="Logo droite" />
+    </div>
  
     <div class="container">
       <div id="zone-impression-pdf">
  
         <div class="page-pdf page-garde">
-          <div class="bandeau-haut-garde"></div>
- 
-          <div class="logo-garde-container">
-            <img src="images/logo.png" class="logo-garde" alt="Logo" />
+          <div class="corps-page">
+            <div class="contenu-ajuste">
+              <div class="bandeau-haut-garde"></div>
+     
+              <div class="logo-garde-container">
+                <img src="images/logo.png" class="logo-garde" alt="Logo" />
+              </div>
+     
+              <div class="contenu-garde">
+                <h1 class="titre-principal-garde">Rapport de caractérisation</h1>
+                <div class="sous-titre-garde">( <span id="report-userCaracteristique"></span> )</div>
+       
+                <div class="bloc-delivre-garde">
+                  <p class="label-delivre">Délivré à :</p> 
+                  <p class="valeur-delivre" id="report-userEntreprise"></p>
+                </div>
+              </div>
+            </div>
           </div>
  
-          <div class="contenu-garde">
-            <h1 class="titre-principal-garde">Rapport de caractérisation</h1>
-            <div class="sous-titre-garde">( <span id="report-userCaracteristique"></span> )</div>
- 
-          <div class="bloc-delivre-garde">
-            <p class="label-delivre">Délivré à :</p> <p class="valeur-delivre" id="report-userEntreprise"></p>
-          </div>
-         </div>
- 
-          <div class="pied-garde">
+          <div class="pied-page">
             <span class="ref-pied"></span>
             <span>Page 1 / 9</span>
           </div>
         </div>
  
-        <div class="page-pdf">
+        <div class="page-pdf page-courte">
           <div class="entete-page">
             <img src="images/logo.png" class="logo-entete" alt="Logo" />
             <span class="titre-entete">Rapport de caractérisation</span>
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section-hors-num">Table des matières</h2>
-            <ul class="sommaire">
-              <li><span>1  Introduction</span><span class="points"></span><span>3</span></li>
-              <li class="sous-item"><span>1.1  Objectif</span><span class="points"></span><span>3</span></li>
-              <li class="sous-item"><span>1.2  Champ d'application</span><span class="points"></span><span>3</span></li>
-              <li><span>2  Synthèse</span><span class="points"></span><span>4</span></li>
-              <li class="sous-item"><span>2.1  Période de la caractérisation</span><span class="points"></span><span>4</span></li>
-              <li class="sous-item"><span>2.2  Identification de l'enceinte</span><span class="points"></span><span>4</span></li>
-              <li class="sous-item"><span>2.3  Norme(s) de référence</span><span class="points"></span><span>4</span></li>
-              <li class="sous-item"><span>2.4  Jugement</span><span class="points"></span><span>4</span></li>
-              <li><span>3  Conditions de fonctionnement</span><span class="points"></span><span>4</span></li>
-              <li class="sous-item"><span>3.2  Placement des sondes</span><span class="points"></span><span>5</span></li>
-              <li class="sous-item"><span>3.3  Sondes utilisées</span><span class="points"></span><span>5</span></li>
-              <li class="sous-item"><span>3.4  Mode opératoire</span><span class="points"></span><span>6</span></li>
-              <li><span>4  Résultats</span><span class="points"></span><span>7</span></li>
-              <li class="sous-item"><span>4.1  Relevés des capteurs</span><span class="points"></span><span>7</span></li>
-              <li class="sous-item"><span>4.2  Tableau de Calcul individuelle</span><span class="points"></span><span>7</span></li>
-              <li><span>5  Résultats selon la norme FD X 15-140</span><span class="points"></span><span>8</span></li>
-              <li><span>6  Conformité</span><span class="points"></span><span>8</span></li>
-              <li class="sous-item"><span>6.1  Remarques</span><span class="points"></span><span>8</span></li>
-            </ul>
- 
-            <h2 class="titre-section">1  Introduction</h2>
-            <h3>1.1  Objectif</h3>
-            <p>L'objectif de la cartographie est de s'assurer que vos articles / produits sont stockés correctement dans les conditions attendues en respectant les tolérances définies.</p>
-            <p>Ce rapport permet de synthétiser et comparer les résultats obtenus lors de la caractérisation avec les spécifications de l'enceinte afin de conclure quant à sa conformité ou à sa non-conformité.</p>
- 
-            <h3>1.2  Champ d'application</h3>
-            <p>OCEAMap permet de :</p>
-            <ul class="liste-puces">
-              <li>Evaluer des performances de l'enceinte par mesure de la température durant le régime établi.</li>
-              <li>Quantifier l'homogénéité et la stabilité de l'enceinte, ainsi que l'écart de consigne et l'erreur d'indication (le cas échéant).</li>
-            </ul>
-          </div>
- 
-          <div class="pied-page">
-            <span class="ref-pied"></span>
-            <span>Page 2 / 9</span>
+            <div class="contenu-ajuste">
+              <h2 class="titre-section-hors-num">Table des matières</h2>
+              <ul class="sommaire">
+                <li><span>1   Introduction</span><span class="points"></span><span>3</span></li>
+                <li class="sous-item"><span>1.1   Objectif</span><span class="points"></span><span>3</span></li>
+                <li class="sous-item"><span>1.2   Champ d'application</span><span class="points"></span><span>3</span></li>
+                <li><span>2   Synthèse</span><span class="points"></span><span>4</span></li>
+                <li class="sous-item"><span>2.1   Période de la caractérisation</span><span class="points"></span><span>4</span></li>
+                <li class="sous-item"><span>2.2   Identification de l'enceinte</span><span class="points"></span><span>4</span></li>
+                <li class="sous-item"><span>2.3   Norme(s) de référence</span><span class="points"></span><span>4</span></li>
+                <li class="sous-item"><span>2.4   Jugement</span><span class="points"></span><span>4</span></li>
+                <li><span>3   Conditions de fonctionnement</span><span class="points"></span><span>4</span></li>
+                <li class="sous-item"><span>3.2   Placement des sondes</span><span class="points"></span><span>5</span></li>
+                <li class="sous-item"><span>3.3   Sondes utilisées</span><span class="points"></span><span>5</span></li>
+                <li class="sous-item"><span>3.4   Mode opératoire</span><span class="points"></span><span>6</span></li>
+                <li><span>4   Résultats</span><span class="points"></span><span>7</span></li>
+                <li class="sous-item"><span>4.1   Relevés des capteurs</span><span class="points"></span><span>7</span></li>
+                <li class="sous-item"><span>4.2   Tableau de Calcul individuelle</span><span class="points"></span><span>7</span></li>
+                <li><span>5   Résultats selon la norme FD X 15-140</span><span class="points"></span><span>8</span></li>
+                <li><span>6   Conformité</span><span class="points"></span><span>8</span></li>
+                <li class="sous-item"><span>6.1   Remarques</span><span class="points"></span><span>8</span></li>
+              </ul>
+   
+              <h2 class="titre-section">1   Introduction</h2>
+              <h3>1.1   Objectif</h3>
+              <p>L'objectif de la cartographie est de s'assurer que vos articles / produits sont stockés correctement dans les conditions attendues en respectant les tolérances définies.</p>
+              <p>Ce rapport permet de synthétiser et comparer les résultats obtenus lors de la caractérisation avec les spécifications de l'enceinte afin de conclure quant à sa conformité ou à sa non-conformité.</p>
+   
+              <h3>1.2   Champ d'application</h3>
+              <p>OCEAMap permet de :</p>
+              <ul class="liste-puces">
+                <li>Evaluer des performances de l'enceinte par mesure de la température durant le régime établi.</li>
+                <li>Quantifier l'homogénéité et la stabilité de l'enceinte, ainsi que l'écart de consigne et l'erreur d'indication (le cas échéant).</li>
+              </ul>
+
+              <div class="pied-page" style="margin-top: auto; padding-top: 20px;">
+                <span class="ref-pied"></span>
+                <span>Page 2 / 9</span>
+              </div>
+            </div>
           </div>
         </div>
  
@@ -101,30 +110,31 @@
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section">2  Synthèse</h2>
- 
-            <h3>2.1  Période de la caractérisation</h3>
-            <p>Date d'émission : <span id="report-date-emission">—</span></p>
-            <p>Période de la cartographie : de <span id="report-filtreHeureDebut">—</span> à <span id="report-filtreHeureFin">—</span></p>
- 
-            <h3>2.2  Identification de l'enceinte</h3>
-            <p><strong>N° de série / Référence interne :</strong> <span id="report-userReference">—</span></p>
-            <p><strong>Localisation de l'enceinte :</strong> <span id="report-userLoc">—</span></p>
-            <p>Marque : <span id="report-userCaracteristique">—</span></p>
- 
-            <h3>2.3  Norme(s) de référence</h3>
-            <p>FD X 15-140 (2024)</p>
- 
-            <h3>2.4  Jugement</h3>
-            <p>(Voir la section 6 pour les règles de conformité)</p>
-            <p id="report-statut-conclusion-texte">En attente d'analyse...</p>
- 
-            <h2 class="titre-section">3  Conditions de fonctionnement</h2>
- 
-            <h3>3.1  Configuration</h3>
-            <p>Condition désirée (XSpé) : <span id="report-tdeconsigne">—</span> °C</p>
-            <p>EMT : ±<span id="report-valeur">—</span> °C</p>
-
+            <div class="contenu-ajuste">
+              <h2 class="titre-section">2   Synthèse</h2>
+   
+              <h3>2.1   Période de la caractérisation</h3>
+              <p>Date d'émission : <span id="report-date-emission">—</span></p>
+              <p>Période de la cartographie : de <span id="report-filtreHeureDebut">—</span> à <span id="report-filtreHeureFin">—</span></p>
+   
+              <h3>2.2   Identification de l'enceinte</h3>
+              <p><strong>N° de série / Référence interne :</strong> <span id="report-userReference">—</span></p>
+              <p><strong>Localisation de l'enceinte :</strong> <span id="report-userLoc">—</span></p>
+              <p>Marque : <span id="report-userCaracteristique">—</span></p>
+   
+              <h3>2.3   Norme(s) de référence</h3>
+              <p>FD X 15-140 (2024)</p>
+   
+              <h3>2.4   Jugement</h3>
+              <p>(Voir la section 6 pour les règles de conformité)</p>
+              <p id="report-statut-conclusion-texte">En attente d'analyse...</p>
+   
+              <h2 class="titre-section">3   Conditions de fonctionnement</h2>
+   
+              <h3>3.1   Configuration</h3>
+              <p>Condition désirée (XSpé) : <span id="report-tdeconsigne">—</span> °C</p>
+              <p>EMT : ±<span id="report-valeur">—</span> °C</p>
+            </div>
           </div>
  
           <div class="pied-page">
@@ -140,18 +150,20 @@
           </div>
  
           <div class="corps-page">
-            <h3>3.2  Placement des sondes</h3>
- 
-            <div id="conteneur-global-carto-rapport">
-              <div class="zone-carte" id="carte-rapport">
-                <img src="images/MAP frigo.png" alt="Carte" />
+            <div class="contenu-ajuste">
+              <h3>3.2   Placement des sondes</h3>
+   
+              <div id="conteneur-global-carto-rapport">
+                <div class="zone-carte" id="carte-rapport">
+                  <img src="images/MAP frigo.png" alt="Carte" />
+                </div>
               </div>
+              <p class="legende-figure">Figure 1 – Placement des sondes pendant la cartographie</p>
+   
+              <h3>3.3   Sondes utilisées</h3>
+              <p>Type de sonde : <span id="report-type-sonde">Pt100</span>&nbsp;&nbsp;&nbsp;
+                 Résolution des sondes r = <span id="report-resolution-sonde">0.031</span></p>
             </div>
-            <p class="legende-figure">Figure 1 – Placement des sondes pendant la cartographie</p>
- 
-            <h3>3.3  Sondes utilisées</h3>
-            <p>Type de sonde : <span id="report-type-sonde">Pt100</span>&nbsp;&nbsp;&nbsp;
-               Résolution des sondes r = <span id="report-resolution-sonde">0.031</span></p>
           </div>
  
           <div class="pied-page">
@@ -167,8 +179,10 @@
           </div>
  
           <div class="corps-page">
-            <h3>3.4  Mode opératoire</h3>
-            <div id="report-message" class="bloc-message-word">Non renseigné</div>
+            <div class="contenu-ajuste">
+              <h3>3.4   Mode opératoire</h3>
+              <div id="report-message" class="bloc-message-word">Non renseigné</div>
+            </div>
           </div>
  
           <div class="pied-page">
@@ -184,17 +198,19 @@
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section">4  Résultats</h2>
-            <h3>4.1  Relevés des capteurs</h3>
- 
-            <div class="conteneur-graphique">
-              <div class="wrapper-canvas">
-                <img id="graphiqueTemperatures"
-                     class="graphique-rapport-img"
-                     alt="Graphique des relevés de température" />
+            <div class="contenu-ajuste">
+              <h2 class="titre-section">4   Résultats</h2>
+              <h3>4.1   Relevés des capteurs</h3>
+   
+              <div class="conteneur-graphique">
+                <div class="wrapper-canvas">
+                  <img id="graphiqueTemperatures"
+                       class="graphique-rapport-img"
+                       alt="Graphique des relevés de température" />
+                </div>
               </div>
+              <p class="legende-figure">Figure 2 – Relevés des capteurs présentés avec les seuils de tolérance haut et bas</p>
             </div>
-            <p class="legende-figure">Figure 2 – Relevés des capteurs présentés avec les seuils de tolérance haut et bas</p>
           </div>
  
           <div class="pied-page">
@@ -203,16 +219,18 @@
           </div>
         </div>
 
-         <div class="page-pdf">
+        <div class="page-pdf">
           <div class="entete-page">
             <img src="images/logo.png" class="logo-entete" alt="Logo" />
             <span class="titre-entete">Rapport de caractérisation</span>
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section">4.2 Incertitudes et Résultats Complémentaires</h2>
-            <p>Ci-dessous le récapitulatif complet des calculs et coefficients définis par capteur :</p>
-            <div id="conteneur-tableau-norme-sondes"></div>
+            <div class="contenu-ajuste">
+              <h2 class="titre-section">4.2 Incertitudes et Résultats Complémentaires</h2>
+              <p>Ci-dessous le récapitulatif complet des calculs et coefficients définis par capteur :</p>
+              <div id="conteneur-tableau-norme-sondes"></div>
+            </div>
           </div>
        
           <div class="pied-page">
@@ -228,81 +246,83 @@
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section">5  Résultats selon la norme FD X 15-140</h2>
-            <p><strong class="Sonde">Résultats selon la norme NF X 15-140 :</strong></p>
-            <div class="conteneur-tableau"></div>
+            <div class="contenu-ajuste">
+              <h2 class="titre-section">5   Résultats selon la norme FD X 15-140</h2>
+              <p><strong class="Sonde">Résultats selon la norme NF X 15-140 :</strong></p>
+              <div class="conteneur-tableau"></div>
+            </div>
           </div>
  
           <div class="pied-page">
-            <span>Rapport de cartographie n: <span class="ref-pied"></span></span>
             <span>Page 8 / 9</span>
           </div>
         </div>
  
-        <div class="page-pdf">
+        <div class="page-pdf page-courte">
           <div class="entete-page">
             <img src="images/logo.png" class="logo-entete" alt="Logo" />
             <span class="titre-entete">Rapport de caractérisation</span>
           </div>
  
           <div class="corps-page">
-            <h2 class="titre-section">6  Conformité</h2>
-            <p><strong>Règles de conformité :</strong></p>
-            <p>Pour qu'une enceinte soit déclarée conforme, il faut que, pour chaque paramètre spécifié, la moyenne de tous les mesurages x<sub>mj</sub> de chaque capteur et son incertitude élargie U<sub>mj</sub> associée appartiennent à l'intervalle des EMT situé autour de la valeur spécifiée :</p>
- 
-            <div class="formule-conformite">
-              ∀j = 1, …N : (x<sub>mj</sub> ± U<sub>mj</sub>) ∈ [x<sub>spé</sub> + EMT<sub>min</sub> ; x<sub>spé</sub> + EMT<sub>max</sub>]
-            </div>
- 
-            <div class="conteneur-graphique">
-              <div class="wrapper-canvas">
-                <img id="graphiqueTemperatures"
-                     class="graphique-rapport-img"
-                     alt="Graphique des relevés de température - Vue Conformité" />
+            <div class="contenu-ajuste">
+              <h2 class="titre-section">6   Conformité</h2>
+              <p><strong>Règles de conformité :</strong></p>
+              <p>Pour qu'une enceinte soit déclarée conforme, il faut que, pour chaque paramètre spécifié, la moyenne de tous les mesurages x<sub>mj</sub> de chaque capteur et son incertitude élargie U<sub>mj</sub> associée appartiennent à l'intervalle des EMT situé autour de la valeur spécifiée :</p>
+   
+              <div class="formule-conformite">
+                ∀j = 1, …N : (x<sub>mj</sub> ± U<sub>mj</sub>) ∈ [x<sub>spé</sub> + EMT<sub>min</sub> ; x<sub>spé</sub> + EMT<sub>max</sub>]
+              </div>
+   
+              <div class="conteneur-graphique">
+                <div class="wrapper-canvas">
+                  <img id="graphiqueConformite"
+                       class="graphique-rapport-img"
+                       alt="Graphique des relevés de température - Vue Conformité" />
+                </div>
+              </div>
+   
+              <h3>6.1   Remarques</h3>
+              <p>Les calculs d'incertitude et de profil thermique ont été exécutés conformément aux exigences de formalisation méthodologique de la réglementation en vigueur.</p>
+   
+              <div class="zone-signatures-word">
+                <table class="table-signatures-brute">
+                  <tr>
+                    <td>
+                      <strong>Réalisé par :</strong><br>
+                      <span id="report-username-signature" style="font-style:italic;color:#595959;"></span>
+                      <br><br><br>
+                      ................................................
+                    </td>
+                    <td>
+                      <strong>Validé par :</strong><br>
+                      <br><br><br>
+                      ................................................
+                    </td>
+                  </tr>
+                </table>
+              </div>
+   
+              <div class="mention-fin-word">
+                <p><em>FIN DU RAPPORT</em><br>
+                <small>CE RAPPORT NE PEUT ÊTRE REPRODUIT AUTREMENT QUE DANS SON INTÉGRALITÉ PAR PROCÉDÉ PHOTOGRAPHIQUE</small></p>
+              </div>
+
+              <div class="pied-page" style="margin-top: auto; padding-top: 20px;">
+                 <span class="ref-pied"></span>
+                 <span>Page 9 / 9</span>
               </div>
             </div>
- 
-            <h3>6.1  Remarques</h3>
-            <p>Les calculs d'incertitude et de profil thermique ont été exécutés conformément aux exigences de formalisation méthodologique de la réglementation en vigueur.</p>
- 
-            <div class="zone-signatures-word">
-              <table class="table-signatures-brute">
-                <tr>
-                  <td>
-                    <strong>Réalisé par :</strong><br>
-                    <span id="report-username-signature" style="font-style:italic;color:#595959;"></span>
-                    <br><br><br>
-                    ................................................
-                  </td>
-                  <td>
-                    <strong>Validé par :</strong><br>
-                    <br><br><br>
-                    ................................................
-                  </td>
-                </tr>
-              </table>
-            </div>
- 
-            <div class="mention-fin-word">
-              <p><em>FIN DU RAPPORT</em><br>
-              <small>CE RAPPORT NE PEUT ÊTRE REPRODUIT AUTREMENT QUE DANS SON INTÉGRALITÉ PAR PROCÉDÉ PHOTOGRAPHIQUE</small></p>
-            </div>
           </div>
- 
-          <div class="pied-page">
-            <span>Rapport de cartographie n: <span class="ref-pied"></span></span>
-            <span>Page 9 / 9</span>
-          </div> 
         </div>
 
-        <div class="actions-zone">
-            <button id="btn-telecharger-pdf" onclick="telechargerPDFDirect()">⬇ Télécharger en PDF</button>
-            <button type="button" onclick="window.history.back()">⬅ Revenir aux saisies</button>
-        </div>
-
+      </div> <div class="actions-zone">
+          <button id="btn-telecharger-pdf" onclick="telechargerPDFDirect()">⬇ Télécharger en PDF</button>
+          <button type="button" onclick="window.history.back()">⬅ Revenir aux saisies</button>
       </div>
-      
+
     </div>
+    
     <script src="JS/script-page2.js"></script>
     <script src="JS/script-fond.js"></script>
   </body>
