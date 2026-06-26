@@ -629,7 +629,7 @@ button:hover {
 }
 
 .zone-periode input {
-  text-align: center; /* Aligne le texte indicatif/saisi au centre des inputs */
+  text-align: center;
   padding: 10px;
   border-radius: 4px;
   border: 1px solid #ccc;
@@ -642,8 +642,9 @@ button:hover {
 .zone-periode p {
   color: beige;
   text-align: center;
-  font-size: 20px;
-  margin-bottom: 15px;
+  font-size: 30px;
+  margin-bottom: 20px;
+  text-decoration: underline;
 }
 
 .conteneur-calculs {
