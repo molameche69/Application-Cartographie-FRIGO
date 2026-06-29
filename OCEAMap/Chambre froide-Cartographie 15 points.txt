@@ -1,3 +1,0 @@
-- La cartographie a été effectuée avec l'enceinte en charge à environ 80%
-- Le début des mesure commence une fois le régime établi.
-- Les points sont positionnés à 20 cm de chacune des parois.
