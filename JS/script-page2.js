@@ -936,6 +936,157 @@ function genererTableauCalculsNormeAutomatique() {
   `;
 }
 
-function telechargerPDFDirect() {
-  window.print();
+function nettoyerNomFichierPDF(valeur) {
+  return (valeur || "")
+    .toString()
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, "_")
+    .substring(0, 80);
+}
+
+function construireNomFichierPDF() {
+  const entreprise =
+    sessionStorage.getItem("store_userEntreprise") ||
+    localStorage.getItem("userEntreprise") ||
+    "rapport";
+
+  const reference =
+    sessionStorage.getItem("store_userReference") ||
+    localStorage.getItem("userReference") ||
+    "";
+
+  const dateEmission =
+    sessionStorage.getItem("store_report-date-emission") ||
+    localStorage.getItem("report-date-emission") ||
+    new Date().toISOString().substring(0, 10);
+
+  const morceaux = [
+    "Rapport_cartographie",
+    nettoyerNomFichierPDF(entreprise),
+    nettoyerNomFichierPDF(reference),
+    nettoyerNomFichierPDF(dateEmission)
+  ].filter(Boolean);
+
+  return morceaux.join("_") + ".pdf";
+}
+
+/**
+ * Télécharge directement le rapport en PDF dans le dossier de téléchargement
+ * configuré dans le navigateur.
+ *
+ * Important :
+ * pour des raisons de sécurité, un navigateur ne peut pas écrire tout seul dans
+ * n'importe quel dossier du PC. Le fichier ira donc dans le dossier de
+ * téléchargement défini dans Chrome/Edge/Firefox.
+ */
+
+async function attendreChargementImagesPDF(zonePDF) {
+  const images = Array.from(zonePDF.querySelectorAll('img'));
+  const attentes = images.map(img => new Promise(resolve => {
+    if (!img.src || img.complete) return resolve();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+  }));
+  await Promise.all(attentes);
+}
+
+/**
+ * Génère le PDF page par page.
+ * Contrairement à html2pdf, cette méthode évite les pages blanches :
+ * chaque bloc .page-pdf devient exactement une page A4 dans le PDF.
+ */
+async function telechargerPDFDirect() {
+  const zonePDF = document.getElementById("zone-impression-pdf");
+  const boutonPDF = document.getElementById("btn-telecharger-pdf");
+
+  if (!zonePDF) {
+    alert("Zone PDF introuvable.");
+    return;
+  }
+
+  if (typeof html2canvas === "undefined" || !window.jspdf || !window.jspdf.jsPDF) {
+    alert("Le générateur PDF n'est pas chargé. La fenêtre d'impression va s'ouvrir.");
+    window.print();
+    return;
+  }
+
+  const pages = Array.from(zonePDF.querySelectorAll(".page-pdf"));
+  if (pages.length === 0) {
+    alert("Aucune page PDF trouvée.");
+    return;
+  }
+
+  try {
+    if (boutonPDF) {
+      boutonPDF.disabled = true;
+      boutonPDF.dataset.texteInitial = boutonPDF.textContent;
+      boutonPDF.textContent = "Génération du PDF...";
+      boutonPDF.style.opacity = "0.6";
+      boutonPDF.style.cursor = "wait";
+    }
+
+    document.body.classList.add("pdf-en-generation");
+
+    // Laisse le temps au DOM d'appliquer les styles PDF et aux images/tableaux de se stabiliser.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await attendreChargementImagesPDF(zonePDF);
+    await new Promise(resolve => setTimeout(resolve, 250));
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true
+    });
+
+    const largeurPDF = 210;
+    const hauteurPDF = 297;
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+
+      // Force une page A4 stricte avant capture.
+      page.style.width = "210mm";
+      page.style.height = "297mm";
+      page.style.minHeight = "297mm";
+      page.style.maxHeight = "297mm";
+      page.style.margin = "0";
+      page.style.overflow = "hidden";
+
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: page.scrollWidth,
+        windowHeight: page.scrollHeight
+      });
+
+      const image = canvas.toDataURL("image/jpeg", 0.98);
+
+      if (i > 0) pdf.addPage("a4", "portrait");
+      pdf.addImage(image, "JPEG", 0, 0, largeurPDF, hauteurPDF, undefined, "FAST");
+    }
+
+    pdf.save(construireNomFichierPDF());
+
+  } catch (erreur) {
+    console.error("Erreur lors de la génération du PDF page par page :", erreur);
+    alert("Le PDF n'a pas pu être généré automatiquement. La fenêtre d'impression va s'ouvrir.");
+    window.print();
+  } finally {
+    document.body.classList.remove("pdf-en-generation");
+
+    if (boutonPDF) {
+      boutonPDF.disabled = false;
+      boutonPDF.textContent = boutonPDF.dataset.texteInitial || "⬇ Télécharger en PDF";
+      boutonPDF.style.opacity = "1";
+      boutonPDF.style.cursor = "pointer";
+    }
+  }
 }

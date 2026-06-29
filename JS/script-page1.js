@@ -158,8 +158,12 @@ function restaurerEtatGlobalPage1() {
 
 // ✅ NOUVEAU : reconstruit le HTML du tableau depuis le JSON brut du fichier
 function _reconstruireTableauDepuisJson(donneesJson) {
-  const filtreDebut = normaliserFiltreDateHeure(localStorage.getItem("filtreHeureDebut") || "", "debut");
-  const filtreFin   = normaliserFiltreDateHeure(localStorage.getItem("filtreHeureFin")   || "", "fin");
+  let filtreDebut = localStorage.getItem("filtreHeureDebut") || "";
+  let filtreFin   = localStorage.getItem("filtreHeureFin")   || "";
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
 
   const pointsSauvegardes = JSON.parse(localStorage.getItem("pointsSelectionnesTableau") || "[]");
   let htmlLignes = "";
@@ -203,15 +207,14 @@ function _reconstruireTableauDepuisJson(donneesJson) {
       }
     }
 
-    const cleHorodatageGraphique = tempsBrutTexte || tempsAffiche;
-    if (filtreDebut && !horodatageRespecteFiltre(cleHorodatageGraphique, filtreDebut, "debut")) continue;
-    if (filtreFin   && !horodatageRespecteFiltre(cleHorodatageGraphique, filtreFin, "fin"))   continue;
+    // Le tableau reste complet : la plage horaire sert uniquement à zoomer le graphique.
 
     const valeurTemp = parseFloat(ligne[2]);
     const unite      = ligne[3] || "°C";
     const couleurTemp = valeurTemp > 24 ? "#dc3545" : "#007BFF";
 
     // ✅ Restaure la surbrillance des lignes sélectionnées
+    const cleHorodatageGraphique = tempsBrutTexte || tempsAffiche;
     const estSelectionne = pointsSauvegardes.includes(tempsAffiche) || pointsSauvegardes.includes(cleHorodatageGraphique);
     const styleLigne = estSelectionne
       ? 'style="border-bottom:1px solid #eee;user-select:none;cursor:pointer;background-color:rgba(0,123,255,0.18);"'
@@ -291,23 +294,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const inputHeureDebut = document.getElementById("heureDebut");
   const inputHeureFin   = document.getElementById("heureFin");
-  configurerInputDateHeure("heureDebut");
-  configurerInputDateHeure("heureFin");
+
+  // Permet de saisir une date + une heure directement dans les champs existants.
+  // Le code accepte aussi les anciennes valeurs de type HH:MM ou HH:MM:SS.
+  [inputHeureDebut, inputHeureFin].forEach(input => {
+    if (!input) return;
+    try {
+      input.type = "datetime-local";
+      input.step = "1";
+    } catch (e) {
+      console.warn("Impossible de passer le champ en datetime-local :", e);
+    }
+  });
+
+  const appliquerZoomDepuisChamps = () => {
+    if (inputHeureDebut) localStorage.setItem("filtreHeureDebut", inputHeureDebut.value);
+    if (inputHeureFin)   localStorage.setItem("filtreHeureFin",   inputHeureFin.value);
+    if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
+  };
+
   if (inputHeureDebut) {
-    inputHeureDebut.addEventListener("input", () => {
-      const filtre = normaliserFiltreDateHeure(inputHeureDebut.value, "debut");
-      if (filtre) localStorage.setItem("filtreHeureDebut", filtre.texte);
-      else localStorage.removeItem("filtreHeureDebut");
-      if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
-    });
+    inputHeureDebut.addEventListener("input", appliquerZoomDepuisChamps);
+    inputHeureDebut.addEventListener("change", appliquerZoomDepuisChamps);
   }
   if (inputHeureFin) {
-    inputHeureFin.addEventListener("input", () => {
-      const filtre = normaliserFiltreDateHeure(inputHeureFin.value, "fin");
-      if (filtre) localStorage.setItem("filtreHeureFin", filtre.texte);
-      else localStorage.removeItem("filtreHeureFin");
-      if (typeof synchroniserPlageHoraireSurGraphique === "function") synchroniserPlageHoraireSurGraphique();
-    });
+    inputHeureFin.addEventListener("input", appliquerZoomDepuisChamps);
+    inputHeureFin.addEventListener("change", appliquerZoomDepuisChamps);
   }
 
   // Drag & Drop carte
@@ -364,7 +376,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (iFin)   iFin.value   = "";
       localStorage.removeItem("filtreHeureDebut");
       localStorage.removeItem("filtreHeureFin");
-      if (donneesGraphesEnMemoire.labelsX.length > 0) genererLeGraphique();
+      if (monGraphiqueInstance && typeof synchroniserPlageHoraireSurGraphique === "function") {
+        synchroniserPlageHoraireSurGraphique();
+      }
     });
   }
 
@@ -566,160 +580,173 @@ function remettreDansReserve(sonde, reserve) {
 }
 
 function normaliserHeureFiltre(valeur) {
-  const filtre = normaliserFiltreDateHeure(valeur, "debut");
-  return filtre ? filtre.heure : "";
+  let heure = (valeur || "").toString().trim().replace(/[Hh]/g, ":");
+  if (!heure) return "";
+
+  // Si une date complète est présente, on garde uniquement HH:MM:SS.
+  const matchHeure = heure.match(/(\d{2}:\d{2}(?::\d{2})?)/);
+  if (matchHeure) heure = matchHeure[1];
+
+  if (heure.length === 2) heure += ":00:00";
+  if (heure.length === 5) heure += ":00";
+  return heure;
 }
 
-function completerSecondes(heure) {
-  let h = (heure || "").toString().trim().replace(/[Hh]/g, ":");
-  if (!h) return "";
-  if (/^\d{1,2}$/.test(h)) h = h.padStart(2, "0") + ":00:00";
-  if (/^\d{1,2}:\d{2}$/.test(h)) h = h.split(":")[0].padStart(2, "0") + ":" + h.split(":")[1] + ":00";
-  if (/^\d{1,2}:\d{2}:\d{2}$/.test(h)) {
-    const morceaux = h.split(":");
-    return `${morceaux[0].padStart(2, "0")}:${morceaux[1]}:${morceaux[2]}`;
-  }
-  const match = h.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  return match ? `${match[1].padStart(2, "0")}:${match[2]}:${match[3] || "00"}` : "";
+function extraireHeureDepuisLabelGraphique(label) {
+  const texte = (label || "").toString();
+  const match = texte.match(/(\d{2}:\d{2}:\d{2})/);
+  return match ? match[1] : texte.substring(0, 8);
 }
 
-function normaliserFiltreDateHeure(valeur, borne = "debut") {
-  let texte = (valeur || "").toString().trim();
+// ========================================================
+// 🔎 ZOOM AUTOMATIQUE DATE + HEURE SUR LE GRAPHIQUE
+// ========================================================
+function convertirTexteDateHeureEnTimestamp(valeur) {
+  if (valeur === null || valeur === undefined) return null;
+
+  let texte = valeur.toString().trim();
   if (!texte) return null;
 
-  texte = texte.replace(/[Hh]/g, ":").replace("T", " ").replace("Z", "").trim();
-  texte = texte.replace(/\s+/g, " ");
+  texte = texte
+    .replace(/[Hh]/g, ":")
+    .replace("T", " ")
+    .replace("Z", "")
+    .trim();
 
-  // Formats acceptés : YYYY-MM-DD HH:MM[:SS], YYYY/MM/DD HH:MM[:SS]
-  let matchIso = texte.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:\s+(\d{1,2}:\d{2}(?::\d{2})?))?$/);
-  if (matchIso) {
-    const yyyy = matchIso[1];
-    const mm = matchIso[2].padStart(2, "0");
-    const dd = matchIso[3].padStart(2, "0");
-    const heure = matchIso[4] ? completerSecondes(matchIso[4]) : (borne === "fin" ? "23:59:59" : "00:00:00");
-    return { contientDate: true, texte: `${yyyy}-${mm}-${dd} ${heure}`, heure };
+  // Format ISO / Excel texte : 2026-06-29 14:30:00
+  let m = texte.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    return new Date(
+      Number(m[1]), Number(m[2]) - 1, Number(m[3]),
+      Number(m[4]), Number(m[5]), Number(m[6] || 0)
+    ).getTime();
   }
 
-  // Formats acceptés : DD/MM/YYYY HH:MM[:SS], DD-MM-YYYY HH:MM[:SS]
-  let matchFr = texte.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:\s+(\d{1,2}:\d{2}(?::\d{2})?))?$/);
-  if (matchFr) {
-    const dd = matchFr[1].padStart(2, "0");
-    const mm = matchFr[2].padStart(2, "0");
-    const yyyy = matchFr[3];
-    const heure = matchFr[4] ? completerSecondes(matchFr[4]) : (borne === "fin" ? "23:59:59" : "00:00:00");
-    return { contientDate: true, texte: `${yyyy}-${mm}-${dd} ${heure}`, heure };
+  // Format français : 29/06/2026 14:30:00 ou 29-06-2026 14:30
+  m = texte.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (m) {
+    return new Date(
+      Number(m[3]), Number(m[2]) - 1, Number(m[1]),
+      Number(m[4]), Number(m[5]), Number(m[6] || 0)
+    ).getTime();
   }
 
-  // Ancien fonctionnement : filtre heure seule HH:MM[:SS]
-  const heure = completerSecondes(texte);
-  if (heure) return { contientDate: false, texte: heure, heure };
+  // Format heure seule : HH:MM ou HH:MM:SS.
+  // On renvoie un nombre de secondes depuis minuit.
+  m = texte.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) {
+    return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3] || 0);
+  }
+
+  // Dernier essai avec Date natif.
+  const d = new Date(texte);
+  if (!Number.isNaN(d.getTime())) return d.getTime();
 
   return null;
 }
 
-function extraireDateHeureDepuisLabelGraphique(label) {
-  let texte = (label || "").toString().trim();
-  if (!texte) return { contientDate: false, texte: "", heure: "" };
+function labelGraphiqueVersValeurComparable(label, modeHeureSeule) {
+  const texte = (label || "").toString().trim();
+  if (!texte) return null;
 
-  texte = texte.replace("T", " ").replace("Z", "").trim();
-  texte = texte.replace(/\s+/g, " ");
-
-  const matchIso = texte.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
-  if (matchIso) {
-    const yyyy = matchIso[1];
-    const mm = matchIso[2].padStart(2, "0");
-    const dd = matchIso[3].padStart(2, "0");
-    const heure = completerSecondes(matchIso[4]);
-    return { contientDate: true, texte: `${yyyy}-${mm}-${dd} ${heure}`, heure };
+  if (modeHeureSeule) {
+    return convertirTexteDateHeureEnTimestamp(extraireHeureDepuisLabelGraphique(texte));
   }
 
-  const matchFr = texte.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
-  if (matchFr) {
-    const dd = matchFr[1].padStart(2, "0");
-    const mm = matchFr[2].padStart(2, "0");
-    const yyyy = matchFr[3];
-    const heure = completerSecondes(matchFr[4]);
-    return { contientDate: true, texte: `${yyyy}-${mm}-${dd} ${heure}`, heure };
+  return convertirTexteDateHeureEnTimestamp(texte);
+}
+
+function champContientUneDate(valeur) {
+  const texte = (valeur || "").toString().trim();
+  return /\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(texte) || /\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}/.test(texte);
+}
+
+function appliquerZoomGraphiqueParIndex(indexMin, indexMax) {
+  if (!monGraphiqueInstance) return;
+  if (indexMin === null || indexMax === null || indexMin < 0 || indexMax < 0) return;
+  if (indexMin > indexMax) [indexMin, indexMax] = [indexMax, indexMin];
+
+  const chart = monGraphiqueInstance;
+
+  // On repart d'abord du graphique complet pour éviter d'empiler les zooms.
+  if (typeof chart.resetZoom === "function") chart.resetZoom();
+
+  // Zoom horizontal identique au principe du drag de chartjs-plugin-zoom.
+  if (typeof chart.zoomScale === "function") {
+    chart.zoomScale("x", { min: indexMin, max: indexMax }, "default");
+  } else {
+    chart.options.scales.x.min = indexMin;
+    chart.options.scales.x.max = indexMax;
   }
 
-  const heure = completerSecondes(texte);
-  return { contientDate: false, texte: heure, heure };
-}
+  // Ajustement vertical automatique sur les valeurs visibles pour renforcer l'effet "zoom".
+  const valeursVisibles = [];
+  chart.data.datasets.forEach((dataset, datasetIndex) => {
+    if (typeof chart.isDatasetVisible === "function" && !chart.isDatasetVisible(datasetIndex)) return;
+    for (let i = indexMin; i <= indexMax; i++) {
+      const v = dataset.data[i];
+      if (typeof v === "number" && !Number.isNaN(v)) valeursVisibles.push(v);
+    }
+  });
 
-function extraireHeureDepuisLabelGraphique(label) {
-  return extraireDateHeureDepuisLabelGraphique(label).heure;
-}
+  if (valeursVisibles.length > 0) {
+    const minY = Math.min(...valeursVisibles);
+    const maxY = Math.max(...valeursVisibles);
+    const marge = Math.max((maxY - minY) * 0.12, 0.2);
+    chart.options.scales.y.min = minY - marge;
+    chart.options.scales.y.max = maxY + marge;
+  }
 
-function horodatageRespecteFiltre(label, filtre, sens) {
-  if (!filtre) return true;
-  const horodatage = extraireDateHeureDepuisLabelGraphique(label);
-  if (!horodatage.heure && !horodatage.texte) return true;
-
-  // Si le filtre contient une date et que le label aussi, on compare date + heure.
-  // Sinon, on conserve l'ancien comportement en comparant uniquement l'heure.
-  const valeurLabel = filtre.contientDate && horodatage.contientDate ? horodatage.texte : horodatage.heure;
-  const valeurFiltre = filtre.contientDate && horodatage.contientDate ? filtre.texte : filtre.heure;
-
-  if (!valeurLabel || !valeurFiltre) return true;
-  return sens === "debut" ? valeurLabel >= valeurFiltre : valeurLabel <= valeurFiltre;
-}
-
-function formaterValeurPourInputDateHeure(valeur) {
-  const filtre = normaliserFiltreDateHeure(valeur, "debut");
-  if (!filtre) return "";
-  if (filtre.contientDate) return filtre.texte.replace(" ", "T").substring(0, 16);
-  return filtre.heure.substring(0, 5);
-}
-
-function configurerInputDateHeure(id) {
-  const input = document.getElementById(id);
-  if (!input) return;
-
-  // Permet de saisir date + heure dans le même champ.
-  // Si le navigateur ne supporte pas datetime-local, il garde un champ texte utilisable.
-  try { input.type = "datetime-local"; } catch (e) { input.type = "text"; }
-  input.step = "1";
-  input.placeholder = "AAAA-MM-JJ HH:MM:SS";
-
-  const valeurStockee = localStorage.getItem(id === "heureDebut" ? "filtreHeureDebut" : "filtreHeureFin") || input.value;
-  const valeurFormatee = formaterValeurPourInputDateHeure(valeurStockee);
-  if (valeurFormatee) input.value = valeurFormatee;
+  chart.update("none");
 }
 
 function synchroniserPlageHoraireSurGraphique() {
   if (!monGraphiqueInstance) return;
 
-  const filtreDebut = normaliserFiltreDateHeure(
-    document.getElementById("heureDebut")?.value.trim() || localStorage.getItem("filtreHeureDebut") || "",
-    "debut"
-  );
-  const filtreFin = normaliserFiltreDateHeure(
-    document.getElementById("heureFin")?.value.trim() || localStorage.getItem("filtreHeureFin") || "",
-    "fin"
-  );
+  const valeurDebutBrute = document.getElementById("heureDebut")?.value.trim() || localStorage.getItem("filtreHeureDebut") || "";
+  const valeurFinBrute   = document.getElementById("heureFin")?.value.trim()   || localStorage.getItem("filtreHeureFin")   || "";
 
   const labels = monGraphiqueInstance.data.labels;
   if (!labels || labels.length === 0) return;
 
-  let indexMin = 0;
-  let indexMax = labels.length - 1;
-
-  if (filtreDebut) {
-    const idx = labels.findIndex(label => horodatageRespecteFiltre(label, filtreDebut, "debut"));
-    if (idx !== -1) indexMin = idx;
-  }
-
-  if (filtreFin) {
-    const idx = labels.findLastIndex(label => horodatageRespecteFiltre(label, filtreFin, "fin"));
-    if (idx !== -1) indexMax = idx;
-  }
-
-  if (indexMin > indexMax) {
-    alert("⚠️ La plage date/heure demandée ne correspond à aucune donnée du tableau.");
+  // Si aucun champ n'est renseigné : retour à 100 % du graphique.
+  if (!valeurDebutBrute && !valeurFinBrute) {
+    if (typeof monGraphiqueInstance.resetZoom === "function") monGraphiqueInstance.resetZoom();
+    delete monGraphiqueInstance.options.scales.x.min;
+    delete monGraphiqueInstance.options.scales.x.max;
+    delete monGraphiqueInstance.options.scales.y.min;
+    delete monGraphiqueInstance.options.scales.y.max;
+    monGraphiqueInstance.update("none");
     return;
   }
 
-  monGraphiqueInstance.zoomScale('x', { min: indexMin, max: indexMax }, 'default');
+  // Si l'utilisateur saisit seulement une heure, on compare uniquement HH:MM:SS.
+  // S'il saisit une date + heure, on compare la date complète.
+  const modeHeureSeule = !champContientUneDate(valeurDebutBrute) && !champContientUneDate(valeurFinBrute);
+  const valeursLabels = labels.map(label => labelGraphiqueVersValeurComparable(label, modeHeureSeule));
+
+  const debut = valeurDebutBrute ? convertirTexteDateHeureEnTimestamp(modeHeureSeule ? normaliserHeureFiltre(valeurDebutBrute) : valeurDebutBrute) : null;
+  const fin   = valeurFinBrute   ? convertirTexteDateHeureEnTimestamp(modeHeureSeule ? normaliserHeureFiltre(valeurFinBrute)   : valeurFinBrute)   : null;
+
+  let indexMin = 0;
+  let indexMax = labels.length - 1;
+
+  if (debut !== null) {
+    const idx = valeursLabels.findIndex(v => v !== null && v >= debut);
+    if (idx !== -1) indexMin = idx;
+  }
+
+  if (fin !== null) {
+    for (let i = valeursLabels.length - 1; i >= 0; i--) {
+      if (valeursLabels[i] !== null && valeursLabels[i] <= fin) {
+        indexMax = i;
+        break;
+      }
+    }
+  }
+
+  if (indexMin > indexMax) [indexMin, indexMax] = [indexMax, indexMin];
+  appliquerZoomGraphiqueParIndex(indexMin, indexMax);
 }
 
 function gererBasculeCapteur(idCapteur) {
@@ -895,27 +922,22 @@ function genererLeGraphique() {
   `;
 
   document.getElementById("btn-reset-zoom")?.addEventListener("click", () => {
-    if (monGraphiqueInstance) monGraphiqueInstance.resetZoom();
+    if (monGraphiqueInstance) {
+      if (typeof monGraphiqueInstance.resetZoom === "function") monGraphiqueInstance.resetZoom();
+      delete monGraphiqueInstance.options.scales.x.min;
+      delete monGraphiqueInstance.options.scales.x.max;
+      delete monGraphiqueInstance.options.scales.y.min;
+      delete monGraphiqueInstance.options.scales.y.max;
+      monGraphiqueInstance.update("none");
+    }
   });
   document.getElementById("btn-supprimer-donnees")?.addEventListener("click", supprimerGraphiqueEtTableau);
 
   genererGraphiqueTriCapteurs(donneesGraphesEnMemoire.labelsX, donneesGraphesEnMemoire.datasets);
 
-  // ✅ Correction : sans filtre actif, le graphique doit afficher 100 % du tableau.
-  const filtreDebutActif = normaliserFiltreDateHeure(
-    document.getElementById("heureDebut")?.value.trim() || localStorage.getItem("filtreHeureDebut") || "",
-    "debut"
-  );
-  const filtreFinActif = normaliserFiltreDateHeure(
-    document.getElementById("heureFin")?.value.trim() || localStorage.getItem("filtreHeureFin") || "",
-    "fin"
-  );
-
-  if (filtreDebutActif || filtreFinActif) {
-    synchroniserPlageHoraireSurGraphique();
-  } else if (monGraphiqueInstance && typeof monGraphiqueInstance.resetZoom === "function") {
-    monGraphiqueInstance.resetZoom();
-  }
+  // ✅ Si une plage date/heure est saisie, on zoome dessus.
+  // Sinon, le graphique reste affiché à 100 %.
+  synchroniserPlageHoraireSurGraphique();
 
   const btnGenerer = document.getElementById("btn-generer-graphique");
   if (btnGenerer) btnGenerer.style.display = "none";
@@ -952,13 +974,6 @@ function supprimerGraphiqueEtTableau() {
   const txtNomFichier = document.getElementById("nom-fichier-choisi");
   if (txtNomFichier) txtNomFichier.textContent = "Aucun fichier choisi";
 
-  localStorage.removeItem("filtreHeureDebut");
-  localStorage.removeItem("filtreHeureFin");
-  const inputDebut = document.getElementById("heureDebut");
-  const inputFin = document.getElementById("heureFin");
-  if (inputDebut) inputDebut.value = "";
-  if (inputFin) inputFin.value = "";
-
   const corpsTableau = document.getElementById("corpsTableauODS");
   if (corpsTableau) corpsTableau.innerHTML =
     '<tr><td colspan="4" style="text-align:center;padding:20px;">Aucune donnée chargée.</td></tr>';
@@ -973,14 +988,13 @@ function supprimerGraphiqueEtTableau() {
 }
 
 function chargerDonneesODS(fichierDynamique = null) {
-  const filtreDebut = normaliserFiltreDateHeure(
-    localStorage.getItem("filtreHeureDebut") || document.getElementById("heureDebut")?.value.trim() || "",
-    "debut"
-  );
-  const filtreFin = normaliserFiltreDateHeure(
-    localStorage.getItem("filtreHeureFin") || document.getElementById("heureFin")?.value.trim() || "",
-    "fin"
-  );
+  let filtreDebut = localStorage.getItem("filtreHeureDebut") || document.getElementById("heureDebut")?.value.trim() || "";
+  let filtreFin   = localStorage.getItem("filtreHeureFin")   || document.getElementById("heureFin")?.value.trim()   || "";
+
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
 
   const fichierATraiter = fichierDynamique || fichierActuelPourFiltrage;
   if (!fichierATraiter) return;
@@ -1043,9 +1057,7 @@ function chargerDonneesODS(fichierDynamique = null) {
         }
       }
 
-      const cleHorodatageGraphique = tempsBrutTexte || tempsAffiche;
-      if (filtreDebut && !horodatageRespecteFiltre(cleHorodatageGraphique, filtreDebut, "debut")) continue;
-      if (filtreFin   && !horodatageRespecteFiltre(cleHorodatageGraphique, filtreFin, "fin"))   continue;
+      // Le tableau reste complet : la plage horaire sert uniquement à zoomer le graphique.
 
       const valeurTemp = parseFloat(ligne[2]);
       const unite      = ligne[3] || "°C";
@@ -1054,6 +1066,7 @@ function chargerDonneesODS(fichierDynamique = null) {
 
       // ✅ Correction : le graphique utilise la date + heure complète si disponible.
       // Cela évite d'écraser des points si le fichier contient plusieurs jours avec les mêmes heures.
+      const cleHorodatageGraphique = tempsBrutTexte || tempsAffiche;
       donneesCapteurs[idCapteur][cleHorodatageGraphique] = valeurTemp;
       tousLesHorodatages.add(cleHorodatageGraphique);
 
@@ -1426,7 +1439,7 @@ function sauvegarderToutEtDiriger() {
   const finInvalide   = !inputHeureFinElement || !hFin || !inputHeureFinElement.checkValidity();
 
   if (debutInvalide || finInvalide) {
-    alert("⚠️ Erreur : Veuillez sélectionner une date/heure de début et une date/heure de fin dans l'onglet 'Tableau température' avant de générer le rapport.");
+    alert("⚠️ Erreur : Veuillez sélectionner une heure de début et une heure de fin dans l'onglet 'Tableau température' avant de générer le rapport.");
     
     const boutonGraphique = boutonsOnglets[2];
     if (boutonGraphique) changerOnglet({ currentTarget: boutonGraphique }, 'onglet3');
@@ -1478,8 +1491,12 @@ function sauvegarderToutEtDiriger() {
 
   localStorage.removeItem("imageGraphiqueZoome");
 
-  let filtreDebut = normaliserFiltreDateHeure(hDebut, "debut")?.texte || hDebut;
-  let filtreFin   = normaliserFiltreDateHeure(hFin, "fin")?.texte || hFin;
+  let filtreDebut = hDebut;
+  let filtreFin   = hFin;
+  filtreDebut = filtreDebut.replace(/[Hh]/g, ":");
+  filtreFin   = filtreFin.replace(/[Hh]/g, ":");
+  if (filtreDebut.length === 5) filtreDebut += ":00";
+  if (filtreFin.length   === 5) filtreFin   += ":00";
 
   if (pointsSelectionnes.length >= 31) {
     pointsSelectionnes.sort();
@@ -1487,8 +1504,8 @@ function sauvegarderToutEtDiriger() {
     filtreFin   = pointsSelectionnes[pointsSelectionnes.length - 1];
   }
 
-  if (inputHeureDebutElement) inputHeureDebutElement.value = formaterValeurPourInputDateHeure(filtreDebut);
-  if (inputHeureFinElement)   inputHeureFinElement.value   = formaterValeurPourInputDateHeure(filtreFin);
+  if (inputHeureDebutElement) inputHeureDebutElement.value = filtreDebut;
+  if (inputHeureFinElement)   inputHeureFinElement.value   = filtreFin;
 
   localStorage.setItem("filtreHeureDebut", filtreDebut);
   localStorage.setItem("filtreHeureFin",   filtreFin);
@@ -1528,9 +1545,6 @@ function reinitialiserZoomGraphique() {
   }
 }
 
-// ========================================================
-// 🟢 INITIALISATION AU CHARGEMENT DU DOM
-// ========================================================
 window.addEventListener("DOMContentLoaded", () => {
   const zoneTexteIntro = document.getElementById("texte-recommandations");
   if (zoneTexteIntro) {
