@@ -26,3 +26,5 @@ Les étapes 1 à 3 ne sont à exécuter qu'une seule fois au moment de la config
 5) Placez les capteurs sur votre enceinte  ou volume à cartographier. Pour vous donner une idée des emplacements possibles vous pouvez sélectionner dans cette fenêtre le nombre de points de votre cartographie dans la liste déroulante. L'image qui apparaît à droite vous aidera pour le placement.
  
 6) Attendez au moins 30 minutes après la stabilisation. Vous pouvez surveiller la stabilisation dans OCEAView.
+
+7) Une fois l'opération terminée, vous pourrez récupérer votre PDF dans le dossier « Téléchargements » de votre explorateur de fichiers.
